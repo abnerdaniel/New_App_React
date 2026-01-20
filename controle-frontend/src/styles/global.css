@@ -15,6 +15,7 @@
   background: #1f2937;
   color: white;
   padding: 16px;
+  text-align: center;
 }
 
 .content-container {
@@ -26,6 +27,15 @@
   width: 200px;
   background: #e5e7eb;
   padding: 16px;
+}
+
+.sidebar a {
+  text-decoration: none;
+  color: #111827;
+}
+
+.sidebar a:hover {
+  font-weight: bold;
 }
 
 .sidebar ul {

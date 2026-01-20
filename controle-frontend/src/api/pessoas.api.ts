@@ -1,15 +1,42 @@
-import { api } from "./axios";
-import type { Pessoa } from "../types/Pessoa";
+import { api } from './axios'
+import type { Pessoa } from '../types/Pessoa'
 
-export const listarPessoas = async (): Promise<Pessoa[]> => {
-  const response = await api.get<Pessoa[]>("/pessoas/lista");
+export interface PessoaRequest {
+  nome: string;
+  idade: number;
+}
+
+const listar = async (): Promise<Pessoa[]> => {
+  const response = await api.get<Pessoa[]>('/api/pessoas/lista');
   return response.data;
 };
 
-export const criarPessoa = async (nome: string, idade: number): Promise<void> => {
-  await api.post("/pessoas/criar", { nome, idade });
+const criar = async (
+  data: PessoaRequest
+): Promise<Pessoa> => {
+  const response = await api.post<Pessoa>(
+    '/api/pessoas/criar',
+    data
+  );
+  return response.data;
 };
 
-export const deletarPessoa = async (id: number): Promise<void> => {
-  await api.delete(`/pessoas/deleta/${id}`);
+const atualizar = async (
+  data: Pessoa
+): Promise<Pessoa> => {
+  const response = await api.put<Pessoa>(
+    '/api/pessoas/atualiza',
+    data
+  );
+  return response.data;
+};
+const deletar = async (id: number): Promise<void> => {
+  await api.delete(`/api/pessoas/deleta/${id}`);
+};
+
+export const pessoaApi = {
+  listar,
+  criar,
+  atualizar,
+  deletar,
 };

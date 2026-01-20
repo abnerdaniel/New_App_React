@@ -1,12 +1,12 @@
 
 import { Layout } from './components/layout/Layout'
-import { PessoasPage } from './pages/PessoasPage'
+import { AppRoutes } from './routers/AppRoutes'
 
 
 function App() {
   return (
     <Layout>
-      <PessoasPage />
+      <AppRoutes />
     </Layout>
   )
 }
