@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { PessoasPage } from '../pages/Pessoas/PessoasPage'
-import { CategoriasPage } from '../pages/CategoriasPage'
-import { TransacoesPage } from '../pages/TransacoesPage'
+import { CategoriasPage } from '../pages/Categorias/CategoriasPage'
+import { TransacoesPage } from '../pages/Transacoes/TransacoesPage'
 import { TotaisPage } from '../pages/TotaisPage'
 
 export function AppRoutes() {
