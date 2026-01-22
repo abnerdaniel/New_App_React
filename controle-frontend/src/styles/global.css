@@ -1,8 +1,19 @@
+/* src/styles/global.css */
+:root {
+  --primary: #1f2937;
+  --secondary: #374151;
+  --bg-page: #f3f4f6;
+  --text-main: #111827;
+  --success: #10b981;
+  --danger: #ef4444;
+  --white: #ffffff;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .app-container {
@@ -12,10 +23,10 @@
 }
 
 .header {
-  background: #1f2937;
-  color: white;
-  padding: 16px;
-  text-align: center;
+  background: var(--primary);
+  color: var(--white);
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .content-container {
@@ -24,91 +35,116 @@
 }
 
 .sidebar {
-  width: 200px;
-  background: #e5e7eb;
-  padding: 16px;
+  width: 220px;
+  background: var(--white);
+  border-right: 1px solid #e5e7eb;
+  padding: 1.5rem;
 }
+
+.sidebar ul { list-style: none; }
+.sidebar li { margin-bottom: 0.75rem; }
 
 .sidebar a {
   text-decoration: none;
-  color: #111827;
+  color: var(--secondary);
+  font-weight: 500;
+  display: block;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s;
 }
 
 .sidebar a:hover {
-  font-weight: bold;
-}
-
-.sidebar ul {
-  list-style: none;
-}
-
-.sidebar li {
-  margin-bottom: 12px;
-  cursor: pointer;
+  background: var(--bg-page);
+  color: var(--primary);
 }
 
 .page-content {
   flex: 1;
-  padding: 24px;
-  background: #f9fafb;
+  padding: 2rem;
+  background: var(--bg-page);
+  overflow-y: auto;
 }
 
-/* Container para centralizar o conteúdo da página */
-.page-content {
-  max-width: 1200px;
-  margin: 0 auto;
+/* Estilo para Formulários (Cards) */
+form {
+  background: var(--white);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
+input, select {
+  padding: 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+}
+
+input:focus, select:focus {
+  border-color: var(--primary);
+}
+
+button {
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+button[type="submit"] {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.btn-save { background: var(--success); color: var(--white); }
+.btn-delete { background: var(--danger); color: var(--white); padding: 4px 8px; font-size: 0.8rem; }
+
+button:hover { opacity: 0.9; }
+
+/* Tabelas */
 table {
   width: 100%;
+  background: var(--white);
   border-collapse: collapse;
-  margin: 20px 0;
-  background-color: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-table thead tr {
-  background-color: #1f2937; /* Cinza escuro combinando com o Header */
-  color: #ffffff;
-  text-align: left;
-}
-
-table th, table td {
-  padding: 12px 15px;
-  border-bottom: 1px solid #edf2f7;
-}
-
-/* Efeito zebrado e hover */
-table tbody tr:nth-of-type(even) {
-  background-color: #f8fafc;
-}
-
-table tbody tr:hover {
-  background-color: #f1f5f9;
-}
-
-/* Badges para o Tipo */
-.badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: bold;
+th {
+  background: #f9fafb;
+  color: #4b5563;
   text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 1rem;
+  border-bottom: 2px solid #e5e7eb;
 }
 
-.badge.receita { background-color: #dcfce7; color: #166534; }
-.badge.despesa { background-color: #fee2e2; color: #991b1b; }
-
-/* Botões de ação */
-.btn-delete {
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
+td {
+  padding: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: var(--text-main);
 }
 
-.btn-delete:hover { background-color: #dc2626; }
+tbody tr:hover { background: #f9fafb; }
+
+/* Badges e utilitários */
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+.badge.receita { background: #d1fae5; color: #065f46; }
+.badge.despesa { background: #fee2e2; color: #991b1b; }
+
+.input-group { display: flex; align-items: center; gap: 4px; }
