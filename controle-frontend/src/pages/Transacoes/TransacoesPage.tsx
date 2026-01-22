@@ -18,9 +18,7 @@ export function TransacoesPage() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(false);
   
-  
-  useEffect(() => {
-    async function carregarDadosIniciais() {
+  async function carregarDadosIniciais() {
       const [pessoasData, categoriasData] = await Promise.all([
         pessoaApi.listar(), 
         categoriaApi.listar()
@@ -28,55 +26,49 @@ export function TransacoesPage() {
 
       setPessoas(pessoasData);
       setCategorias(categoriasData);
+  }
+  
+  async function loadTransacoes(pessoaId: number) {
+    setLoading(true);
+    try {
+      const data = await transacaoApi.listarPorPessoa(pessoaId);
+      setTransacoes(data);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    carregarDadosIniciais();
-  }, []);
-
- 
-  useEffect(() => {
+  async function handleCriar(descricao: string, valor: number, tipo: TipoTransacao, categoriaId: number) {
     if (!pessoaSelecionada) return;
-
-    async function loadTransacoes() {
-      setLoading(true);
-      try {
-        const data = await transacaoApi.listarPorPessoa(pessoaSelecionada.id);
-        setTransacoes(data);
-      } finally {
-        setLoading(false);
-      }
+    try {
+    await transacaoApi.criar({descricao, valor, tipo, categoriaId, pessoaId: pessoaSelecionada.id});
+    loadTransacoes(pessoaSelecionada.id)
+    } catch  {
+      alert("Erro ao criar transação");
     }
-
-    loadTransacoes();
-  }, [pessoaSelecionada]);
-
-  async function handleCriar(
-    descricao: string,
-    valor: number,
-    tipo: TipoTransacao,
-    categoriaId: number
-  ) {
-    if (!pessoaSelecionada) return;
-
-    await transacaoApi.criar({
-      descricao,
-      valor,
-      tipo,
-      categoriaId,
-      pessoaId: pessoaSelecionada.id
-    });
-    
-    const data = await transacaoApi.listarPorPessoa(pessoaSelecionada.id);
-    setTransacoes(data);
   }
 
   async function handleDeletar(id: number) {
     if (!pessoaSelecionada) return;
 
     await transacaoApi.deletar(id);
-    const data = await transacaoApi.listarPorPessoa(pessoaSelecionada.id);
-    setTransacoes(data);
+    await loadTransacoes(pessoaSelecionada.id);
   }
+
+
+  useEffect(() => {
+    carregarDadosIniciais();
+  }, []);
+
+  useEffect(() => {
+    if (!pessoaSelecionada) {
+      setTransacoes([]);
+      return;
+    }
+    
+    setTransacoes([]);
+    loadTransacoes(pessoaSelecionada.id);
+  }, [pessoaSelecionada]);
 
   return (
     <div>

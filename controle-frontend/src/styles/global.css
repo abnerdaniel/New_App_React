@@ -52,3 +52,63 @@
   padding: 24px;
   background: #f9fafb;
 }
+
+/* Container para centralizar o conteúdo da página */
+.page-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+table thead tr {
+  background-color: #1f2937; /* Cinza escuro combinando com o Header */
+  color: #ffffff;
+  text-align: left;
+}
+
+table th, table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+/* Efeito zebrado e hover */
+table tbody tr:nth-of-type(even) {
+  background-color: #f8fafc;
+}
+
+table tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+/* Badges para o Tipo */
+.badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.badge.receita { background-color: #dcfce7; color: #166534; }
+.badge.despesa { background-color: #fee2e2; color: #991b1b; }
+
+/* Botões de ação */
+.btn-delete {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-delete:hover { background-color: #dc2626; }

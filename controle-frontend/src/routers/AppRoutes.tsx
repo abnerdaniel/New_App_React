@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { PessoasPage } from '../pages/Pessoas/PessoasPage'
 import { CategoriasPage } from '../pages/Categorias/CategoriasPage'
 import { TransacoesPage } from '../pages/Transacoes/TransacoesPage'
-import { TotaisPage } from '../pages/TotaisPage'
+import { ConsultaTotaisPage } from '../pages/ConsultaTotais/TotaisPage'
 
 export function AppRoutes() {
   return (
@@ -11,7 +11,7 @@ export function AppRoutes() {
       <Route path="/pessoas" element={<PessoasPage />} />
       <Route path="/categorias" element={<CategoriasPage />} />
       <Route path="/transacoes" element={<TransacoesPage />} />
-      <Route path="/totais" element={<TotaisPage />} />
+      <Route path="/totais" element={<ConsultaTotaisPage />} />
     </Routes>
   );
 }
