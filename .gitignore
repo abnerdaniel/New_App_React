@@ -1,3 +1,67 @@
-/node_modules/
-/lib/
-.bsb.lock
+## --- Visual Studio & IDEs ---
+.vs/
+.vscode/
+.idea/
+*.sln.iml
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+## --- Build Results ---
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+[Bb]in/
+[Oo]bj/
+artifacts/
+bld/
+
+## --- Common Generated Files ---
+*.ilk
+*.pdb
+*.iobj
+*.ipdb
+*.log
+*.tlog
+*.tmp
+*_i.c
+*_p.c
+*_h.h
+*.meta
+*.pch
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*_wpftmp.csproj
+
+## --- NuGet ---
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+
+## --- Test Results ---
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+## --- Sensitive Data (Secrets) ---
+.env
+.env.*
+# Descomente abaixo se não quiser versionar as configs de ambiente
+# appsettings.Development.json
+# appsettings.json
