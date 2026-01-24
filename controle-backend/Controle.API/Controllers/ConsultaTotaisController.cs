@@ -1,6 +1,7 @@
 using Controle.Application.DTOs;
 using Controle.Application.Interfaces;
 using Controle.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -15,6 +16,7 @@ namespace Controle.API.Controllers
     [ApiController]
     [Route("api/consultaTotais")]
     [DisplayName("Consulta de totais")]
+    [Authorize] // Requer autenticação JWT
     public class ConsultaTotaisController : ControllerBase
     {
         private readonly IConsultaTotaisService _consultaTotaisService;

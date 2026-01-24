@@ -24,7 +24,6 @@ Este é um sistema completo de controle financeiro residencial que permite:
 - **Gerenciar Transações**: Registrar receitas e despesas vinculadas a pessoas e categorias
 - **Consultar Totais**: Visualizar totais de transações agrupadas por pessoa
 
-O sistema foi desenvolvido seguindo boas práticas de arquitetura de software, com separação clara entre frontend e backend, permitindo escalabilidade e manutenibilidade.
 
 ## 🏗️ Arquitetura do Sistema
 
@@ -32,7 +31,7 @@ O projeto é composto por duas aplicações principais:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    FRONTEND (React)                      │
+│                    FRONTEND (React)                     │
 │  - Interface de usuário                                 │
 │  - React 19 + TypeScript + Vite                         │
 │  - Porta: 5173                                          │
@@ -40,15 +39,15 @@ O projeto é composto por duas aplicações principais:
                    │ HTTP/REST
                    │
 ┌──────────────────▼──────────────────────────────────────┐
-│                    BACKEND (.NET)                        │
-│  - API REST                                              │
+│                    BACKEND (.NET)                       │
+│  - API REST                                             │
 │  - .NET 9.0 + ASP.NET Core                              │
 │  - Porta: 5000/7080                                     │
 └──────────────────┬──────────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────────┐
-│              BANCO DE DADOS (PostgreSQL)                 │
-│  - Armazenamento de dados                                │
+│              BANCO DE DADOS (PostgreSQL)                │
+│  - Armazenamento de dados                               │
 │  - Entity Framework Core                                │
 └─────────────────────────────────────────────────────────┘
 ```

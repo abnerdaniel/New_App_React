@@ -1,5 +1,6 @@
 using Controle.Application.Interfaces;
 using Controle.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -14,6 +15,7 @@ namespace Controle.API.Controllers
     [ApiController]
     [Route("api/categorias")]
     [DisplayName("Gestão de categorias")]
+    [Authorize] // Requer autenticação JWT
     public class CategoriasController : ControllerBase
     {
         private readonly ICategoriaService _service;
