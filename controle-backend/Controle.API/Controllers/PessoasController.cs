@@ -16,6 +16,7 @@ namespace Controle.API.Controllers
     [ApiController]
     [Route("api/pessoas")]
     [DisplayName("Gestão de Pessoas")]
+    [Authorize] // Requer autenticação JWT
     public class PessoasController : ControllerBase
     {
         private readonly IPessoaService _service;

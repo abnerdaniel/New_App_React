@@ -22,11 +22,13 @@ namespace Controle.API.Extensions
             services.AddScoped<ITransacaoService, TransacaoService>();
             services.AddScoped<ICategoriaService, CategoriaService>();
             services.AddScoped<IConsultaTotaisService, ConsultaTotaisService>();
+            services.AddScoped<IAuthService, AuthService>();
 
             // Repositories
             services.AddScoped<IPessoaRepository, PessoaRepository>();
             services.AddScoped<ITransacaoRepository, TransacaoRepository>();
             services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+            services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
             return services;
         }
