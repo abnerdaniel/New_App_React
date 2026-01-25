@@ -9,7 +9,22 @@
 *.sln.docstates
 *.rsuser
 
-## --- Build Results ---
+# Antigravity Kit (Agentes e Skills locais)
+.agent/
+
+## --- Node.js / React (ESSENCIAL) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build do Vite/React
+dist/
+dist-ssr/
+coverage/
+
+## --- Build Results (.NET) ---
 [Dd]ebug/
 [Rr]elease/
 x64/
@@ -62,6 +77,12 @@ nunit-*.xml
 ## --- Sensitive Data (Secrets) ---
 .env
 .env.*
-# Descomente abaixo se não quiser versionar as configs de ambiente
-# appsettings.Development.json
-# appsettings.json
+!.env.example
+# Ignorar configurações de desenvolvimento que podem ter senhas locais
+appsettings.Development.json
+# Manter appsettings.json (template de produção)
+!appsettings.json
+
+## --- Sistema Operacional ---
+.DS_Store
+Thumbs.db
