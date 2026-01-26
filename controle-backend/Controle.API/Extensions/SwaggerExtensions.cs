@@ -14,7 +14,7 @@ namespace Controle.API.Extensions
                 {
                     Title = "Controle de Gastos - API",
                     Version = "v1",
-                    Description = "API responsável pelo gerenciamento de pessoas, transações e categorias."
+                    Description = "API responsável pelo gerenciament."
                 });
 
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
