@@ -19,7 +19,7 @@ namespace Controle.Application.Services
             _pedidoItemRepository = pedidoItemRepository;
         }
 
-        public async Task<DashboardResumoDTO> GetResumoDoDiaAsync(int lojaId)
+        public async Task<DashboardResumoDTO> GetResumoDoDiaAsync(Guid lojaId)
         {
             var pedidos = await _pedidoRepository.GetAllAsync();
             
@@ -41,7 +41,7 @@ namespace Controle.Application.Services
             };
         }
 
-        public async Task<IEnumerable<ProdutoRankingDTO>> GetProdutosMaisVendidosAsync(int lojaId)
+        public async Task<IEnumerable<ProdutoRankingDTO>> GetProdutosMaisVendidosAsync(Guid lojaId)
         {
             var pedidos = await _pedidoRepository.GetAllAsync();
             var pedidosLoja = pedidos.Where(p => p.LojaId == lojaId && p.Status != "Cancelado").ToList();

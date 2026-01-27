@@ -6,7 +6,7 @@ namespace Controle.Domain.Entities;
 public class Cardapio
 {
     public int Id { get; set; }
-    public int LojaId { get; set; }
+    public Guid LojaId { get; set; }
     public string Nome { get; set; } = string.Empty;
     public TimeSpan? HorarioInicio { get; set; }
     public TimeSpan? HorarioFim { get; set; }

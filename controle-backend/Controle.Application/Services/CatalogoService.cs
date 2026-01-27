@@ -16,7 +16,7 @@ namespace Controle.Application.Services
             _context = context;
         }
 
-        public async Task<ProdutoLoja> AdicionarProdutoNaLojaAsync(int lojaId, int produtoGlobalId, int categoriaId, decimal preco, int estoque)
+        public async Task<ProdutoLoja> AdicionarProdutoNaLojaAsync(Guid lojaId, int produtoGlobalId, int categoriaId, decimal preco, int estoque)
         {
             // Regra de Segurança: Valide se a CategoriaId informada realmente pertence a um Cardápio daquela LojaId
             var categoria = await _context.Categorias

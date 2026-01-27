@@ -34,7 +34,7 @@ namespace Controle.Application.DTOs
 
     public class AuthResponse
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Nome { get; set; } = string.Empty;
         public string Login { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
@@ -43,7 +43,7 @@ namespace Controle.Application.DTOs
 
     public class UsuarioResponse
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Nome { get; set; } = string.Empty;
         public string Login { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;

@@ -25,7 +25,7 @@ namespace Controle.API.Controllers
         [HttpGet("{lojaId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ObterVitrine(int lojaId)
+        public async Task<IActionResult> ObterVitrine(Guid lojaId)
         {
             var vitrine = await _vitrineService.ObterLojaParaClienteAsync(lojaId);
             if (vitrine == null) return NotFound();

@@ -11,9 +11,9 @@ namespace Controle.Application.Interfaces
     {
         Task<Result<AuthResponse>> LoginAsync(string login, string password);
         Task<Result<AuthResponse>> RegisterAsync(string nome, string login, string email, string password);
-        Task<UsuarioResponse?> GetUsuarioByIdAsync(int id);
+        Task<UsuarioResponse?> GetUsuarioByIdAsync(Guid id);
         Task<IEnumerable<UsuarioResponse>> GetAllUsuariosAsync();
-        Task<Result> AtivarUsuarioAsync(int usuarioId);
-        Task<Result> DesativarUsuarioAsync(int usuarioId);
+        Task<Result> AtivarUsuarioAsync(Guid usuarioId);
+        Task<Result> DesativarUsuarioAsync(Guid usuarioId);
     }
 }

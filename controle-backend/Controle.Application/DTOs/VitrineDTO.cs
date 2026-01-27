@@ -4,7 +4,7 @@ namespace Controle.Application.DTOs
 {
     public class VitrineDTO
     {
-        public int LojaId { get; set; }
+        public Guid LojaId { get; set; }
         public string NomeLoja { get; set; } = string.Empty;
         public bool Aberta { get; set; }
         public CardapioDTO? Cardapio { get; set; }

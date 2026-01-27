@@ -24,7 +24,7 @@ namespace Controle.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)
         {
             var usuario = _context.Usuarios.Find(id);
             if (usuario != null)
@@ -39,7 +39,7 @@ namespace Controle.Infrastructure.Repositories
             return await _context.Usuarios.ToListAsync();
         }
 
-        public async Task<Usuario?> GetByIdAsync(int id)
+        public async Task<Usuario?> GetByIdAsync(Guid id)
         {
             return await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
         }

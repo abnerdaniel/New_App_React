@@ -4,7 +4,7 @@ namespace Controle.Application.DTOs
 {
     public class RealizarPedidoDTO
     {
-        public int LojaId { get; set; }
+        public Guid LojaId { get; set; }
         public int ClienteId { get; set; }
         public int EnderecoEntregaId { get; set; }
         public List<ItemPedidoDTO> Itens { get; set; } = new();

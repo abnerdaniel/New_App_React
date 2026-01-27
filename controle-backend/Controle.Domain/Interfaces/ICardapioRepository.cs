@@ -8,7 +8,7 @@ namespace Controle.Domain.Interfaces
     {
         Task<Cardapio?> GetByIdAsync(int id);
         Task<IEnumerable<Cardapio>> GetAllAsync();
-        Task<IEnumerable<Cardapio>> GetByLojaIdAsync(int lojaId);
+        Task<IEnumerable<Cardapio>> GetByLojaIdAsync(Guid lojaId);
         Task AddAsync(Cardapio cardapio);
         Task UpdateAsync(Cardapio cardapio);
         Task DeleteAsync(int id);

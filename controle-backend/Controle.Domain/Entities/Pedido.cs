@@ -7,7 +7,7 @@ namespace Controle.Domain.Entities;
 public class Pedido
 {
     public int Id { get; set; }
-    public int LojaId { get; set; } // Loja que vendeu
+    public Guid LojaId { get; set; } // Loja que vendeu
     public int NumeroFila { get; set; } // Numero da Fila
     public int NumeroMesa { get; set; } // Numero do Mesa
     public int GarcomId { get; set; } // Garcom que atendeu

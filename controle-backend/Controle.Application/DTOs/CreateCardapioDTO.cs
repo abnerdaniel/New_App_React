@@ -4,7 +4,7 @@ namespace Controle.Application.DTOs
 {
     public class CreateCardapioDTO
     {
-        public int LojaId { get; set; }
+        public Guid LojaId { get; set; }
         public string Nome { get; set; } = string.Empty;
         public TimeSpan? HorarioInicio { get; set; }
         public TimeSpan? HorarioFim { get; set; }

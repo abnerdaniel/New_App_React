@@ -8,7 +8,7 @@ public class Endereco
 {
     public int Id { get; set; }
     public int ClienteId { get; set; }//Cliente Final
-    public int LojaId { get; set; }//Loja
+    public Guid LojaId { get; set; }//Loja
     public string Logradouro { get; set; } = string.Empty;//Logradouro
     public string Bairro { get; set; } = string.Empty;//Bairro
     public string Cidade { get; set; } = string.Empty;//Cidade

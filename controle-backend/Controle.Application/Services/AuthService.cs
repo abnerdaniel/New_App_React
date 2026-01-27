@@ -83,6 +83,7 @@ namespace Controle.Application.Services
             // Cria o novo usuário (INATIVO até aprovação do admin)
             var usuario = new Usuario
             {
+                Id = Controle.Domain.Utils.UuidV7.NewUuid(),
                 Nome = nome,
                 Login = login,
                 Email = email,
@@ -106,7 +107,7 @@ namespace Controle.Application.Services
             return Result<AuthResponse>.Ok(response);
         }
 
-        public async Task<UsuarioResponse?> GetUsuarioByIdAsync(int id)
+        public async Task<UsuarioResponse?> GetUsuarioByIdAsync(Guid id)
         {
             var usuario = await _usuarioRepository.GetByIdAsync(id);
             
@@ -141,7 +142,7 @@ namespace Controle.Application.Services
             });
         }
 
-        public async Task<Result> AtivarUsuarioAsync(int usuarioId)
+        public async Task<Result> AtivarUsuarioAsync(Guid usuarioId)
         {
             var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
             
@@ -161,7 +162,7 @@ namespace Controle.Application.Services
             return Result.Ok();
         }
 
-        public async Task<Result> DesativarUsuarioAsync(int usuarioId)
+        public async Task<Result> DesativarUsuarioAsync(Guid usuarioId)
         {
             var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
             

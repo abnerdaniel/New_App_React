@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Controle.Domain.Entities;
 public class Loja
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Nome { get; set; } = string.Empty;
     public string CpfCnpj { get; set; } = string.Empty;
     public string Telefone { get; set; } = string.Empty;
@@ -21,7 +21,7 @@ public class Loja
     public string YouTube { get; set; } = string.Empty;
     public string Twitch { get; set; } = string.Empty;
     public string TikTok { get; set; } = string.Empty;
-    public int UsuarioId { get; set; } = 0;
+    public Guid UsuarioId { get; set; }
     public bool Ativo { get; set; } = false;
     public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
 

@@ -47,7 +47,7 @@ namespace Controle.Infrastructure.Repositories
                                  .FirstOrDefaultAsync(c => c.Id == id);
         }
 
-        public async Task<IEnumerable<Cardapio>> GetByLojaIdAsync(int lojaId)
+        public async Task<IEnumerable<Cardapio>> GetByLojaIdAsync(Guid lojaId)
         {
             return await _context.Set<Cardapio>()
                                  .Where(c => c.LojaId == lojaId)

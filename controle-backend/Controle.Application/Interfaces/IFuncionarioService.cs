@@ -7,8 +7,8 @@ namespace Controle.Application.Interfaces
 {
     public interface IFuncionarioService
     {
-        Task<Result> CadastrarFuncionarioAsync(string nome, string email, string password, string cargoNome, int lojaId);
-        Task<IEnumerable<FuncionarioDTO>> ListarEquipeAsync(int lojaId);
+        Task<Result> CadastrarFuncionarioAsync(string nome, string email, string login, string password, string cargoNome, Guid lojaId);
+        Task<IEnumerable<FuncionarioDTO>> ListarEquipeAsync(Guid lojaId);
         Task<Result> BloquearAcessoAsync(int funcionarioId);
     }
 }

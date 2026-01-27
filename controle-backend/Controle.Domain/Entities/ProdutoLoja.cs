@@ -7,7 +7,7 @@ namespace Controle.Domain.Entities;
 public class ProdutoLoja
 {
     public int Id { get; set; }
-    public int LojaId { get; set; }
+    public Guid LojaId { get; set; }
     public string Descricao { get; set; } = string.Empty;
     public int Preco { get; set; }
     public int Desconto { get; set; }

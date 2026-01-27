@@ -3,6 +3,7 @@ using System;
 using Controle.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Controle.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260127194755_AddAbertaManualmenteToLoja")]
+    partial class AddAbertaManualmenteToLoja
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -36,8 +39,8 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<DateTime>("Data")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("LojaId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("LojaId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Motivo")
                         .IsRequired()
@@ -82,8 +85,8 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<TimeSpan?>("HorarioInicio")
                         .HasColumnType("interval");
 
-                    b.Property<Guid>("LojaId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("LojaId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -268,8 +271,8 @@ namespace Controle.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("LojaId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("LojaId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Numero")
                         .IsRequired()
@@ -301,16 +304,16 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<DateTime>("DataCriacao")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("LojaId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("LojaId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<Guid>("UsuarioId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -319,8 +322,11 @@ namespace Controle.Infrastructure.Migrations
 
             modelBuilder.Entity("Controle.Domain.Entities.Loja", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool?>("AbertaManualmente")
                         .HasColumnType("boolean");
@@ -397,8 +403,8 @@ namespace Controle.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("UsuarioId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("WhatsApp")
                         .IsRequired()
@@ -443,8 +449,8 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<int>("GarcomId")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("LojaId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("LojaId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("NumeroFila")
                         .HasColumnType("integer");
@@ -487,8 +493,8 @@ namespace Controle.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("LojaId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("LojaId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Marca")
                         .IsRequired()
@@ -556,8 +562,8 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<int>("Estoque")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("LojaId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("LojaId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Preco")
                         .HasColumnType("integer");
@@ -580,8 +586,11 @@ namespace Controle.Infrastructure.Migrations
 
             modelBuilder.Entity("Controle.Domain.Entities.Usuario", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Ativo")
                         .ValueGeneratedOnAdd()

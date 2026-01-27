@@ -44,7 +44,7 @@ namespace Controle.Application.Services
                 Complemento = enderecoDto.Complemento,
                 Numero = enderecoDto.Numero,
                 Referencia = enderecoDto.Referencia,
-                LojaId = 0 // Endereço de cliente pode não estar vinculado a uma loja específica inicialmente
+                LojaId = Guid.Empty // Endereço de cliente pode não estar vinculado a uma loja específica inicialmente
             };
 
             await _enderecoRepository.AddAsync(endereco);

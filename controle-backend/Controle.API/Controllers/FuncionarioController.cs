@@ -59,7 +59,7 @@ namespace Controle.API.Controllers
         /// <response code="200">Lista de funcionários retornada com sucesso.</response>
         [HttpGet("loja/{lojaId}")]
         [ProducesResponseType(typeof(IEnumerable<FuncionarioDTO>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> ListarEquipe(int lojaId)
+        public async Task<IActionResult> ListarEquipe(Guid lojaId)
         {
             var equipe = await _funcionarioService.ListarEquipeAsync(lojaId);
             return Ok(equipe);

@@ -96,7 +96,7 @@ namespace Controle.API.Controllers
         [HttpGet("usuario/{id}")]
         [ProducesResponseType(typeof(UsuarioResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetUsuario(int id)
+        public async Task<IActionResult> GetUsuario(Guid id)
         {
             var usuario = await _authService.GetUsuarioByIdAsync(id);
 
@@ -143,7 +143,7 @@ namespace Controle.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> AtivarUsuario(int id)
+        public async Task<IActionResult> AtivarUsuario(Guid id)
         {
             var result = await _authService.AtivarUsuarioAsync(id);
 
@@ -171,7 +171,7 @@ namespace Controle.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> DesativarUsuario(int id)
+        public async Task<IActionResult> DesativarUsuario(Guid id)
         {
             var result = await _authService.DesativarUsuarioAsync(id);
 

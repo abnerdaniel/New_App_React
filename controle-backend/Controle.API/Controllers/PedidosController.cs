@@ -38,7 +38,7 @@ namespace Controle.API.Controllers
         /// </summary>
         [HttpGet("fila/{lojaId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> ListarPedidosFila(int lojaId)
+        public async Task<IActionResult> ListarPedidosFila(Guid lojaId)
         {
             var pedidos = await _pedidoService.ListarPedidosFilaAsync(lojaId);
             return Ok(pedidos);

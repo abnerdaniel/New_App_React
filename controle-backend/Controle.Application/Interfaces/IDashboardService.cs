@@ -6,7 +6,7 @@ namespace Controle.Application.Interfaces
 {
     public interface IDashboardService
     {
-        Task<DashboardResumoDTO> GetResumoDoDiaAsync(int lojaId);
-        Task<IEnumerable<ProdutoRankingDTO>> GetProdutosMaisVendidosAsync(int lojaId);
+        Task<DashboardResumoDTO> GetResumoDoDiaAsync(Guid lojaId);
+        Task<IEnumerable<ProdutoRankingDTO>> GetProdutosMaisVendidosAsync(Guid lojaId);
     }
 }

@@ -133,7 +133,7 @@ namespace Controle.Application.Services
             }
         }
 
-        public async Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(int lojaId)
+        public async Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(Guid lojaId)
         {
             return await _context.Pedidos
                 .Where(p => p.LojaId == lojaId && (p.Status == "Pendente" || p.Status == "Em Preparo"))

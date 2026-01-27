@@ -20,12 +20,36 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Cria uma nova loja.
+        /// </summary>
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CriarLoja([FromBody] CreateLojaDTO dto)
+        {
+            var loja = await _lojaService.CriarLojaAsync(dto);
+            return StatusCode(StatusCodes.Status201Created, loja);
+        }
+
+        /// <summary>
+        /// Atualiza os dados cadastrais da loja.
+        /// </summary>
+        [HttpPut("{lojaId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> AtualizarLoja(Guid lojaId, [FromBody] UpdateLojaDTO dto)
+        {
+            var loja = await _lojaService.AtualizarLojaAsync(lojaId, dto);
+            return Ok(loja);
+        }
+
+        /// <summary>
         /// Atualiza as configurações da loja.
         /// </summary>
         [HttpPut("{lojaId}/config")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> AtualizarConfiguracoes(int lojaId, [FromBody] LojaConfiguracaoDTO dto)
+        public async Task<IActionResult> AtualizarConfiguracoes(Guid lojaId, [FromBody] LojaConfiguracaoDTO dto)
         {
             var loja = await _lojaService.AtualizarConfiguracoesAsync(lojaId, dto);
             return Ok(loja);
@@ -37,7 +61,7 @@ namespace Controle.API.Controllers
         [HttpPatch("{lojaId}/taxas")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GerirTaxasEntrega(int lojaId, [FromBody] TaxaEntregaDTO dto)
+        public async Task<IActionResult> GerirTaxasEntrega(Guid lojaId, [FromBody] TaxaEntregaDTO dto)
         {
             var loja = await _lojaService.GerirTaxasEntregaAsync(lojaId, dto);
             return Ok(loja);
@@ -49,7 +73,7 @@ namespace Controle.API.Controllers
         [HttpPatch("{lojaId}/status")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> AbrirFecharLoja(int lojaId, [FromBody] bool aberta)
+        public async Task<IActionResult> AbrirFecharLoja(Guid lojaId, [FromBody] bool aberta)
         {
             var loja = await _lojaService.AbrirFecharLojaAsync(lojaId, aberta);
             return Ok(loja);

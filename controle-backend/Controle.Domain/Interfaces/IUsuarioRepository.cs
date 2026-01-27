@@ -8,12 +8,12 @@ namespace Controle.Domain.Interfaces
 {
     public interface IUsuarioRepository
     {
-        Task<Usuario?> GetByIdAsync(int id);
+        Task<Usuario?> GetByIdAsync(Guid id);
         Task<Usuario?> GetByEmailAsync(string email);
         Task<Usuario?> GetByLoginAsync(string login);
         Task<IEnumerable<Usuario>> GetAllAsync();
         Task AddAsync(Usuario usuario);
         Task UpdateAsync(Usuario usuario);
-        Task DeleteAsync(int id);
+        Task DeleteAsync(Guid id);
     }
 }

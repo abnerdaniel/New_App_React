@@ -5,6 +5,6 @@ namespace Controle.Application.Interfaces
 {
     public interface ICatalogoService
     {
-        Task<ProdutoLoja> AdicionarProdutoNaLojaAsync(int lojaId, int produtoGlobalId, int categoriaId, decimal preco, int estoque);
+        Task<ProdutoLoja> AdicionarProdutoNaLojaAsync(Guid lojaId, int produtoGlobalId, int categoriaId, decimal preco, int estoque);
     }
 }

@@ -28,7 +28,7 @@ namespace Controle.Application.Services
             _authService = authService;
         }
 
-        public async Task<Result> CadastrarFuncionarioAsync(string nome, string email, string password, string cargoNome, int lojaId)
+        public async Task<Result> CadastrarFuncionarioAsync(string nome, string email, string password, string cargoNome, Guid lojaId)
         {
             // 1. Criar Usuário (AuthService já valida email/login duplicado)
             // O login será o email por padrão para simplificar
@@ -76,7 +76,7 @@ namespace Controle.Application.Services
             return Result.Ok();
         }
 
-        public async Task<IEnumerable<FuncionarioDTO>> ListarEquipeAsync(int lojaId)
+        public async Task<IEnumerable<FuncionarioDTO>> ListarEquipeAsync(Guid lojaId)
         {
             var funcionarios = await _funcionarioRepository.GetAllAsync();
             

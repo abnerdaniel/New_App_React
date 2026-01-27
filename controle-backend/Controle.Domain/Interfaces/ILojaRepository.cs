@@ -9,9 +9,9 @@ namespace Controle.Domain.Interfaces
     public interface ILojaRepository
     {
         Task<IEnumerable<Loja>> GetAllAsync();
-        Task<Loja?> GetByIdAsync(int id);
+        Task<Loja?> GetByIdAsync(Guid id);
         Task AddAsync(Loja loja);
         Task UpdateAsync(Loja loja);
-        Task DeleteAsync(int id);
+        Task DeleteAsync(Guid id);
     }
 }

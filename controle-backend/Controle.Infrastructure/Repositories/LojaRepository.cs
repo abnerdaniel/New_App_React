@@ -24,7 +24,7 @@ namespace Controle.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(Guid id)
         {
             var loja = await _context.Lojas.FindAsync(id);
             if (loja != null)
@@ -39,7 +39,7 @@ namespace Controle.Infrastructure.Repositories
             return await _context.Lojas.ToListAsync();
         }
 
-        public async Task<Loja?> GetByIdAsync(int id)
+        public async Task<Loja?> GetByIdAsync(Guid id)
         {
             return await _context.Lojas.FindAsync(id);
         }

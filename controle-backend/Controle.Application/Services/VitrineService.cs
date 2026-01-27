@@ -18,7 +18,7 @@ namespace Controle.Application.Services
             _context = context;
         }
 
-        public async Task<VitrineDTO?> ObterLojaParaClienteAsync(int lojaId)
+        public async Task<VitrineDTO?> ObterLojaParaClienteAsync(Guid lojaId)
         {
             // 1. Use AsNoTracking() em todas as consultas.
             var loja = await _context.Lojas
