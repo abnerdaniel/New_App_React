@@ -22,7 +22,11 @@ namespace Controle.API.Extensions
             services.AddScoped<ICardapioService, CardapioService>();
             services.AddScoped<ICatalogoService, CatalogoService>();
             services.AddScoped<IVitrineService, VitrineService>();
+            services.AddScoped<ILojaService, LojaService>();
             services.AddScoped<IPedidoService, PedidoService>();
+            services.AddScoped<IFuncionarioService, FuncionarioService>();
+            services.AddScoped<IClienteService, ClienteService>();
+            services.AddScoped<IDashboardService, DashboardService>();
 
             // Repositories
             // Repositories

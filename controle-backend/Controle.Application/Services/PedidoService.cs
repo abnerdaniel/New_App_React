@@ -132,5 +132,67 @@ namespace Controle.Application.Services
                 throw;
             }
         }
+
+        public async Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(int lojaId)
+        {
+            return await _context.Pedidos
+                .Where(p => p.LojaId == lojaId && (p.Status == "Pendente" || p.Status == "Em Preparo"))
+                .Include(p => p.Sacola)
+                .OrderBy(p => p.DataVenda)
+                .ToListAsync();
+        }
+
+        public async Task<Pedido> AtualizarStatusPedidoAsync(int pedidoId, string novoStatus)
+        {
+            var pedido = await _context.Pedidos.FindAsync(pedidoId);
+            if (pedido == null) throw new DomainException("Pedido não encontrado.");
+
+            pedido.Status = novoStatus;
+            _context.Pedidos.Update(pedido);
+            await _context.SaveChangesAsync();
+
+            return pedido;
+        }
+
+        public async Task<Pedido> CancelarPedidoLojistaAsync(int pedidoId, string motivo)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var pedido = await _context.Pedidos
+                    .Include(p => p.Sacola)
+                    .FirstOrDefaultAsync(p => p.Id == pedidoId);
+
+                if (pedido == null) throw new DomainException("Pedido não encontrado.");
+
+                if (pedido.Status == "Cancelado") throw new DomainException("Pedido já está cancelado.");
+
+                pedido.Status = "Cancelado";
+                pedido.Descricao += $" (Cancelado: {motivo})"; // Append reason to description or handle as needed
+
+                // Estorno de Estoque
+                foreach (var item in pedido.Sacola)
+                {
+                    var produtoLoja = await _context.ProdutosLojas.FindAsync(item.ProdutoLojaId);
+                    if (produtoLoja != null)
+                    {
+                        produtoLoja.QuantidadeEstoque += item.Quantidade;
+                        produtoLoja.Vendas -= item.Quantidade; // Optional: revert sales count
+                        _context.ProdutosLojas.Update(produtoLoja);
+                    }
+                }
+
+                _context.Pedidos.Update(pedido);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return pedido;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
     }
 }

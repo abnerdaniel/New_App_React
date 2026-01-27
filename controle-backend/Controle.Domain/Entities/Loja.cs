@@ -24,4 +24,12 @@ public class Loja
     public int UsuarioId { get; set; } = 0;
     public bool Ativo { get; set; } = false;
     public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
+
+    // Configurações da Loja
+    public string? LogoUrl { get; set; }
+    public int? TempoMinimoEntrega { get; set; } // Em minutos
+    public int? TempoMaximoEntrega { get; set; } // Em minutos
+    public decimal? TaxaEntregaFixa { get; set; }
+    public decimal? TaxaPorKm { get; set; }
+    public bool? AbertaManualmente { get; set; } // Null = Segue horário, True = Forçar Aberta, False = Forçar Fechada
 }

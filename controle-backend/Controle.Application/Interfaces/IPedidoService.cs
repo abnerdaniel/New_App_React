@@ -7,5 +7,8 @@ namespace Controle.Application.Interfaces
     public interface IPedidoService
     {
         Task<Pedido> RealizarPedidoAsync(RealizarPedidoDTO pedidoDto);
+        Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(int lojaId);
+        Task<Pedido> AtualizarStatusPedidoAsync(int pedidoId, string novoStatus);
+        Task<Pedido> CancelarPedidoLojistaAsync(int pedidoId, string motivo);
     }
 }
