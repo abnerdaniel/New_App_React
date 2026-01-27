@@ -8,8 +8,7 @@ namespace Controle.Application.DTOs
     public class LoginRequest
     {
         [Required]
-        [EmailAddress]
-        public string Email { get; set; } = null!;
+        public string Login { get; set; } = null!;
         
         [Required]
         [MinLength(6)]
@@ -20,6 +19,9 @@ namespace Controle.Application.DTOs
     {
         [Required]
         public string Nome { get; set; } = null!;
+
+        [Required]
+        public string Login { get; set; } = null!;
         
         [Required]
         [EmailAddress]
@@ -34,6 +36,7 @@ namespace Controle.Application.DTOs
     {
         public int Id { get; set; }
         public string Nome { get; set; } = string.Empty;
+        public string Login { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Token { get; set; } = string.Empty;
     }
@@ -42,6 +45,7 @@ namespace Controle.Application.DTOs
     {
         public int Id { get; set; }
         public string Nome { get; set; } = string.Empty;
+        public string Login { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public bool Ativo { get; set; }
         public DateTime DataCriacao { get; set; }

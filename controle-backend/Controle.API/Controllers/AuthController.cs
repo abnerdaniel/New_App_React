@@ -45,7 +45,7 @@ namespace Controle.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            var result = await _authService.LoginAsync(request.Email, request.Password);
+            var result = await _authService.LoginAsync(request.Login, request.Password);
 
             if (!result.Success)
             {
@@ -78,7 +78,7 @@ namespace Controle.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            var result = await _authService.RegisterAsync(request.Nome, request.Email, request.Password);
+            var result = await _authService.RegisterAsync(request.Nome, request.Login, request.Email, request.Password);
 
             if (!result.Success)
             {

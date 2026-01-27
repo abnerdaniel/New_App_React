@@ -13,6 +13,8 @@ namespace Controle.Infrastructure.Configurations
         public void Configure(EntityTypeBuilder<Usuario> builder)
         {
             builder.HasKey(u => u.Id);
+            builder.Property(u => u.Login).IsRequired().HasMaxLength(100);
+            builder.HasIndex(u => u.Login).IsUnique();
             builder.Property(u => u.Email).IsRequired().HasMaxLength(255);
             builder.HasIndex(u => u.Email).IsUnique();
             builder.Property(u => u.Nome).IsRequired().HasMaxLength(200);

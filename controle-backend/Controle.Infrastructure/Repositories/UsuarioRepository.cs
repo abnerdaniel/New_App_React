@@ -49,12 +49,18 @@ namespace Controle.Infrastructure.Repositories
             return await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public async Task<Usuario?> GetByLoginAsync(string login)
+        {
+            return await _context.Usuarios.FirstOrDefaultAsync(u => u.Login == login);
+        }
+
         public async Task UpdateAsync(Usuario usuario)
         {
             var existingUsuario = await _context.Usuarios.FindAsync(usuario.Id);
             if (existingUsuario == null)
                 return; 
 
+            existingUsuario.Login = usuario.Login;
             existingUsuario.Email = usuario.Email;
             existingUsuario.Nome = usuario.Nome;
             existingUsuario.PasswordHash = usuario.PasswordHash;

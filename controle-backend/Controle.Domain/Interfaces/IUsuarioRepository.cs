@@ -10,6 +10,7 @@ namespace Controle.Domain.Interfaces
     {
         Task<Usuario?> GetByIdAsync(int id);
         Task<Usuario?> GetByEmailAsync(string email);
+        Task<Usuario?> GetByLoginAsync(string login);
         Task<IEnumerable<Usuario>> GetAllAsync();
         Task AddAsync(Usuario usuario);
         Task UpdateAsync(Usuario usuario);

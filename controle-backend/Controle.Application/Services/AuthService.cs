@@ -26,9 +26,9 @@ namespace Controle.Application.Services
             _configuration = configuration;
         }
 
-        public async Task<Result<AuthResponse>> LoginAsync(string email, string password)
+        public async Task<Result<AuthResponse>> LoginAsync(string login, string password)
         {
-            var usuario = await _usuarioRepository.GetByEmailAsync(email);
+            var usuario = await _usuarioRepository.GetByLoginAsync(login);
             
             if (usuario == null)
             {
@@ -37,7 +37,7 @@ namespace Controle.Application.Services
 
             if (!VerifyPasswordHash(password, usuario.PasswordHash))
             {
-                return Result<AuthResponse>.Fail("Email ou senha inválidos.");
+                return Result<AuthResponse>.Fail("Login ou senha inválidos.");
             }
 
             // Verifica se o usuário está ativo (aprovado pelo admin)
@@ -56,6 +56,7 @@ namespace Controle.Application.Services
             {
                 Id = usuario.Id,
                 Nome = usuario.Nome,
+                Login = usuario.Login,
                 Email = usuario.Email,
                 Token = token
             };
@@ -63,8 +64,15 @@ namespace Controle.Application.Services
             return Result<AuthResponse>.Ok(response);
         }
 
-        public async Task<Result<AuthResponse>> RegisterAsync(string nome, string email, string password)
+        public async Task<Result<AuthResponse>> RegisterAsync(string nome, string login, string email, string password)
         {
+            // Verifica se o login já existe
+            var existingUserLogin = await _usuarioRepository.GetByLoginAsync(login);
+            if (existingUserLogin != null)
+            {
+                return Result<AuthResponse>.Fail("Login já está em uso.");
+            }
+
             // Verifica se o email já existe
             var existingUser = await _usuarioRepository.GetByEmailAsync(email);
             if (existingUser != null)
@@ -76,6 +84,7 @@ namespace Controle.Application.Services
             var usuario = new Usuario
             {
                 Nome = nome,
+                Login = login,
                 Email = email,
                 PasswordHash = HashPassword(password),
                 Ativo = false, // Usuário criado como INATIVO
@@ -89,6 +98,7 @@ namespace Controle.Application.Services
             {
                 Id = usuario.Id,
                 Nome = usuario.Nome,
+                Login = usuario.Login,
                 Email = usuario.Email,
                 Token = string.Empty // Sem token até ser aprovado
             };
@@ -107,6 +117,7 @@ namespace Controle.Application.Services
             {
                 Id = usuario.Id,
                 Nome = usuario.Nome,
+                Login = usuario.Login,
                 Email = usuario.Email,
                 Ativo = usuario.Ativo,
                 DataCriacao = usuario.DataCriacao,
@@ -122,6 +133,7 @@ namespace Controle.Application.Services
             {
                 Id = u.Id,
                 Nome = u.Nome,
+                Login = u.Login,
                 Email = u.Email,
                 Ativo = u.Ativo,
                 DataCriacao = u.DataCriacao,
