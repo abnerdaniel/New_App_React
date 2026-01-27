@@ -3,18 +3,30 @@ using Controle.Application.DTOs;
 using Controle.Application.Interfaces;
 using Controle.Domain.Entities;
 using Controle.Domain.Exceptions;
+using Controle.Domain.Interfaces;
 using Controle.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Controle.Application.Services
 {
     public class LojaService : ILojaService
     {
         private readonly AppDbContext _context;
+        private readonly ICargoRepository _cargoRepository;
+        private readonly IFuncionarioRepository _funcionarioRepository;
+        private readonly IUsuarioRepository _usuarioRepository;
 
-        public LojaService(AppDbContext context)
+        public LojaService(
+            AppDbContext context,
+            ICargoRepository cargoRepository,
+            IFuncionarioRepository funcionarioRepository,
+            IUsuarioRepository usuarioRepository)
         {
             _context = context;
+            _cargoRepository = cargoRepository;
+            _funcionarioRepository = funcionarioRepository;
+            _usuarioRepository = usuarioRepository;
         }
 
         public async Task<Loja> AtualizarConfiguracoesAsync(Guid lojaId, LojaConfiguracaoDTO dto)
@@ -85,6 +97,37 @@ namespace Controle.Application.Services
 
             _context.Lojas.Add(loja);
             await _context.SaveChangesAsync();
+
+            // --- Lógica para atribuir cargo de Proprietário ao criador ---
+            const string cargoProprietario = "Proprietário / Sócio";
+            var cargos = await _cargoRepository.GetAllAsync();
+            var cargo = cargos.FirstOrDefault(c => c.Nome.Equals(cargoProprietario, System.StringComparison.OrdinalIgnoreCase));
+
+            if (cargo == null)
+            {
+                cargo = new Cargo { Nome = cargoProprietario };
+                await _cargoRepository.AddAsync(cargo);
+                // O ID é gerado pelo banco, precisamos recarregar ou confiar que o EF preencheu se for Identity
+                // Mas como AddAsync do repositório pode não salvar imediatamente se não tiver SaveChanges, 
+                // vamos garantir que o cargo tenha ID. O repositório AddAsync chama SaveChanges na implementação atual.
+            }
+
+            // Buscar nome do usuário para o funcionário
+            var usuario = await _usuarioRepository.GetByIdAsync(dto.UsuarioId);
+            var nomeFuncionario = usuario?.Nome ?? "Proprietário";
+
+            var funcionario = new Funcionario
+            {
+                Nome = nomeFuncionario,
+                UsuarioId = dto.UsuarioId,
+                LojaId = loja.Id,
+                CargoId = cargo.Id,
+                Ativo = true,
+                DataCriacao = System.DateTime.UtcNow
+            };
+
+            await _funcionarioRepository.AddAsync(funcionario);
+            // -------------------------------------------------------------
 
             return loja;
         }

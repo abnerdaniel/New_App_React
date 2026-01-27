@@ -8,6 +8,7 @@ namespace Controle.Domain.Interfaces
     {
         Task<IEnumerable<Funcionario>> GetAllAsync();
         Task<Funcionario?> GetByIdAsync(int id);
+        Task<IEnumerable<Funcionario>> GetByUsuarioIdAsync(Guid usuarioId);
         Task AddAsync(Funcionario funcionario);
         Task UpdateAsync(Funcionario funcionario);
         Task DeleteAsync(int id);

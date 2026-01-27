@@ -39,6 +39,23 @@ namespace Controle.Application.DTOs
         public string Login { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Token { get; set; } = string.Empty;
+        public List<LojaResumoDTO> Lojas { get; set; } = new();
+        public List<FuncionarioResumoDTO> Funcionarios { get; set; } = new();
+    }
+
+    public class LojaResumoDTO
+    {
+        public Guid Id { get; set; }
+        public string Nome { get; set; } = string.Empty;
+        public string? LogoUrl { get; set; }
+    }
+
+    public class FuncionarioResumoDTO
+    {
+        public int Id { get; set; }
+        public Guid LojaId { get; set; }
+        public string Cargo { get; set; } = string.Empty;
+        public bool Ativo { get; set; }
     }
 
     public class UsuarioResponse

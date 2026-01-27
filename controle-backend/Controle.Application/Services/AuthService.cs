@@ -18,11 +18,22 @@ namespace Controle.Application.Services
     public class AuthService : IAuthService
     {
         private readonly IUsuarioRepository _usuarioRepository;
+        private readonly ILojaRepository _lojaRepository;
+        private readonly IFuncionarioRepository _funcionarioRepository;
+        private readonly ICargoRepository _cargoRepository;
         private readonly IConfiguration _configuration;
 
-        public AuthService(IUsuarioRepository usuarioRepository, IConfiguration configuration)
+        public AuthService(
+            IUsuarioRepository usuarioRepository,
+            ILojaRepository lojaRepository,
+            IFuncionarioRepository funcionarioRepository,
+            ICargoRepository cargoRepository,
+            IConfiguration configuration)
         {
             _usuarioRepository = usuarioRepository;
+            _lojaRepository = lojaRepository;
+            _funcionarioRepository = funcionarioRepository;
+            _cargoRepository = cargoRepository;
             _configuration = configuration;
         }
 
@@ -52,13 +63,40 @@ namespace Controle.Application.Services
 
             var token = GenerateJwtToken(usuario);
 
+            // Buscar Lojas vinculadas (Dono)
+            var lojas = await _lojaRepository.GetByUsuarioIdAsync(usuario.Id);
+            var lojasDto = lojas.Select(l => new LojaResumoDTO
+            {
+                Id = l.Id,
+                Nome = l.Nome,
+                LogoUrl = l.LogoUrl
+            }).ToList();
+
+            // Buscar Funcionários vinculados (Equipe)
+            var funcionarios = await _funcionarioRepository.GetByUsuarioIdAsync(usuario.Id);
+            var funcionariosDto = new List<FuncionarioResumoDTO>();
+
+            foreach (var f in funcionarios)
+            {
+                var cargo = await _cargoRepository.GetByIdAsync(f.CargoId);
+                funcionariosDto.Add(new FuncionarioResumoDTO
+                {
+                    Id = f.Id,
+                    LojaId = f.LojaId,
+                    Cargo = cargo?.Nome ?? "Desconhecido",
+                    Ativo = f.Ativo
+                });
+            }
+
             var response = new AuthResponse
             {
                 Id = usuario.Id,
                 Nome = usuario.Nome,
                 Login = usuario.Login,
                 Email = usuario.Email,
-                Token = token
+                Token = token,
+                Lojas = lojasDto,
+                Funcionarios = funcionariosDto
             };
 
             return Result<AuthResponse>.Ok(response);

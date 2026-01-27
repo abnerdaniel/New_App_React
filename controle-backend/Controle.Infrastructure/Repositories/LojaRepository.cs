@@ -44,6 +44,11 @@ namespace Controle.Infrastructure.Repositories
             return await _context.Lojas.FindAsync(id);
         }
 
+        public async Task<IEnumerable<Loja>> GetByUsuarioIdAsync(Guid usuarioId)
+        {
+            return await _context.Lojas.Where(l => l.UsuarioId == usuarioId).ToListAsync();
+        }
+
         public async Task UpdateAsync(Loja loja)
         {
             _context.Lojas.Update(loja);

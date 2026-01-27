@@ -44,6 +44,11 @@ namespace Controle.Infrastructure.Repositories
             return await _context.Funcionarios.FindAsync(id);
         }
 
+        public async Task<IEnumerable<Funcionario>> GetByUsuarioIdAsync(Guid usuarioId)
+        {
+            return await _context.Funcionarios.Where(f => f.UsuarioId == usuarioId).ToListAsync();
+        }
+
         public async Task UpdateAsync(Funcionario funcionario)
         {
             _context.Funcionarios.Update(funcionario);

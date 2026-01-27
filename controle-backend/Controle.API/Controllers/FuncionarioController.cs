@@ -42,7 +42,7 @@ namespace Controle.API.Controllers
             }
 
             var result = await _funcionarioService.CadastrarFuncionarioAsync(
-                request.Nome, request.Email, request.Password, request.Cargo, request.LojaId);
+                request.Nome, request.Email, request.Login, request.Password, request.Cargo, request.LojaId);
 
             if (!result.Success)
             {
