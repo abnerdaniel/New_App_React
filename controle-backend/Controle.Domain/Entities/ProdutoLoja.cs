@@ -8,13 +8,13 @@ public class ProdutoLoja
 {
     public int Id { get; set; }
     public int LojaId { get; set; }
-    public string Descricao { get; set; }//Descrição do produto
-    public int Preco { get; set; }//Preço do produto
-    public int Desconto { get; set; }//Desconto do produto
-    public int Estoque { get; set; }//Estoque do produto
-    public int Vendas { get; set; }//Vendas do produto
-    public int ProdutoId { get; set; }//Produto
-    public int QuantidadeEstoque { get; set; }//Quantidade do produto
-    public int CategoriaId { get; set; }//Categoria
+    public string Descricao { get; set; } = string.Empty;
+    public int Preco { get; set; }
+    public int Desconto { get; set; }
+    public int Estoque { get; set; }
+    public int Vendas { get; set; }
+    public int ProdutoId { get; set; }
+    public int QuantidadeEstoque { get; set; }
+    public int CategoriaId { get; set; }
+    public Categoria? Categoria { get; set; }
 }
-   

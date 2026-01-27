@@ -19,6 +19,10 @@ namespace Controle.API.Extensions
 
             // Services
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ICardapioService, CardapioService>();
+            services.AddScoped<ICatalogoService, CatalogoService>();
+            services.AddScoped<IVitrineService, VitrineService>();
+            services.AddScoped<IPedidoService, PedidoService>();
 
             // Repositories
             // Repositories

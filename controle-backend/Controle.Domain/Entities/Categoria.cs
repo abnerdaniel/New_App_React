@@ -1,9 +1,13 @@
+using System.Collections.Generic;
+
 namespace Controle.Domain.Entities;
 
 public class Categoria
 {
     public int Id { get; set; }
-    public string Nome { get; set; } = string.Empty; // Ex: "Hambúrgueres", "Bebidas"
-    public int CardapioId { get; set; } // <--- VÍNCULO NOVO
-    public int OrdemExibicao { get; set; } = 0; // Para ordenar: 1º Lanches, 2º Bebidas...
+    public string Nome { get; set; } = string.Empty;
+    public int CardapioId { get; set; }
+    public Cardapio? Cardapio { get; set; }
+    public int OrdemExibicao { get; set; } = 0;
+    public List<ProdutoLoja> Produtos { get; set; } = new();
 }
