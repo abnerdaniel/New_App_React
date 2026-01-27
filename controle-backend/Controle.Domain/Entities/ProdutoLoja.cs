@@ -15,5 +15,6 @@ public class ProdutoLoja
     public int Vendas { get; set; }//Vendas do produto
     public int ProdutoId { get; set; }//Produto
     public int QuantidadeEstoque { get; set; }//Quantidade do produto
+    public int CategoriaId { get; set; }//Categoria
 }
    

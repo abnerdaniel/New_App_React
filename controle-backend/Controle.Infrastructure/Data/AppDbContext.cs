@@ -18,6 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<ProdutoLoja> ProdutosLojas { get; set; }
     public DbSet<Produto> Produtos { get; set; }
     public DbSet<PedidoItem> PedidoItems { get; set; }
+    public DbSet<Cardapio> Cardapios { get; set; }
+    public DbSet<Categoria> Categorias { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

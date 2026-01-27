@@ -14,6 +14,7 @@ namespace Controle.Infrastructure.Configurations
         {
             builder.HasKey(pl => pl.Id);
             builder.Property(pl => pl.QuantidadeEstoque).IsRequired();
+            builder.Property(pl => pl.CategoriaId).IsRequired();
         }
     }
 }
