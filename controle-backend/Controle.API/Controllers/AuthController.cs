@@ -78,7 +78,7 @@ namespace Controle.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            var result = await _authService.RegisterAsync(request.Nome, request.Login, request.Email, request.Password);
+            var result = await _authService.RegisterAsync(request.Nome, request.Login, request.Email, request.Password, request.LojaId);
 
             if (!result.Success)
             {

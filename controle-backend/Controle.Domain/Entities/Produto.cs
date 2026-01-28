@@ -20,6 +20,4 @@ public class Produto
     public string URL_Video { get; set; }
     public string URL_Audio { get; set; }
     public string URL_Documento { get; set; }
-    public Guid LojaId { get; set; }
 }
-   

@@ -30,6 +30,8 @@ namespace Controle.Application.DTOs
         [Required]
         [MinLength(6)]
         public string Password { get; set; } = null!;
+
+        public Guid? LojaId { get; set; }
     }
 
     public class AuthResponse
@@ -53,7 +55,7 @@ namespace Controle.Application.DTOs
     public class FuncionarioResumoDTO
     {
         public int Id { get; set; }
-        public Guid LojaId { get; set; }
+        public Guid? LojaId { get; set; }
         public string Cargo { get; set; } = string.Empty;
         public bool Ativo { get; set; }
     }

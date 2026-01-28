@@ -34,10 +34,10 @@ namespace Controle.Application.Services
             var loja = await _context.Lojas.FindAsync(lojaId);
             if (loja == null) throw new DomainException("Loja não encontrada.");
 
-            loja.Nome = dto.Nome;
-            loja.LogoUrl = dto.LogoUrl;
-            loja.TempoMinimoEntrega = dto.TempoMinimoEntrega;
-            loja.TempoMaximoEntrega = dto.TempoMaximoEntrega;
+            if (!string.IsNullOrEmpty(dto.Nome)) loja.Nome = dto.Nome;
+            if (!string.IsNullOrEmpty(dto.LogoUrl)) loja.LogoUrl = dto.LogoUrl;
+            if (dto.TempoMinimoEntrega.HasValue) loja.TempoMinimoEntrega = dto.TempoMinimoEntrega;
+            if (dto.TempoMaximoEntrega.HasValue) loja.TempoMaximoEntrega = dto.TempoMaximoEntrega;
 
             _context.Lojas.Update(loja);
             await _context.SaveChangesAsync();
@@ -50,8 +50,8 @@ namespace Controle.Application.Services
             var loja = await _context.Lojas.FindAsync(lojaId);
             if (loja == null) throw new DomainException("Loja não encontrada.");
 
-            loja.TaxaEntregaFixa = dto.TaxaEntregaFixa;
-            loja.TaxaPorKm = dto.TaxaPorKm;
+            if (dto.TaxaEntregaFixa.HasValue) loja.TaxaEntregaFixa = dto.TaxaEntregaFixa;
+            if (dto.TaxaPorKm.HasValue) loja.TaxaPorKm = dto.TaxaPorKm;
 
             _context.Lojas.Update(loja);
             await _context.SaveChangesAsync();
@@ -98,37 +98,6 @@ namespace Controle.Application.Services
             _context.Lojas.Add(loja);
             await _context.SaveChangesAsync();
 
-            // --- Lógica para atribuir cargo de Proprietário ao criador ---
-            const string cargoProprietario = "Proprietário / Sócio";
-            var cargos = await _cargoRepository.GetAllAsync();
-            var cargo = cargos.FirstOrDefault(c => c.Nome.Equals(cargoProprietario, System.StringComparison.OrdinalIgnoreCase));
-
-            if (cargo == null)
-            {
-                cargo = new Cargo { Nome = cargoProprietario };
-                await _cargoRepository.AddAsync(cargo);
-                // O ID é gerado pelo banco, precisamos recarregar ou confiar que o EF preencheu se for Identity
-                // Mas como AddAsync do repositório pode não salvar imediatamente se não tiver SaveChanges, 
-                // vamos garantir que o cargo tenha ID. O repositório AddAsync chama SaveChanges na implementação atual.
-            }
-
-            // Buscar nome do usuário para o funcionário
-            var usuario = await _usuarioRepository.GetByIdAsync(dto.UsuarioId);
-            var nomeFuncionario = usuario?.Nome ?? "Proprietário";
-
-            var funcionario = new Funcionario
-            {
-                Nome = nomeFuncionario,
-                UsuarioId = dto.UsuarioId,
-                LojaId = loja.Id,
-                CargoId = cargo.Id,
-                Ativo = true,
-                DataCriacao = System.DateTime.UtcNow
-            };
-
-            await _funcionarioRepository.AddAsync(funcionario);
-            // -------------------------------------------------------------
-
             return loja;
         }
 
@@ -137,20 +106,20 @@ namespace Controle.Application.Services
             var loja = await _context.Lojas.FindAsync(lojaId);
             if (loja == null) throw new DomainException("Loja não encontrada.");
 
-            loja.Nome = dto.Nome;
-            loja.CpfCnpj = dto.CpfCnpj;
-            loja.Telefone = dto.Telefone;
-            loja.Email = dto.Email;
-            loja.Instagram = dto.Instagram;
-            loja.Facebook = dto.Facebook;
-            loja.Twitter = dto.Twitter;
-            loja.LinkedIn = dto.LinkedIn;
-            loja.WhatsApp = dto.WhatsApp;
-            loja.Telegram = dto.Telegram;
-            loja.YouTube = dto.YouTube;
-            loja.Twitch = dto.Twitch;
-            loja.TikTok = dto.TikTok;
-            loja.Ativo = dto.Ativo;
+            if (!string.IsNullOrEmpty(dto.Nome)) loja.Nome = dto.Nome;
+            if (!string.IsNullOrEmpty(dto.CpfCnpj)) loja.CpfCnpj = dto.CpfCnpj;
+            if (!string.IsNullOrEmpty(dto.Telefone)) loja.Telefone = dto.Telefone;
+            if (!string.IsNullOrEmpty(dto.Email)) loja.Email = dto.Email;
+            if (!string.IsNullOrEmpty(dto.Instagram)) loja.Instagram = dto.Instagram;
+            if (!string.IsNullOrEmpty(dto.Facebook)) loja.Facebook = dto.Facebook;
+            if (!string.IsNullOrEmpty(dto.Twitter)) loja.Twitter = dto.Twitter;
+            if (!string.IsNullOrEmpty(dto.LinkedIn)) loja.LinkedIn = dto.LinkedIn;
+            if (!string.IsNullOrEmpty(dto.WhatsApp)) loja.WhatsApp = dto.WhatsApp;
+            if (!string.IsNullOrEmpty(dto.Telegram)) loja.Telegram = dto.Telegram;
+            if (!string.IsNullOrEmpty(dto.YouTube)) loja.YouTube = dto.YouTube;
+            if (!string.IsNullOrEmpty(dto.Twitch)) loja.Twitch = dto.Twitch;
+            if (!string.IsNullOrEmpty(dto.TikTok)) loja.TikTok = dto.TikTok;
+            if (dto.Ativo.HasValue) loja.Ativo = dto.Ativo.Value;
 
             _context.Lojas.Update(loja);
             await _context.SaveChangesAsync();

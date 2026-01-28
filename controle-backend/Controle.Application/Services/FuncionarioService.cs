@@ -31,7 +31,7 @@ namespace Controle.Application.Services
         public async Task<Result> CadastrarFuncionarioAsync(string nome, string email, string login, string password, string cargoNome, Guid lojaId)
         {
             // 1. Criar Usuário (AuthService já valida email/login duplicado)
-            var registerResult = await _authService.RegisterAsync(nome, email, login, password);
+            var registerResult = await _authService.RegisterAsync(nome, login, email, password, lojaId: null, createFuncionario: false);
             
             if (!registerResult.Success)
             {

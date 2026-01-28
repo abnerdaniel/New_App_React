@@ -18,10 +18,11 @@ namespace Controle.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task AddAsync(ProdutoLoja produtoLoja)
+        public async Task<ProdutoLoja> AddAsync(ProdutoLoja produtoLoja)
         {
             await _context.ProdutosLojas.AddAsync(produtoLoja);
             await _context.SaveChangesAsync();
+            return produtoLoja;
         }
 
         public async Task DeleteAsync(int id)
@@ -48,6 +49,18 @@ namespace Controle.Infrastructure.Repositories
         {
             _context.ProdutosLojas.Update(produtoLoja);
             await _context.SaveChangesAsync();
+        }
+        public async Task<ProdutoLoja?> GetByProdutoAndLojaAsync(int produtoId, Guid lojaId)
+        {
+            return await _context.ProdutosLojas
+                .FirstOrDefaultAsync(pl => pl.ProdutoId == produtoId && pl.LojaId == lojaId);
+        }
+
+        public async Task<IEnumerable<ProdutoLoja>> GetByLojaIdAsync(Guid lojaId)
+        {
+            return await _context.ProdutosLojas
+                .Where(pl => pl.LojaId == lojaId)
+                .ToListAsync();
         }
     }
 }

@@ -28,6 +28,7 @@ namespace Controle.API.Extensions
             services.AddScoped<IClienteService, ClienteService>();
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IProdutoService, ProdutoService>();
+            services.AddScoped<IProdutoLojaService, ProdutoLojaService>();
 
             // Repositories
             // Repositories

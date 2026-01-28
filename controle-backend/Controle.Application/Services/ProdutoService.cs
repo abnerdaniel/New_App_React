@@ -57,10 +57,10 @@ namespace Controle.Application.Services
             var produto = await _produtoRepository.GetByIdAsync(id);
             if (produto == null) throw new DomainException("Produto não encontrado.");
 
-            produto.Nome = dto.Nome;
-            produto.Descricao = dto.Descricao;
-            produto.URL_Imagem = dto.ImagemUrl;
-            produto.Tipo = dto.Tipo;
+            if (!string.IsNullOrEmpty(dto.Nome)) produto.Nome = dto.Nome;
+            if (!string.IsNullOrEmpty(dto.Descricao)) produto.Descricao = dto.Descricao;
+            if (!string.IsNullOrEmpty(dto.ImagemUrl)) produto.URL_Imagem = dto.ImagemUrl;
+            if (!string.IsNullOrEmpty(dto.Tipo)) produto.Tipo = dto.Tipo;
             // Atualizar outros campos
 
             await _produtoRepository.UpdateAsync(produto);

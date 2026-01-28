@@ -8,10 +8,9 @@ namespace Controle.Domain.Interfaces
 {
     public interface IProdutoLojaRepository
     {
-        Task<IEnumerable<ProdutoLoja>> GetAllAsync();
-        Task<ProdutoLoja?> GetByIdAsync(int id);
-        Task AddAsync(ProdutoLoja produtoLoja);
-        Task UpdateAsync(ProdutoLoja produtoLoja);
-        Task DeleteAsync(int id);
+        Task<ProdutoLoja> AddAsync(ProdutoLoja produtoLoja);
+        Task<ProdutoLoja?> GetByProdutoAndLojaAsync(int produtoId, Guid lojaId);
+        Task<IEnumerable<ProdutoLoja>> GetByLojaIdAsync(Guid lojaId);
+        // Add other necessary methods
     }
 }

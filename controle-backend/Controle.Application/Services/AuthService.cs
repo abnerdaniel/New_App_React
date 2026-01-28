@@ -43,7 +43,7 @@ namespace Controle.Application.Services
             
             if (usuario == null)
             {
-                return Result<AuthResponse>.Fail("Email ou senha inválidos.");
+                return Result<AuthResponse>.Fail("Login ou senha inválidos.");
             }
 
             if (!VerifyPasswordHash(password, usuario.PasswordHash))
@@ -102,7 +102,7 @@ namespace Controle.Application.Services
             return Result<AuthResponse>.Ok(response);
         }
 
-        public async Task<Result<AuthResponse>> RegisterAsync(string nome, string login, string email, string password)
+        public async Task<Result<AuthResponse>> RegisterAsync(string nome, string login, string email, string password, Guid? lojaId = null, bool createFuncionario = true)
         {
             // Verifica se o login já existe
             var existingUserLogin = await _usuarioRepository.GetByLoginAsync(login);
@@ -118,7 +118,7 @@ namespace Controle.Application.Services
                 return Result<AuthResponse>.Fail("Email já está em uso.");
             }
 
-            // Cria o novo usuário (INATIVO até aprovação do admin)
+            // Cria o novo usuário (INATIVO até aprovação do admin, exceto se criar loja)
             var usuario = new Usuario
             {
                 Id = Controle.Domain.Utils.UuidV7.NewUuid(),
@@ -126,20 +126,70 @@ namespace Controle.Application.Services
                 Login = login,
                 Email = email,
                 PasswordHash = HashPassword(password),
-                Ativo = false, // Usuário criado como INATIVO
+                Ativo = lojaId.HasValue, // Se criar loja, o usuário já nasce ativo (dono)
                 DataCriacao = DateTime.UtcNow
             };
 
             await _usuarioRepository.AddAsync(usuario);
 
-            // NÃO retorna token no registro, pois usuário precisa ser aprovado
+            if (createFuncionario)
+            {
+                // Criar Cargo Proprietário se não existir
+                const string cargoProprietario = "Proprietário / Sócio";
+                var cargos = await _cargoRepository.GetAllAsync();
+                var cargo = cargos.FirstOrDefault(c => c.Nome.Equals(cargoProprietario, StringComparison.OrdinalIgnoreCase));
+
+                if (cargo == null)
+                {
+                    cargo = new Cargo { Nome = cargoProprietario };
+                    await _cargoRepository.AddAsync(cargo);
+                }
+
+                // Criar Funcionario (Dono)
+                var funcionario = new Funcionario
+                {
+                    Nome = nome,
+                    UsuarioId = usuario.Id,
+                    LojaId = lojaId,
+                    CargoId = cargo.Id,
+                    Ativo = true,
+                    DataCriacao = DateTime.UtcNow
+                };
+
+                await _funcionarioRepository.AddAsync(funcionario);
+
+                if (lojaId.HasValue)
+                {
+                    // Criar Loja
+                    var loja = new Loja
+                    {
+                        Id = lojaId.Value,
+                        Nome = $"Nova Loja",
+                        UsuarioId = usuario.Id,
+                        Ativo = true,
+                        DataCriacao = DateTime.UtcNow,
+                        // Campos obrigatórios mínimos
+                        CpfCnpj = "00000000000",
+                        Telefone = "0000000000",
+                        Email = email,
+                        Senha = "temp", // Não usado para login, mas obrigatório na entidade
+                        Instagram = "", Facebook = "", Twitter = "", LinkedIn = "", WhatsApp = "", Telegram = "", YouTube = "", Twitch = "", TikTok = ""
+                    };
+                    
+                    await _lojaRepository.AddAsync(loja);
+                }
+            }
+
+            // Não retornar token no registro por segurança
+            var token = string.Empty;
+
             var response = new AuthResponse
             {
                 Id = usuario.Id,
                 Nome = usuario.Nome,
                 Login = usuario.Login,
                 Email = usuario.Email,
-                Token = string.Empty // Sem token até ser aprovado
+                Token = token
             };
 
             return Result<AuthResponse>.Ok(response);

@@ -15,6 +15,6 @@ namespace Controle.Application.DTOs
         public string YouTube { get; set; }
         public string Twitch { get; set; }
         public string TikTok { get; set; }
-        public bool Ativo { get; set; }
+        public bool? Ativo { get; set; }
     }
 }

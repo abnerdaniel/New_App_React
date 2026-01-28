@@ -9,7 +9,7 @@ public class Funcionario
     public int Id { get; set; }
     public string Nome { get; set; } = string.Empty;// Nome do Funcionario
     public int CargoId { get; set; } = 0;// Cargo que trabalha
-    public Guid LojaId { get; set; }
+    public Guid? LojaId { get; set; }
     public Guid UsuarioId { get; set; }
     public bool Ativo { get; set; } = false;// Usuario que cadastra
     public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
