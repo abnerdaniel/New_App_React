@@ -29,9 +29,11 @@ namespace Controle.API.Controllers
         /// <param name="enderecoDto">Dados do endereço.</param>
         /// <response code="200">Endereço adicionado com sucesso.</response>
         /// <response code="400">Erro ao adicionar endereço.</response>
+        /// <response code="401">Não autorizado.</response>
         [HttpPost("{clienteId}/enderecos")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> AdicionarEndereco(int clienteId, [FromBody] EnderecoDTO enderecoDto)
         {
             if (!ModelState.IsValid)
@@ -54,8 +56,10 @@ namespace Controle.API.Controllers
         /// </summary>
         /// <param name="clienteId">ID do cliente.</param>
         /// <response code="200">Lista de endereços retornada com sucesso.</response>
+        /// <response code="401">Não autorizado.</response>
         [HttpGet("{clienteId}/enderecos")]
         [ProducesResponseType(typeof(IEnumerable<EnderecoDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ListarEnderecos(int clienteId)
         {
             var enderecos = await _clienteService.ListarEnderecosAsync(clienteId);
@@ -67,8 +71,10 @@ namespace Controle.API.Controllers
         /// </summary>
         /// <param name="clienteId">ID do cliente.</param>
         /// <response code="200">Histórico de pedidos retornado com sucesso.</response>
+        /// <response code="401">Não autorizado.</response>
         [HttpGet("{clienteId}/historico")]
         [ProducesResponseType(typeof(IEnumerable<PedidoHistoricoDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetHistoricoPedidos(int clienteId)
         {
             var historico = await _clienteService.GetHistoricoPedidosAsync(clienteId);

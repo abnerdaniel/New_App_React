@@ -25,14 +25,10 @@ namespace Controle.Infrastructure.Repositories
             return produtoLoja;
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task RemoveAsync(ProdutoLoja produtoLoja)
         {
-            var produtoLoja = await _context.ProdutosLojas.FindAsync(id);
-            if (produtoLoja != null)
-            {
-                _context.ProdutosLojas.Remove(produtoLoja);
-                await _context.SaveChangesAsync();
-            }
+            _context.ProdutosLojas.Remove(produtoLoja);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<ProdutoLoja>> GetAllAsync()

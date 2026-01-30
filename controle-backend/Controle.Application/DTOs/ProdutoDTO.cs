@@ -20,6 +20,17 @@ namespace Controle.Application.DTOs
         public string Categoria { get; set; }
         public string ImagemUrl { get; set; }
         public string Tipo { get; set; }
+        
+        // Novos campos opcionais
+        public string? Marca { get; set; }
+        public string? Modelo { get; set; }
+        public string? Cor { get; set; }
+        public string? Tamanho { get; set; }
+        public string? Material { get; set; }
+        public string? Fabricante { get; set; }
+        public string? URL_Video { get; set; }
+        public string? URL_Audio { get; set; }
+        public string? URL_Documento { get; set; }
     }
 
     public class UpdateProdutoDTO

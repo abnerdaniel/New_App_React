@@ -27,8 +27,10 @@ namespace Controle.API.Controllers
         /// </summary>
         /// <param name="lojaId">ID da loja.</param>
         /// <response code="200">Resumo do dia retornado com sucesso.</response>
+        /// <response code="401">Não autorizado.</response>
         [HttpGet("loja/{lojaId}/resumo")]
         [ProducesResponseType(typeof(DashboardResumoDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetResumoDoDia(Guid lojaId)
         {
             var resumo = await _dashboardService.GetResumoDoDiaAsync(lojaId);
@@ -40,8 +42,10 @@ namespace Controle.API.Controllers
         /// </summary>
         /// <param name="lojaId">ID da loja.</param>
         /// <response code="200">Ranking de produtos retornado com sucesso.</response>
+        /// <response code="401">Não autorizado.</response>
         [HttpGet("loja/{lojaId}/ranking")]
         [ProducesResponseType(typeof(IEnumerable<ProdutoRankingDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetProdutosMaisVendidos(Guid lojaId)
         {
             var ranking = await _dashboardService.GetProdutosMaisVendidosAsync(lojaId);

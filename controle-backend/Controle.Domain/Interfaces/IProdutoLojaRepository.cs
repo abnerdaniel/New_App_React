@@ -11,6 +11,8 @@ namespace Controle.Domain.Interfaces
         Task<ProdutoLoja> AddAsync(ProdutoLoja produtoLoja);
         Task<ProdutoLoja?> GetByProdutoAndLojaAsync(int produtoId, Guid lojaId);
         Task<IEnumerable<ProdutoLoja>> GetByLojaIdAsync(Guid lojaId);
-        // Add other necessary methods
+        Task<ProdutoLoja?> GetByIdAsync(int id);
+        Task UpdateAsync(ProdutoLoja produtoLoja);
+        Task RemoveAsync(ProdutoLoja produtoLoja);
     }
 }

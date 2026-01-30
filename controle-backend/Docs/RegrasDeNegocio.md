@@ -26,3 +26,12 @@
 
 1. **Catálogo Geral**: Listagem de todos os produtos cadastrados globalmente, utilizada para pré-preenchimento e busca.
 2. **Estoque por Loja**: Listagem específica de uma loja, retornando dados combinados do produto (Nome, Imagem) com dados da loja (Preço, Estoque).
+
+## Autenticação e Cadastro de Usuários
+
+1. **Cadastro**: Ao realizar o cadastro, o usuário deve preencher os dados necessários e aguardar a aprovação. O acesso não é liberado imediatamente.
+2. **Login**: Após a aprovação, ao realizar o login, a API deve retornar:
+   - Token de autenticação
+   - ID do Funcionário
+   - ID da Loja
+3. **Frontend**: O frontend deve armazenar e utilizar esses dados (Token, ID Funcionário, ID Loja) após o login bem-sucedido.

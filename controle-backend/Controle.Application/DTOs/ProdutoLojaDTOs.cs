@@ -23,4 +23,12 @@ namespace Controle.Application.DTOs
         public Guid LojaId { get; set; }
         public int ProdutoLojaId { get; set; }
     }
+
+    public class UpdateProdutoLojaRequest
+    {
+        public decimal? Preco { get; set; }
+        public int? Estoque { get; set; }
+        public int? Desconto { get; set; }
+        public string? Descricao { get; set; }
+    }
 }

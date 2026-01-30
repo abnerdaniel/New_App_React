@@ -31,9 +31,11 @@ namespace Controle.API.Controllers
         /// </remarks>
         /// <response code="200">Funcionário cadastrado com sucesso.</response>
         /// <response code="400">Erro ao cadastrar funcionário.</response>
+        /// <response code="401">Não autorizado.</response>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Cadastrar([FromBody] RegisterFuncionarioRequest request)
         {
             if (!ModelState.IsValid)
@@ -57,8 +59,10 @@ namespace Controle.API.Controllers
         /// </summary>
         /// <param name="lojaId">ID da loja.</param>
         /// <response code="200">Lista de funcionários retornada com sucesso.</response>
+        /// <response code="401">Não autorizado.</response>
         [HttpGet("loja/{lojaId}")]
         [ProducesResponseType(typeof(IEnumerable<FuncionarioDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ListarEquipe(Guid lojaId)
         {
             var equipe = await _funcionarioService.ListarEquipeAsync(lojaId);
@@ -71,9 +75,11 @@ namespace Controle.API.Controllers
         /// <param name="id">ID do funcionário.</param>
         /// <response code="200">Funcionário bloqueado com sucesso.</response>
         /// <response code="400">Erro ao bloquear funcionário.</response>
+        /// <response code="401">Não autorizado.</response>
         [HttpPut("{id}/bloquear")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> BloquearAcesso(int id)
         {
             var result = await _funcionarioService.BloquearAcessoAsync(id);

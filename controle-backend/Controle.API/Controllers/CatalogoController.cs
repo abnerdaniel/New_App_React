@@ -22,9 +22,16 @@ namespace Controle.API.Controllers
         /// <summary>
         /// Adiciona um produto ao catálogo da loja.
         /// </summary>
+        /// <remarks>
+        /// Requer autenticação JWT.
+        /// </remarks>
+        /// <response code="200">Produto adicionado com sucesso.</response>
+        /// <response code="400">Dados inválidos.</response>
+        /// <response code="401">Não autorizado.</response>
         [HttpPost("produtos-loja")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> AdicionarProdutoLoja([FromBody] AdicionarProdutoLojaDTO dto)
         {
             var produtoLoja = await _catalogoService.AdicionarProdutoNaLojaAsync(
