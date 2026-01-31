@@ -14,11 +14,7 @@ namespace Controle.Application.Services
     public class ProdutoLojaService : IProdutoLojaService
     {
         private readonly IProdutoRepository _produtoRepository;
-        private readonly IProdutoLojaRepository _produtoLojaRepository; // Assuming this exists or I need to create it
-        // If IProdutoLojaRepository doesn't exist, I might need to use a generic repository or add it.
-        // For now I'll assume I need to create the interface and repository or use what's available.
-        // Checking existing repositories... I only saw IProdutoRepository.
-        // I will assume I need to create IProdutoLojaRepository as well.
+        private readonly IProdutoLojaRepository _produtoLojaRepository; 
         
         public ProdutoLojaService(IProdutoRepository produtoRepository, IProdutoLojaRepository produtoLojaRepository)
         {
@@ -28,16 +24,18 @@ namespace Controle.Application.Services
 
         public async Task<ProdutoLoja> AdicionarProdutoLojaAsync(CreateProdutoLojaRequest dto)
         {
-            Produto produto;
+            Produto? produto = null;
 
             if (dto.ProdutoId.HasValue)
             {
                 produto = await _produtoRepository.GetByIdAsync(dto.ProdutoId.Value);
-                if (produto == null) throw new DomainException("Produto não encontrado.");
             }
-            else if (dto.NovoProduto != null)
+
+            // Se o produto não foi encontrado (seja porque ID não veio ou ID não existe), 
+            // e temos dados para criar um novo, então criamos.
+            if (produto == null && dto.NovoProduto != null)
             {
-                // Validate Tipo
+                // Validar Tipo
                 if (!ProdutoTipo.EhValido(dto.NovoProduto.Tipo))
                 {
                      throw new DomainException($"Tipo de produto inválido. Tipos permitidos: {string.Join(", ", ProdutoTipo.Todos)}");
@@ -50,8 +48,8 @@ namespace Controle.Application.Services
                     Tipo = dto.NovoProduto.Tipo,
                     URL_Imagem = dto.NovoProduto.ImagemUrl,
                     
-                    // Mapping new optional fields
-                    Marca = dto.NovoProduto.Marca,
+                    // Mapeando novos campos opcionais
+                    Marca = dto.NovoProduto.Marca ?? string.Empty,
                     Modelo = dto.NovoProduto.Modelo,
                     Cor = dto.NovoProduto.Cor,
                     Tamanho = dto.NovoProduto.Tamanho,
@@ -61,14 +59,19 @@ namespace Controle.Application.Services
                     URL_Audio = dto.NovoProduto.URL_Audio,
                     URL_Documento = dto.NovoProduto.URL_Documento
                 };
+                
                 await _produtoRepository.AddAsync(produto);
+                // O ID do produto será gerado pelo banco e populado na entidade após o AddAsync (considerando que o repo chame SaveChanges)
+                // Se o repositório não chamar SaveChanges imediatamente, precisaremos chamar aqui ou garantir que o UoW trate.
+                // Assumindo padrão de repositório que perdiste.
             }
-            else
+            else if (produto == null)
             {
-                throw new DomainException("É necessário informar um ProdutoId existente ou os dados para um NovoProduto.");
+                // Se não achou por ID e não tem dados de novo produto
+                throw new DomainException("Produto não encontrado e dados para novo produto não fornecidos.");
             }
 
-            // Check if already exists in store
+            // Verificar se já existe na loja
             var existente = await _produtoLojaRepository.GetByProdutoAndLojaAsync(produto.Id, dto.LojaId);
             if (existente != null) throw new DomainException("Este produto já está vinculado a esta loja.");
 
@@ -78,15 +81,15 @@ namespace Controle.Application.Services
                 ProdutoId = produto.Id,
                 Preco = (int)dto.Preco, 
                 Estoque = dto.Estoque,
-                Descricao = dto.NovoProduto?.Descricao ?? produto.Descricao // Use product description as default if not provided? Or maybe dto should have specific description for store? 
-                // Using product description for now as per previous logic inference or default.
-                // Wait, ProdutoLoja has its own Descricao.
+                Descricao = dto.NovoProduto?.Descricao ?? produto.Descricao ?? string.Empty 
+                // Usar a descrição do produto como padrão se não fornecida.
+                // ProdutoLoja tem sua própria descrição.
             };
             
-            // If CreateProdutoLojaRequest doesn't have specific description for the store relation, we might want to use the product's description or empty.
-            // The DTO has 'NovoProduto' which has 'Descricao'.
-            // Let's assume we want to copy the product description to the store product description initially.
-            produtoLoja.Descricao = produto.Descricao; 
+            // Se CreateProdutoLojaRequest não tiver descrição específica para a relação com a loja, usamos a do produto.
+            // O DTO tem 'NovoProduto' que tem 'Descricao'.
+            // Vamos assumir que copiamos a descrição do produto para a loja inicialmente.
+            produtoLoja.Descricao = produto.Descricao ?? string.Empty; 
 
             await _produtoLojaRepository.AddAsync(produtoLoja);
             return produtoLoja;
@@ -132,7 +135,7 @@ namespace Controle.Application.Services
                         Tipo = produto.Tipo,
                         ImagemUrl = produto.URL_Imagem,
                         Preco = pl.Preco,
-                        Estoque = pl.Estoque,
+                        Estoque = pl.Estoque ?? 0,
                         LojaId = pl.LojaId,
                         ProdutoLojaId = pl.Id
                     });

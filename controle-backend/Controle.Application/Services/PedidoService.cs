@@ -45,7 +45,7 @@ namespace Controle.Application.Services
                     // 1. Recuperar ProdutoLoja e navegar até Cardapio
                     var produtoLoja = await _context.ProdutosLojas
                         .Include(p => p.Categoria)
-                        .ThenInclude(c => c.Cardapio)
+                        .ThenInclude(c => c!.Cardapio) // Suppress nullable warning for expression tree traversing optional navigation
                         .FirstOrDefaultAsync(p => p.Id == itemDto.IdProduto);
 
                     if (produtoLoja == null)

@@ -33,7 +33,7 @@ namespace Controle.API.Controllers
         public async Task<IActionResult> RealizarPedido([FromBody] RealizarPedidoDTO dto)
         {
             var pedido = await _pedidoService.RealizarPedidoAsync(dto);
-            // Retorna 201 Created. O Location header aponta para a fila de pedidos da loja por enquanto, 
+            // Retorna 201 Created. O header Location aponta para a fila de pedidos da loja por enquanto, 
             // já que não temos um endpoint GetPedidoById específico exposto ainda (embora pudesse ser criado).
             return CreatedAtAction(nameof(ListarPedidosFila), new { lojaId = pedido.LojaId }, pedido);
         }

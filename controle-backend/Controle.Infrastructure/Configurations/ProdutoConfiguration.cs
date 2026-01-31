@@ -13,7 +13,7 @@ namespace Controle.Infrastructure.Configurations
         public void Configure(EntityTypeBuilder<Produto> builder)
         {
             builder.HasKey(p => p.Id);
-            // Add other properties configuration if needed
+            // Adicionar configuração de outras propriedades se necessário
         }
     }
 }

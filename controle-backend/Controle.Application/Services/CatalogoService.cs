@@ -38,12 +38,12 @@ namespace Controle.Application.Services
                 LojaId = lojaId,
                 ProdutoId = produtoGlobalId,
                 CategoriaId = categoriaId,
-                Preco = (int)preco, // Assuming int stores the price (possibly in cents or raw unit), casting as per entity definition.
+                Preco = (int)preco, // Assumindo que int armazena o preço (possivelmente em centavos ou unidade bruta), casting conforme definição da entidade.
                 Estoque = estoque,
-                QuantidadeEstoque = estoque // Mapping 'Estoque' to 'QuantidadeEstoque' as well if needed, or just one. 
-                                            // Entity has both 'Estoque' and 'QuantidadeEstoque'. 
-                                            // I will set both to be safe or just 'Estoque' if that's the main one.
-                                            // Looking at ProdutoLoja.cs in Step 17, it has both. I'll set both.
+                QuantidadeEstoque = estoque // Mapeando 'Estoque' para 'QuantidadeEstoque' também se necessário, ou apenas um.
+                                            // A entidade possui ambos 'Estoque' e 'QuantidadeEstoque'.
+                                            // Vou definir ambos por segurança ou apenas 'Estoque' se for o principal.
+                                            // Olhando ProdutoLoja.cs no Passo 17, tem ambos. Vou definir ambos.
             };
 
             _context.ProdutosLojas.Add(produtoLoja);

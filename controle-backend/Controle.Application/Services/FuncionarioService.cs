@@ -35,7 +35,7 @@ namespace Controle.Application.Services
             
             if (!registerResult.Success)
             {
-                return Result.Fail(registerResult.Error);
+                return Result.Fail(registerResult.Error ?? "Erro desconhecido ao registrar usuário.");
             }
 
             var usuarioResponse = registerResult.Data!;

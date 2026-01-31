@@ -10,11 +10,11 @@ public class ProdutoLoja
     public Guid LojaId { get; set; }
     public string Descricao { get; set; } = string.Empty;
     public int Preco { get; set; }
-    public int Desconto { get; set; }
-    public int Estoque { get; set; }
-    public int Vendas { get; set; }
+    public int? Desconto { get; set; }
+    public int? Estoque { get; set; }
+    public int? Vendas { get; set; }
     public int ProdutoId { get; set; }
     public int QuantidadeEstoque { get; set; }
-    public int CategoriaId { get; set; }
+    public int? CategoriaId { get; set; }
     public Categoria? Categoria { get; set; }
 }

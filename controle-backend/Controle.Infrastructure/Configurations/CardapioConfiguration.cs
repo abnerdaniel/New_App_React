@@ -16,7 +16,7 @@ namespace Controle.Infrastructure.Configurations
 
             // Relacionamento com Categoria (Um Cardapio tem muitas Categorias)
             builder.HasMany(c => c.Categorias)
-                   .WithOne()
+                   .WithOne(cat => cat.Cardapio)
                    .HasForeignKey(cat => cat.CardapioId)
                    .OnDelete(DeleteBehavior.Cascade);
         }

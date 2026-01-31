@@ -37,15 +37,15 @@ namespace Controle.Application.Services
         {
             return await _context.Cardapios
                 .Include(c => c.Categorias)
-                .ThenInclude(cat => cat.Produtos) // Note: This assumes Categoria has a collection of products. 
-                                                  // In Step 0/1 we added 'public Cardapio Cardapio' to Categoria, 
-                                                  // but we didn't explicitly check if Categoria has 'Produtos' collection in the Entity.
-                                                  // Let's verify Categoria entity structure if possible, or assume standard navigation.
-                                                  // Wait, in Step 0, user said "Atualize ProdutoLoja: Adicione CategoriaId...".
-                                                  // User didn't explicitly say "Add List<ProdutoLoja> Produtos to Categoria".
-                                                  // However, usually EF Core needs the collection for Include.
-                                                  // I should check Categoria.cs again.
-                                                  // If it's missing, I might need to add it or the Include won't work for "ThenInclude(cat => cat.Produtos)".
+                .ThenInclude(cat => cat.Produtos) // Nota: Assume-se que Categoria possui uma coleção de Produtos.
+                                                  // No Passo 0/1 foi adicionado 'public Cardapio Cardapio' em Categoria,
+                                                  // porém não verificamos explicitamente se Categoria possui a coleção 'Produtos' na Entidade.
+                                                  // Vamos verificar a estrutura de Categoria se possível, ou assumir navegação padrão.
+                                                  // Nota anterior do usuário: "Atualize ProdutoLoja: Adicione CategoriaId...".
+                                                  // O usuário não disse explicitamente "Adicionar List<ProdutoLoja> Produtos em Categoria".
+                                                  // Entretanto, normalmente o EF Core precisa da coleção para o Include funcionar.
+                                                  // Devo checar o Categoria.cs novamente.
+                                                  // Se estiver faltando, poderei ter que adicionar ou o Include não funcionará para "ThenInclude(cat => cat.Produtos)".
                 .FirstOrDefaultAsync(c => c.Id == cardapioId);
         }
     }

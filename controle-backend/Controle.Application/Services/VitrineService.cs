@@ -20,14 +20,14 @@ namespace Controle.Application.Services
 
         public async Task<VitrineDTO?> ObterLojaParaClienteAsync(Guid lojaId)
         {
-            // 1. Use AsNoTracking() em todas as consultas.
+            // 1. Usar AsNoTracking() em todas as consultas.
             var loja = await _context.Lojas
                 .AsNoTracking()
                 .FirstOrDefaultAsync(l => l.Id == lojaId);
 
             if (loja == null) return null;
 
-            // 2. Busque todos os cardápios ativos da loja (com seus includes: Categorias e Produtos).
+            // 2. Buscar todos os cardápios ativos da loja (com seus includes: Categorias e Produtos).
             var cardapios = await _context.Cardapios
                 .AsNoTracking()
                 .Where(c => c.LojaId == lojaId && c.Ativo)
@@ -58,7 +58,7 @@ namespace Controle.Application.Services
                     if (horaAtual >= cardapio.HorarioInicio.Value && horaAtual <= cardapio.HorarioFim.Value)
                     {
                         cardapioSelecionado = cardapio;
-                        break; // Encontrou um específico, para. (Poderia ter lógica de prioridade, mas o primeiro que der match serve por enquanto)
+                        break; // Encontrou um específico, para. (Poderia ter lógica de prioridade, mas o primeiro que der correspondência serve por enquanto)
                     }
                 }
             }
@@ -69,7 +69,7 @@ namespace Controle.Application.Services
                 cardapioSelecionado = cardapios.FirstOrDefault(c => c.Principal);
             }
 
-            // 4. Mapeie e retorne o VitrineDTO.
+            // 4. Mapear e retornar o VitrineDTO.
             var vitrineDTO = new VitrineDTO
             {
                 LojaId = loja.Id,

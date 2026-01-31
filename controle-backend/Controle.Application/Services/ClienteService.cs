@@ -64,10 +64,10 @@ namespace Controle.Application.Services
                 Bairro = e.Bairro,
                 Cidade = e.Cidade,
                 Estado = e.Estado,
-                CEP = e.CEP,
-                Complemento = e.Complemento,
-                Numero = e.Numero,
-                Referencia = e.Referencia
+                CEP = e.CEP ?? string.Empty,
+                Complemento = e.Complemento ?? string.Empty,
+                Numero = e.Numero ?? string.Empty,
+                Referencia = e.Referencia ?? string.Empty
             });
         }
 
@@ -82,10 +82,10 @@ namespace Controle.Application.Services
             {
                 Id = p.Id,
                 DataVenda = p.DataVenda,
-                ValorTotal = p.ValorTotal,
-                Status = p.Status,
+                ValorTotal = p.ValorTotal ?? 0,
+                Status = p.Status ?? "Indefinido",
                 QuantidadeItens = p.Quantidade,
-                ResumoItens = p.Descricao // Assumindo que Descricao contém um resumo ou concatenar itens se necessário
+                ResumoItens = p.Descricao ?? string.Empty // Assumindo que Descricao contém um resumo ou concatenar itens se necessário
             });
         }
     }

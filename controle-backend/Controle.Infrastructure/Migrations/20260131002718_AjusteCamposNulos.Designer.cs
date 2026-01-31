@@ -3,6 +3,7 @@ using System;
 using Controle.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Controle.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260131002718_AjusteCamposNulos")]
+    partial class AjusteCamposNulos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -127,6 +130,9 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<int>("CardapioId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("CardapioId1")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -140,6 +146,8 @@ namespace Controle.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CardapioId");
+
+                    b.HasIndex("CardapioId1");
 
                     b.ToTable("Categorias");
                 });
@@ -497,7 +505,7 @@ namespace Controle.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CategoriaId")
+                    b.Property<int>("CategoriaId")
                         .HasColumnType("integer");
 
                     b.Property<int?>("Desconto")
@@ -612,11 +620,15 @@ namespace Controle.Infrastructure.Migrations
 
             modelBuilder.Entity("Controle.Domain.Entities.Categoria", b =>
                 {
-                    b.HasOne("Controle.Domain.Entities.Cardapio", "Cardapio")
+                    b.HasOne("Controle.Domain.Entities.Cardapio", null)
                         .WithMany("Categorias")
                         .HasForeignKey("CardapioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Controle.Domain.Entities.Cardapio", "Cardapio")
+                        .WithMany()
+                        .HasForeignKey("CardapioId1");
 
                     b.Navigation("Cardapio");
                 });
@@ -625,7 +637,9 @@ namespace Controle.Infrastructure.Migrations
                 {
                     b.HasOne("Controle.Domain.Entities.Categoria", "Categoria")
                         .WithMany("Produtos")
-                        .HasForeignKey("CategoriaId");
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Categoria");
                 });

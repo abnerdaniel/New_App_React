@@ -13,8 +13,8 @@ public class Endereco
     public string Bairro { get; set; } = string.Empty;//Bairro
     public string Cidade { get; set; } = string.Empty;//Cidade
     public string Estado { get; set; } = string.Empty;//Estado
-    public string CEP { get; set; } = string.Empty;//CEP
-    public string Complemento { get; set; } = string.Empty;//Complemento
-    public string Numero { get; set; } = string.Empty;//Numero
-    public string Referencia { get; set; } = string.Empty;//Referencia
+    public string? CEP { get; set; } = string.Empty;//CEP
+    public string? Complemento { get; set; } = string.Empty;//Complemento
+    public string? Numero { get; set; } = string.Empty;//Numero
+    public string? Referencia { get; set; } = string.Empty;//Referencia
 }
