@@ -146,6 +146,11 @@ namespace Controle.Application.Services
                     await _cargoRepository.AddAsync(cargo);
                 }
 
+                if (!lojaId.HasValue)
+                {
+                    lojaId = Controle.Domain.Utils.UuidV7.NewUuid();
+                }
+
                 // Criar Funcionario (Dono)
                 var funcionario = new Funcionario
                 {
@@ -159,12 +164,10 @@ namespace Controle.Application.Services
 
                 await _funcionarioRepository.AddAsync(funcionario);
 
-                if (lojaId.HasValue)
+                // Criar Loja (Sempre criar se createFuncionario for true - fluxo de registro de dono)
+                var loja = new Loja
                 {
-                    // Criar Loja
-                    var loja = new Loja
-                    {
-                        Id = lojaId.Value,
+                    Id = lojaId.Value,
                         Nome = $"Nova Loja",
                         UsuarioId = usuario.Id,
                         Ativo = true,
@@ -178,7 +181,6 @@ namespace Controle.Application.Services
                     };
                     
                     await _lojaRepository.AddAsync(loja);
-                }
             }
 
             // Não retornar token no registro por segurança

@@ -14,7 +14,15 @@ export function SetupCompany() {
     cpfCnpj: "",
     telefone: "",
     email: "",
-    instagram: ""
+    instagram: "",
+    facebook: "",
+    twitter: "",
+    linkedIn: "",
+    whatsApp: "",
+    telegram: "",
+    youTube: "",
+    twitch: "",
+    tikTok: "",
   });
 
   useEffect(() => {
@@ -40,29 +48,38 @@ export function SetupCompany() {
     setError("");
 
     try {
-      if (!user || !user.lojas || user.lojas.length === 0) {
-        throw new Error("Loja não encontrada para atualização.");
+      const hasStore = user && user.lojas && user.lojas.length > 0;
+      
+      if (hasStore) {
+        // Modo Edição (PUT)
+        const lojaId = user.lojas![0].id; // Safe because hasStore is true
+        await api.put(`/api/lojas/${lojaId}`, {
+          ...formData,
+          ativo: true
+        });
+      } else {
+        // Modo Criação (POST)
+        // Precisamos enviar alguns campos extras que o DTO pede
+        // Modo Criação (POST)
+        await api.post(`/api/loja`, {
+            ...formData,
+            usuarioId: user!.id,
+            senha: "temp",
+            ativo: true
+        });
       }
 
-      const lojaId = user.lojas[0].id;
-
-      // Chama endpoint de atualização da loja
-      await api.put(`/api/lojas/${lojaId}`, {
-        ...formData,
-        ativo: true
-      });
-
-      // Atualiza o contexto do usuário recarregando dados ou manipulando o objeto local
-      // Como o endpoint de PUT retorna a loja, idealmente precisaríamos atualizar o auth.
-      // Por simplificação, vamos apenas redirecionar para o dashboard, assumindo que o nome atualizou no backend.
-      // E para refletir no frontend agora, podemos forçar um reload ou atualizar o estado local se tivéssemos um metodo 'updateUser'.
-      
-      // Vamos navegar para home
       alert("Loja configurada com sucesso!");
-      navigate("/pessoas"); 
       
-      // Nota: O ideal seria ter um endpoint /me que retorna o usuário atualizado e chamar login(novoUser)
-      // Mas para o MVP, o redirect funciona. O nome antigo pode persistir no context até o próximo login/refresh.
+      // Como alteramos dados estruturais (nova loja ou novo nome), idealmente recarregamos a página ou fazemos novo login silencioso.
+      // Vamos redirecionar para login para forçar recarga dos dados do usuário (token novo com claims novas se precisasse)
+      // Ou navegar para dashboard e torcer para o AuthContext se virar.
+      // Melhor: Navegar para dashboard. O AuthContext já tem a loja? Não, se foi criada agora, não tem.
+      // Se foi criada agora, o user.lojas está vazio.
+      // O ideal seria fazer um 'refreshUser'.
+      
+      navigate("/pessoas"); 
+      window.location.reload(); // Força recarga para pegar os novos dados da API (vai fazer o restoreUser)
 
     } catch (err: any) {
       console.error("Erro no setup:", err);

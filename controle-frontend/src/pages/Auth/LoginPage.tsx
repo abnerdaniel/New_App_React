@@ -22,7 +22,7 @@ export function LoginPage() {
       login(response);
       
       // Verifica se precisa de setup
-      if (response.lojas.length > 0 && response.lojas[0].nome === "Nova Loja") {
+      if (response.lojas.length === 0 || (response.lojas.length > 0 && response.lojas[0].nome === "Nova Loja")) {
         navigate("/setup");
       } else {
         navigate("/pessoas");
