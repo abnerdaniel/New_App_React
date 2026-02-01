@@ -11,6 +11,7 @@
 
 # Antigravity Kit (Agentes e Skills locais)
 .agent/
+agent/
 
 ## --- Node.js / React (ESSENCIAL) ---
 node_modules/

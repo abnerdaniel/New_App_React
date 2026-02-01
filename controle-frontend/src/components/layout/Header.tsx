@@ -13,46 +13,56 @@ export function Header() {
   }
 
   return (
-    <header className="header">
-      <h1>App New Control</h1>
+    <header className="bg-brand-primary text-white p-4 shadow-md flex justify-between items-center z-40 relative">
+      <div className="flex items-center gap-2">
+         {/* Logo placeholder - text based for now */}
+         <div className="bg-white text-brand-primary font-black text-xl w-10 h-10 flex items-center justify-center rounded-lg shadow-sm">
+            L
+         </div>
+         <h1 className="text-xl font-bold tracking-tight">App New Control</h1>
+      </div>
       {user && (
-        <div className="header-user">
-          <div style={{ position: 'relative', display: 'inline-block', marginRight: '15px' }}>
+        <div className="flex items-center gap-4">
+          <div className="relative">
             <button 
               onClick={() => setShowMenu(!showMenu)} 
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+              className="text-white text-xl p-2 hover:bg-white/10 rounded-full transition-colors focus:outline-none"
               title="Configurações"
             >
               ⚙️
             </button>
             {showMenu && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                right: 0,
-                backgroundColor: '#fff',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                zIndex: 1000,
-                minWidth: '150px',
-                display: 'flex',
-                flexDirection: 'column'
-              }}>
-                <button onClick={() => { navigate('/manage-stores'); setShowMenu(false); }} style={{ padding: '10px', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer', borderBottom: '1px solid #eee' }}>
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden animate-fade-in-down">
+                <button 
+                  onClick={() => { navigate('/manage-stores'); setShowMenu(false); }} 
+                  className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-primary transition-colors border-b border-gray-50"
+                >
                   Gerenciar Lojas
                 </button>
-                <button onClick={() => { navigate('/setup-employee'); setShowMenu(false); }} style={{ padding: '10px', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer', borderBottom: '1px solid #eee' }}>
+                <button 
+                  onClick={() => { navigate('/setup-employee'); setShowMenu(false); }} 
+                  className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-primary transition-colors border-b border-gray-50"
+                >
                   Funcionários
                 </button>
-                <div style={{ padding: '10px', color: '#ccc', fontSize: '0.8rem' }}>Gerenciar Login</div>
+                <div className="px-4 py-2 text-xs text-gray-400 bg-gray-50 text-center uppercase tracking-wider font-semibold">
+                    Gerenciar Login
+                </div>
               </div>
             )}
           </div>
-          <span>Olá, {user.nome}</span>
-          <button onClick={handleLogout} className="logout-button">
-            Sair
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="text-right hidden md:block">
+                <span className="block text-sm font-semibold text-white">{user.nome}</span>
+                <span className="block text-xs text-white/80">Administrador</span>
+            </div>
+            <button 
+                onClick={handleLogout} 
+                className="bg-white/10 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white hover:text-brand-primary transition-all border border-white/20"
+            >
+                Sair
+            </button>
+          </div>
         </div>
       )}
     </header>

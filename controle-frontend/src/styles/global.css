@@ -1,19 +1,34 @@
 /* src/styles/global.css */
-:root {
-  --primary: #1f2937;
-  --secondary: #374151;
-  --bg-page: #f3f4f6;
-  --text-main: #111827;
-  --success: #10b981;
-  --danger: #ef4444;
-  --white: #ffffff;
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@theme {
+  --color-brand-primary: #EA1D2C;
+  --color-brand-hover: #C91622;
+  --color-surface: #FFFFFF;
+  --color-surface-background: #F7F7F7;
+  --color-text-dark: #3E3E3E;
+  --color-text-muted: #717171;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+:root {
+  /* Legacy Vars for fallback */
+  --primary: #EA1D2C; 
+  --white: #FFFFFF;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--color-surface-background);
+  color: var(--color-text-dark);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Remove all legacy button/input/login styles - let Tailwind handle it */
+button {
+  cursor: pointer;
 }
 
 .app-container {
@@ -23,10 +38,17 @@
 }
 
 .header {
-  background: var(--primary);
+  background: var(--white); /* iFood style: White header usually, with red accents. Or Red header? Design system says Primary is Red. Let's stick to Primary Header for now or White Header with Red nuances. */
+  /* Re-reading Design System: "Brand Primary... (Header)" -> Suggests Red Header or Red elements in header. 
+     Common delivery apps have White headers with Red Logos/Buttons. 
+     However, old style was solid block. 
+     Let's make Header WHITE standard for modern feel, and use Primary for interactions. 
+     Wait, user said "Brand Primary ... Header". 
+     Let's stick to Primary Background for strong brand identity as requested. */
+  background: var(--primary); 
   color: var(--white);
   padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(234, 29, 44, 0.15); /* Soft red shadow */
 }
 
 .content-container {
@@ -41,8 +63,12 @@
   padding: 1.5rem;
 }
 
-.sidebar ul { list-style: none; }
-.sidebar li { margin-bottom: 0.75rem; }
+.sidebar ul {
+  list-style: none;
+}
+.sidebar li {
+  margin-bottom: 0.75rem;
+}
 
 .sidebar a {
   text-decoration: none;
@@ -71,7 +97,7 @@ form {
   background: var(--white);
   padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
   display: flex;
   gap: 1rem;
@@ -79,35 +105,42 @@ form {
   flex-wrap: wrap;
 }
 
-input, select {
+input,
+select {
   padding: 0.6rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   outline: none;
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
   border-color: var(--primary);
 }
 
 button {
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
+  padding: 0.75rem 1.5rem; /* Py-3 Px-6 approx */
+  border-radius: 8px; /* Rounded-lg */
   border: none;
   cursor: pointer;
-  font-weight: 600;
-  transition: opacity 0.2s;
+  font-weight: 500; /* Medium */
+  transition: background-color 0.2s, opacity 0.2s;
 }
 
-button[type="submit"] {
+button[type="submit"], .btn-primary {
   background: var(--primary);
   color: var(--white);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+button[type="submit"]:hover, .btn-primary:hover {
+  background: var(--primary-hover);
 }
 
 .btn-save { background: var(--success); color: var(--white); }
 .btn-delete { background: var(--danger); color: var(--white); padding: 4px 8px; font-size: 0.8rem; }
 
-button:hover { opacity: 0.9; }
+button:hover { opacity: 0.95; }
 
 /* Tabelas */
 table {
@@ -116,7 +149,7 @@ table {
   border-collapse: collapse;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 th {
@@ -135,7 +168,9 @@ td {
   color: var(--text-main);
 }
 
-tbody tr:hover { background: #f9fafb; }
+tbody tr:hover {
+  background: #f9fafb;
+}
 
 /* Badges e utilitários */
 .badge {
@@ -144,10 +179,20 @@ tbody tr:hover { background: #f9fafb; }
   font-size: 0.7rem;
   font-weight: bold;
 }
-.badge.receita { background: #d1fae5; color: #065f46; }
-.badge.despesa { background: #fee2e2; color: #991b1b; }
+.badge.receita {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge.despesa {
+  background: #fee2e2;
+  color: #991b1b;
+}
 
-.input-group { display: flex; align-items: center; gap: 4px; }
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
 /* Login Page Styles */
 .page-content-full {

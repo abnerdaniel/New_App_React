@@ -22,10 +22,14 @@ export function LoginPage() {
       login(response);
       
       // Verifica se precisa de setup
-      if (response.lojas.length === 0 || (response.lojas.length > 0 && response.lojas[0].nome === "Nova Loja")) {
+      // Verifica se precisa de setup (não tem lojas E não é funcionário de nenhuma loja)
+      const isEmployee = response.funcionarios && response.funcionarios.length > 0;
+      const hasStores = response.lojas.length > 0 && response.lojas[0].nome !== "Nova Loja";
+
+      if (!hasStores && !isEmployee) {
         navigate("/setup");
       } else {
-        navigate("/pessoas");
+        navigate("/dashboard");
       }
     } catch (err: any) {
       console.error("Erro ao fazer login:", err);
@@ -52,46 +56,72 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <h1>Sistema de Controle</h1>
-        
-        <div className="login-tabs">
-          <button
-            className={isLogin ? "active" : ""}
-            onClick={() => {
-              setIsLogin(true);
-              setError("");
-            }}
-          >
-            Login
-          </button>
-          <button
-            className={!isLogin ? "active" : ""}
-            onClick={() => {
-              setIsLogin(false);
-              setError("");
-            }}
-          >
-            Registrar
-          </button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        <div className="bg-brand-primary p-6 text-center">
+             <h1 className="text-2xl font-bold text-white tracking-tight">
+               LanchoneteUI
+             </h1>
+             <p className="text-white/80 text-sm mt-1">Sistema de Controle</p>
         </div>
         
-        <div style={{ marginBottom: '15px' }}>
-             <GoogleLoginButton />
-        </div>
-        
-        <div style={{ textAlign: 'center', margin: '10px 0', color: '#666', fontSize: '0.9rem' }}>
-             ou continue com email
-        </div>
+        <div className="p-8">
+            <div className="flex bg-gray-100 p-1 rounded-lg mb-8">
+            <button
+                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                isLogin 
+                    ? "bg-white text-brand-primary shadow-sm" 
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => {
+                setIsLogin(true);
+                setError("");
+                }}
+            >
+                Entrar
+            </button>
+            <button
+                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                !isLogin 
+                    ? "bg-white text-brand-primary shadow-sm" 
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => {
+                setIsLogin(false);
+                setError("");
+                }}
+            >
+                Conta
+            </button>
+            </div>
+            
+            <div className="mb-6">
+                <GoogleLoginButton />
+            </div>
+            
+            <div className="relative mb-8 pt-2">
+                <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center">
+                <span className="bg-white px-4 text-xs font-semibold text-gray-400 uppercase">
+                    ou email
+                </span>
+                </div>
+            </div>
 
-        {error && <div className="error-message">{error}</div>}
+            {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center border border-red-100 mb-6">
+                {error}
+            </div>
+            )}
 
-        {isLogin ? (
-          <LoginForm onSubmit={handleLogin} loading={loading} />
-        ) : (
-          <RegisterForm onSubmit={handleRegister} loading={loading} />
-        )}
+            {isLogin ? (
+            <LoginForm onSubmit={handleLogin} loading={loading} />
+            ) : (
+            <RegisterForm onSubmit={handleRegister} loading={loading} />
+            )}
+        </div>
       </div>
     </div>
   );
