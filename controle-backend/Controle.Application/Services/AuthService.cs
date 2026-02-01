@@ -12,6 +12,7 @@ using Controle.Domain.Entities;
 using Controle.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Google.Apis.Auth; // Biblioteca oficial do Google para validar Tokens
 
 namespace Controle.Application.Services
 {
@@ -193,6 +194,124 @@ namespace Controle.Application.Services
             };
 
             return Result<AuthResponse>.Ok(response);
+        }
+
+        public async Task<Result<AuthResponse>> LoginWithGoogleAsync(string idToken)
+        {
+            try
+            {
+                // Define as configurações de validação
+                // É IMPORTANTE checar se o Client ID bate com o da nossa aplicação
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new List<string>() { _configuration["Google:ClientId"] } // Busca o Client ID do appsettings
+                };
+
+                // Valida o token diretamente nos servidores do Google
+                // Se for inválido, expirado ou forjado, este método lança uma exceção
+                var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
+
+                // Token válido! Agora verificamos se o usuário já existe no nosso banco pelo e-mail
+                var usuario = await _usuarioRepository.GetByEmailAsync(payload.Email);
+
+                if (usuario == null)
+                {
+                    // === USUÁRIO NOVO: REGISTRAR ===
+                    // Se o e-mail não existe, criamos um novo registro automaticamente
+                    
+                    // Usamos o e-mail como login também para simplificar
+                    var novoLogin = payload.Email; 
+
+                    // Verifica se por acaso esse login já existe (raro, mas possível de conflitar)
+                    var existingLogin = await _usuarioRepository.GetByLoginAsync(novoLogin);
+                    if (existingLogin != null)
+                    {
+                        // Se conflitar, adiciona um sufixo aleatório
+                        novoLogin = $"{payload.Email}_{new Random().Next(1000, 9999)}";
+                    }
+
+                    // Registra usando nossa lógica existente, mas gerando uma senha aleatória forte
+                    // já que o usuário vai logar sempre pelo Google
+                    var senhaAleatoria = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "!A1";
+                    
+                    // Chamamos o método Register existente
+                    // Nota: createFuncionario = false pois não sabemos se ele tem loja, 
+                    // a não ser que queiramos criar um padrão. Vamos manter false e criar apenas o Usuário.
+                    // Se a regra de negócio exigir criar um funcionário padrão, podemos ajustar aqui.
+                    var registerResult = await RegisterAsync(payload.Name, novoLogin, payload.Email, senhaAleatoria, null, createFuncionario: false);
+                    
+                    if (!registerResult.Success)
+                    {
+                        return Result<AuthResponse>.Fail($"Erro ao registrar usuário Google: {registerResult.Error}");
+                    }
+                    
+                    // Recupera o usuário recém-criado para gerar o token
+                    usuario = await _usuarioRepository.GetByEmailAsync(payload.Email);
+                }
+
+                // === USUÁRIO EXISTENTE ou RECÉM-CRIADO: LOGAR ===
+                
+                // Verifica status
+                if (!usuario.Ativo)
+                {
+                    return Result<AuthResponse>.Fail("Usuário aguardando aprovação do administrador.");
+                }
+
+                // Atualiza último acesso
+                usuario.UltimoAcesso = DateTime.UtcNow;
+                await _usuarioRepository.UpdateAsync(usuario);
+
+                // Gera nosso JWT interno
+                var appToken = GenerateJwtToken(usuario);
+
+                // Buscar Lojas e Funcionários para retornar no DTO (igual ao Login padrão)
+                var lojas = await _lojaRepository.GetByUsuarioIdAsync(usuario.Id);
+                var lojasDto = lojas.Select(l => new LojaResumoDTO
+                {
+                    Id = l.Id,
+                    Nome = l.Nome,
+                    LogoUrl = l.LogoUrl
+                }).ToList();
+
+                var funcionarios = await _funcionarioRepository.GetByUsuarioIdAsync(usuario.Id);
+                var funcionariosDto = new List<FuncionarioResumoDTO>();
+
+                foreach (var f in funcionarios)
+                {
+                    var cargo = await _cargoRepository.GetByIdAsync(f.CargoId);
+                    funcionariosDto.Add(new FuncionarioResumoDTO
+                    {
+                        Id = f.Id,
+                        LojaId = f.LojaId,
+                        Cargo = cargo?.Nome ?? "Desconhecido",
+                        Ativo = f.Ativo
+                    });
+                }
+
+                var response = new AuthResponse
+                {
+                    Id = usuario.Id,
+                    Nome = usuario.Nome,
+                    Login = usuario.Login,
+                    Email = usuario.Email,
+                    Token = appToken,
+                    Lojas = lojasDto,
+                    Funcionarios = funcionariosDto
+                };
+
+                return Result<AuthResponse>.Ok(response);
+
+            }
+            catch (InvalidJwtException ex)
+            {
+                // Token inválido (formato errado, expirado, assinatura inválida)
+                return Result<AuthResponse>.Fail($"Token do Google inválido: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                // Erro genérico
+                return Result<AuthResponse>.Fail($"Erro ao processar login com Google: {ex.Message}");
+            }
         }
 
         public async Task<UsuarioResponse?> GetUsuarioByIdAsync(Guid id)

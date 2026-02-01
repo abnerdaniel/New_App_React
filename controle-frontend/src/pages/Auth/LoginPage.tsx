@@ -4,6 +4,7 @@ import { authApi } from "../../api/auth.api";
 import { useAuth } from "../../contexts/AuthContext";
 import { LoginForm } from "./LoginForm";
 import { RegisterForm } from "./RegisterForm";
+import { GoogleLoginButton } from "../../components/GoogleLoginButton";
 
 export function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -68,6 +69,14 @@ export function LoginPage() {
           >
             Registrar
           </button>
+        </div>
+        
+        <div style={{ marginBottom: '15px' }}>
+             <GoogleLoginButton />
+        </div>
+        
+        <div style={{ textAlign: 'center', margin: '10px 0', color: '#666', fontSize: '0.9rem' }}>
+             ou continue com email
         </div>
 
         {error && <div className="error-message">{error}</div>}

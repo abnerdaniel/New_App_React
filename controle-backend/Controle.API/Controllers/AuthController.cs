@@ -56,6 +56,40 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Realiza login usando o Google.
+        /// </summary>
+        /// <remarks>
+        /// Este endpoint recebe um ID Token fornecido pelo frontend (após login no Google).
+        /// O token é validado junto ao Google e, se válido:
+        /// - Loga o usuário se já existir.
+        /// - Registra um novo usuário automaticamente se não existir.
+        /// </remarks>
+        /// <param name="request">O DTO contendo o IdToken do Google.</param>
+        /// <response code="200">Login realizado com sucesso.</response>
+        /// <response code="400">Token inválido ou erro no processo.</response>
+        [HttpPost("google-login")]
+        [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> LoginWithGoogle([FromBody] GoogleLoginRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _authService.LoginWithGoogleAsync(request.IdToken);
+
+            if (!result.Success)
+            {
+                // Retorna 400 se o token for inválido ou houver erro
+                return BadRequest(new { message = result.Error });
+            }
+
+            // Retorna o token da nossa API + dados do usuário
+            return Ok(result.Data);
+        }
+
+        /// <summary>
         /// Registra um novo usuário no sistema.
         /// </summary>
         /// <remarks>
