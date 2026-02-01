@@ -54,7 +54,29 @@ export function SetupCompany() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+
+    // Busca automática de CEP
+    if (name === 'cep') {
+      const cep = value.replace(/\D/g, "");
+      if (cep.length === 8) {
+        fetch(`https://viacep.com.br/ws/${cep}/json/`)
+          .then(res => res.json())
+          .then(data => {
+            if (!data.erro) {
+              setFormData((prev: any) => ({
+                ...prev,
+                logradouro: data.logradouro,
+                bairro: data.bairro,
+                cidade: data.localidade,
+                estado: data.uf,
+                complemento: data.complemento || prev.complemento
+              }));
+            }
+          })
+          .catch(err => console.error("Erro ao buscar CEP", err));
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -153,7 +175,7 @@ export function SetupCompany() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <div>
                 <label>CEP</label>
-                <input name="cep" value={formData.cep || ''} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+                <input name="cep" value={formData.cep || ''} onChange={handleChange} placeholder="00000-000" maxLength={9} style={{ width: "100%", padding: "8px" }} />
             </div>
             <div>
                 <label>Cidade</label>

@@ -8,6 +8,11 @@ interface Cargo {
   nome: string;
 }
 
+interface Loja {
+  id: string;
+  nome: string;
+}
+
 export function SetupEmployee() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -15,6 +20,7 @@ export function SetupEmployee() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [cargos, setCargos] = useState<Cargo[]>([]);
+  const [lojas, setLojas] = useState<Loja[]>([]);
 
   const [formData, setFormData] = useState({
     nome: "",
@@ -22,14 +28,28 @@ export function SetupEmployee() {
     login: "",
     password: "",
     cargo: "",
+    lojaId: ""
   });
 
   useEffect(() => {
-    // Carregar cargos disponíveis
-    api.get("/api/cargos")
-      .then(response => setCargos(response.data))
-      .catch(err => console.error("Erro ao carregar cargos", err));
-  }, []);
+    // Carregar cargos e lojas
+    if (user) {
+        Promise.all([
+            api.get("/api/cargos"),
+            api.get(`/api/loja/usuario/${user.id}`)
+        ])
+        .then(([resCargos, resLojas]) => {
+            setCargos(resCargos.data);
+            setLojas(resLojas.data);
+            
+            // Se tiver apenas uma loja, seleciona automaticamente
+            if (resLojas.data.length === 1) {
+                setFormData(prev => ({ ...prev, lojaId: resLojas.data[0].id }));
+            }
+        })
+        .catch(err => console.error("Erro ao carregar dados", err));
+    }
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -42,8 +62,8 @@ export function SetupEmployee() {
     setError("");
     setSuccess("");
 
-    if (!user || !user.lojas || user.lojas.length === 0) {
-      setError("Nenhuma loja selecionada.");
+    if (!formData.lojaId) {
+      setError("Selecione uma loja.");
       setLoading(false);
       return;
     }
@@ -51,7 +71,7 @@ export function SetupEmployee() {
     try {
       await api.post("/api/funcionarios", {
         ...formData,
-        lojaId: user.lojas[0].id // Usa a primeira loja do usuário logado (Dono)
+        // lojaId já está no formData
       });
       
       setSuccess("Funcionário cadastrado com sucesso!");
@@ -60,7 +80,8 @@ export function SetupEmployee() {
         email: "",
         login: "",
         password: "",
-        cargo: ""
+        cargo: "",
+        lojaId: lojas.length === 1 ? lojas[0].id : "" // Mantém se for unica
       });
 
     } catch (err: any) {
@@ -129,6 +150,19 @@ export function SetupEmployee() {
           <option value="">Selecione um Cargo</option>
           {cargos.map(cargo => (
             <option key={cargo.id} value={cargo.nome}>{cargo.nome}</option>
+          ))}
+        </select>
+
+        <select 
+          name="lojaId" 
+          value={formData.lojaId} 
+          onChange={handleChange} 
+          required
+          style={{ padding: "8px" }}
+        >
+          <option value="">Selecione a Loja</option>
+          {lojas.map(loja => (
+            <option key={loja.id} value={loja.id}>{loja.nome}</option>
           ))}
         </select>
 
