@@ -53,7 +53,7 @@ export function SetupCompany() {
       if (hasStore) {
         // Modo Edição (PUT)
         const lojaId = user.lojas![0].id; // Safe because hasStore is true
-        await api.put(`/api/lojas/${lojaId}`, {
+        await api.put(`/api/loja/${lojaId}`, {
           ...formData,
           ativo: true
         });
