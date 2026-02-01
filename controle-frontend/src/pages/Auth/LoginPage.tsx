@@ -13,12 +13,12 @@ export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  async function handleLogin(email: string, password: string) {
+  async function handleLogin(loginData: string, password: string) {
     setLoading(true);
     setError("");
     
     try {
-      const response = await authApi.login({ email, password });
+      const response = await authApi.login({ login: loginData, password });
       login(response);
       
       // Verifica se precisa de setup
