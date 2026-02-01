@@ -90,6 +90,15 @@ namespace Controle.Application.Services
                 YouTube = dto.YouTube,
                 Twitch = dto.Twitch,
                 TikTok = dto.TikTok,
+                // Endereço
+                Cep = dto.Cep,
+                Logradouro = dto.Logradouro,
+                Numero = dto.Numero,
+                Complemento = dto.Complemento,
+                Bairro = dto.Bairro,
+                Cidade = dto.Cidade,
+                Estado = dto.Estado,
+                
                 UsuarioId = dto.UsuarioId,
                 Ativo = dto.Ativo,
                 DataCriacao = System.DateTime.UtcNow
@@ -119,12 +128,29 @@ namespace Controle.Application.Services
             if (!string.IsNullOrEmpty(dto.YouTube)) loja.YouTube = dto.YouTube;
             if (!string.IsNullOrEmpty(dto.Twitch)) loja.Twitch = dto.Twitch;
             if (!string.IsNullOrEmpty(dto.TikTok)) loja.TikTok = dto.TikTok;
+            
+            // Endereço
+            if (!string.IsNullOrEmpty(dto.Cep)) loja.Cep = dto.Cep;
+            if (!string.IsNullOrEmpty(dto.Logradouro)) loja.Logradouro = dto.Logradouro;
+            if (!string.IsNullOrEmpty(dto.Numero)) loja.Numero = dto.Numero;
+            if (!string.IsNullOrEmpty(dto.Complemento)) loja.Complemento = dto.Complemento;
+            if (!string.IsNullOrEmpty(dto.Bairro)) loja.Bairro = dto.Bairro;
+            if (!string.IsNullOrEmpty(dto.Cidade)) loja.Cidade = dto.Cidade;
+            if (!string.IsNullOrEmpty(dto.Estado)) loja.Estado = dto.Estado;
+
             if (dto.Ativo.HasValue) loja.Ativo = dto.Ativo.Value;
 
             _context.Lojas.Update(loja);
             await _context.SaveChangesAsync();
 
             return loja;
+        }
+
+        public async Task<IEnumerable<Loja>> GetLojasByUsuarioIdAsync(Guid usuarioId)
+        {
+            return await _context.Lojas
+                .Where(l => l.UsuarioId == usuarioId)
+                .ToListAsync();
         }
     }
 }

@@ -16,6 +16,15 @@ namespace Controle.Application.DTOs
         public string YouTube { get; set; } = string.Empty;
         public string Twitch { get; set; } = string.Empty;
         public string TikTok { get; set; } = string.Empty;
+        // Endereço
+        public string? Cep { get; set; }
+        public string? Logradouro { get; set; }
+        public string? Numero { get; set; }
+        public string? Complemento { get; set; }
+        public string? Bairro { get; set; }
+        public string? Cidade { get; set; }
+        public string? Estado { get; set; }
+
         public Guid UsuarioId { get; set; }
         public bool Ativo { get; set; } = true;
     }

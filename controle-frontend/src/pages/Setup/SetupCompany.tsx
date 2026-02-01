@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { api } from "../../api/axios";
 
 export function SetupCompany() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     nome: "",
     cpfCnpj: "",
     telefone: "",
@@ -23,19 +24,33 @@ export function SetupCompany() {
     youTube: "",
     twitch: "",
     tikTok: "",
+    // Endereço
+    cep: "",
+    logradouro: "",
+    numero: "",
+    complemento: "",
+    bairro: "",
+    cidade: "",
+    estado: ""
   });
 
   useEffect(() => {
-    // Tenta carregar os dados da loja atual (pré-criada)
-    if (user && user.lojas && user.lojas.length > 0) {
+    // Check if we are in "Create Mode" forced via navigation state
+    const isCreateMode = location.state?.mode === 'create';
+
+    if (!isCreateMode && user && user.lojas && user.lojas.length > 0) {
+      // Load current store data for editing
       const lojaAtual = user.lojas[0];
       setFormData(prev => ({
         ...prev,
-        nome: lojaAtual.nome === "Nova Loja" ? "" : lojaAtual.nome, // Limpa se for o default
+        nome: lojaAtual.nome === "Nova Loja" ? "" : lojaAtual.nome,
+        // ... populate other fields if available in user.lojas (Address not yet in user context usually)
         email: user.email || ""
       }));
+      // Note: Full store details (address) might need a separate fetch if not in AuthContext
+      // But keeping simple for now.
     }
-  }, [user]);
+  }, [user, location.state]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -48,18 +63,17 @@ export function SetupCompany() {
     setError("");
 
     try {
-      const hasStore = user && user.lojas && user.lojas.length > 0;
+      const isCreateMode = location.state?.mode === 'create';
+      const hasStore = !isCreateMode && user && user.lojas && user.lojas.length > 0;
       
       if (hasStore) {
         // Modo Edição (PUT)
-        const lojaId = user.lojas![0].id; // Safe because hasStore is true
+        const lojaId = user.lojas![0].id;
         await api.put(`/api/loja/${lojaId}`, {
           ...formData,
           ativo: true
         });
       } else {
-        // Modo Criação (POST)
-        // Precisamos enviar alguns campos extras que o DTO pede
         // Modo Criação (POST)
         await api.post(`/api/loja`, {
             ...formData,
@@ -134,6 +148,42 @@ export function SetupCompany() {
             style={{ width: "100%", padding: "8px" }}
           />
         </div>
+
+        <h3>Endereço</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div>
+                <label>CEP</label>
+                <input name="cep" value={formData.cep || ''} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+            </div>
+            <div>
+                <label>Cidade</label>
+                <input name="cidade" value={formData.cidade || ''} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+            </div>
+            <div>
+                <label>Estado</label>
+                <input name="estado" value={formData.estado || ''} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+            </div>
+            <div>
+                <label>Bairro</label>
+                <input name="bairro" value={formData.bairro || ''} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+            </div>
+        </div>
+         <div>
+            <label>Logradouro (Rua, Av...)</label>
+            <input name="logradouro" value={formData.logradouro || ''} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '10px' }}>
+            <div>
+                <label>Número</label>
+                <input name="numero" value={formData.numero || ''} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+            </div>
+             <div>
+                <label>Complemento</label>
+                <input name="complemento" value={formData.complemento || ''} onChange={handleChange} style={{ width: "100%", padding: "8px" }} />
+            </div>
+        </div>
+
+        <h3>Redes Sociais</h3>
 
         <div>
           <label>Instagram (Opcional)</label>

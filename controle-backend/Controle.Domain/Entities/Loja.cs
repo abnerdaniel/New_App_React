@@ -23,6 +23,16 @@ public class Loja
     public string? TikTok { get; set; } = string.Empty;
     public Guid UsuarioId { get; set; }
     public bool Ativo { get; set; } = false;
+    
+    // Endereço
+    public string? Cep { get; set; } = string.Empty;
+    public string? Logradouro { get; set; } = string.Empty;
+    public string? Numero { get; set; } = string.Empty;
+    public string? Complemento { get; set; } = string.Empty;
+    public string? Bairro { get; set; } = string.Empty;
+    public string? Cidade { get; set; } = string.Empty;
+    public string? Estado { get; set; } = string.Empty;
+
     public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
 
     // Configurações da Loja

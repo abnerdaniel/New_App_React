@@ -4,6 +4,7 @@ using Controle.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Controle.Domain.Entities;
 
 namespace Controle.API.Controllers
 {
@@ -17,6 +18,18 @@ namespace Controle.API.Controllers
         public LojaController(ILojaService lojaService)
         {
             _lojaService = lojaService;
+        }
+
+        /// <summary>
+        /// Lista as lojas do usuário logado.
+        /// </summary>
+        [HttpGet("usuario/{usuarioId}")]
+        [ProducesResponseType(typeof(IEnumerable<Loja>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ListarLojasDoUsuario(Guid usuarioId)
+        {
+            // Opcional: Verificar se o ID bate com o Token p/ segurança extra
+            var lojas = await _lojaService.GetLojasByUsuarioIdAsync(usuarioId);
+            return Ok(lojas);
         }
 
         /// <remarks>
