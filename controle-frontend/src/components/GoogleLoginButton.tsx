@@ -14,7 +14,13 @@ export function GoogleLoginButton() {
         // Envia o JWT (id_token) direto para o backend
         const response = await authApi.googleLogin(credentialResponse.credential);
         login(response);
-        navigate("/pessoas");
+        
+        // Verifica se precisa de setup
+        if (response.lojas.length > 0 && response.lojas[0].nome === "Nova Loja") {
+          navigate("/setup");
+        } else {
+          navigate("/pessoas");
+        }
       }
     } catch (error: any) {
       console.error("Erro no login Google:", error);

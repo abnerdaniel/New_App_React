@@ -235,10 +235,10 @@ namespace Controle.Application.Services
                     var senhaAleatoria = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "!A1";
                     
                     // Chamamos o método Register existente
-                    // Nota: createFuncionario = false pois não sabemos se ele tem loja, 
-                    // a não ser que queiramos criar um padrão. Vamos manter false e criar apenas o Usuário.
-                    // Se a regra de negócio exigir criar um funcionário padrão, podemos ajustar aqui.
-                    var registerResult = await RegisterAsync(payload.Name, novoLogin, payload.Email, senhaAleatoria, null, createFuncionario: false);
+                    // Nota: createFuncionario = true para criar a Loja e o Funkcionário (Dono) automaticamente.
+                    // Isso gera uma "Nova Loja" que será detectada pelo frontend para completar o setup.
+                    var lojaId = Controle.Domain.Utils.UuidV7.NewUuid();
+                    var registerResult = await RegisterAsync(payload.Name, novoLogin, payload.Email, senhaAleatoria, lojaId, createFuncionario: true);
                     
                     if (!registerResult.Success)
                     {

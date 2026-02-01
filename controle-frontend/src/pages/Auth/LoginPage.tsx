@@ -20,7 +20,13 @@ export function LoginPage() {
     try {
       const response = await authApi.login({ email, password });
       login(response);
-      navigate("/pessoas");
+      
+      // Verifica se precisa de setup
+      if (response.lojas.length > 0 && response.lojas[0].nome === "Nova Loja") {
+        navigate("/setup");
+      } else {
+        navigate("/pessoas");
+      }
     } catch (err: any) {
       console.error("Erro ao fazer login:", err);
       setError(err.response?.data?.message || "Erro ao fazer login. Verifique suas credenciais.");

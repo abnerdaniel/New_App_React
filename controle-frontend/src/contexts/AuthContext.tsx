@@ -39,6 +39,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       id: authData.id,
       nome: authData.nome,
       email: authData.email,
+      lojas: authData.lojas,
+      funcionarios: authData.funcionarios
     };
 
     setUser(userData);

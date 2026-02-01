@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 interface Props {
-  onSubmit: (email: string, password: string) => void;
+  onSubmit: (login: string, password: string) => void;
   loading: boolean;
 }
 
@@ -20,8 +20,8 @@ export function LoginForm({ onSubmit, loading }: Props) {
   return (
     <form onSubmit={handleSubmit} className="auth-form">
       <input
-        type="email"
-        placeholder="Email"
+        type="text"
+        placeholder="Email ou Login"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
