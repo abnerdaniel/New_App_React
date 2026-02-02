@@ -17,11 +17,13 @@ export function Layout({ children }: Props) {
   }
 
   return (
-    <div className="app-container">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
-      <div className="content-container">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="page-content">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6">
+            {children}
+        </main>
       </div>
     </div>
   );
