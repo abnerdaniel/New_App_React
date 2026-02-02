@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { Menu } from "lucide-react";
 
-export function Header() {
+interface HeaderProps {
+  onMobileMenuClick?: () => void;
+}
+
+export function Header({ onMobileMenuClick }: HeaderProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
@@ -14,7 +19,16 @@ export function Header() {
 
   return (
     <header className="bg-brand-primary text-white p-4 shadow-md flex justify-between items-center z-40 relative">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+          {/* Mobile Menu Button */}
+          <button 
+            onClick={onMobileMenuClick}
+            className="md:hidden p-1 hover:bg-white/10 rounded focus:outline-none"
+            title="Menu"
+          >
+            <Menu size={24} />
+          </button>
+
          {/* Logo placeholder - text based for now */}
          <div className="bg-white text-brand-primary font-black text-xl w-10 h-10 flex items-center justify-center rounded-lg shadow-sm">
             L
