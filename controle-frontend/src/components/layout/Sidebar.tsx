@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
-  Armchair, 
+  HandPlatter, 
   Bike, 
   UtensilsCrossed, 
   Package, 
@@ -15,7 +15,7 @@ export function Sidebar() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-    { icon: Armchair, label: "Controle de Mesas", path: "/mesas" },
+    { icon: HandPlatter, label: "Controle de Mesas", path: "/mesas" },
     { icon: Bike, label: "Controle de Delivery", path: "/delivery" },
     { icon: UtensilsCrossed, label: "Cardápio", path: "/cardapio" },
     { icon: Package, label: "Inventário", path: "/estoque" },
