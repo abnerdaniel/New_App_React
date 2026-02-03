@@ -102,15 +102,29 @@ export function EstoquePage() {
       }
   }
 
+  const formatCurrencyInput = (value: string) => {
+      const digits = value.replace(/\D/g, "");
+      const amount = Number(digits) / 100;
+      return amount.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData({ ...formData, preco: formatCurrencyInput(e.target.value) });
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLojaId) return;
+
+    // Extrair centavos diretamente dos dígitos (Ex: "10,00" -> "1000" -> 1000)
+    // Se o campo estiver vazio ou "0,00", será 0
+    const precoCentavos = formData.preco ? Number(formData.preco.replace(/\D/g, "")) : 0;
 
     try {
       if (editingProduto) {
         // Update Logic
         await api.put(`/api/produto-loja/${editingProduto.produtoLojaId}`, {
-          preco: Number(formData.preco),
+          preco: precoCentavos,
           estoque: Number(formData.estoque),
           // descricao: formData.descricao 
         });
@@ -119,7 +133,7 @@ export function EstoquePage() {
         // Create Logic
         const payload: any = {
           lojaId: selectedLojaId,
-          preco: Number(formData.preco),
+          preco: precoCentavos,
           estoque: Number(formData.estoque)
         };
 
@@ -155,7 +169,7 @@ export function EstoquePage() {
       nome: prod.nome,
       descricao: "", 
       tipo: prod.tipo,
-      preco: prod.preco.toString(),
+      preco: (prod.preco / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 }), // Formata para 0,00
       estoque: prod.estoque.toString(),
       imagemUrl: prod.imagemUrl || ""
     });
@@ -279,7 +293,7 @@ export function EstoquePage() {
                                 </span>
                             </td>
                             <td className="p-4 text-right font-mono text-gray-700">
-                                {prod.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                {(prod.preco / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </td>
                             <td className="p-4 text-center">
                                 <span className={`font-bold ${prod.estoque < 5 ? 'text-red-500' : 'text-green-600'}`}>
@@ -442,12 +456,12 @@ export function EstoquePage() {
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Preço (R$)</label>
                                 <input 
-                                    type="number" 
-                                    step="0.01"
+                                    type="text" 
                                     required
                                     className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none bg-yellow-50 font-bold text-gray-800"
                                     value={formData.preco}
-                                    onChange={e => setFormData({...formData, preco: e.target.value})}
+                                    onChange={handlePriceChange}
+                                    placeholder="0,00"
                                 />
                             </div>
                             <div className="space-y-1">
