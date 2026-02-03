@@ -18,9 +18,21 @@ namespace Controle.Application.Services
             _produtoRepository = produtoRepository;
         }
 
-        public async Task<IEnumerable<Produto>> ObterTodosAsync()
+        public async Task<IEnumerable<Produto>> ObterTodosAsync(Guid? lojaId = null)
         {
-            return await _produtoRepository.GetAllAsync();
+            var produtos = await _produtoRepository.GetAllAsync();
+            if (lojaId.HasValue)
+            {
+                // Retorna produtos globais (LojaId == null) OU da loja especifica
+                return produtos.Where(p => p.LojaId == null || p.LojaId == lojaId.Value);
+            }
+            // Se lojaId nulo, retorna APENAS globais? Ou todos? 
+            // O usuario disse: "listar somente os produtos que contenham o id das lojas do proprietario ou id nulo"
+            // Se nao passar lojaId, assume-se contexto global (admin) ou listar tudo? 
+            // Vamos assumir listar tudo se lojaId NULO (comportamento padrao anterior), ou filtrar globais?
+            // "ao listar produtos para pre preencher listar somente os produtos que contenham o id das lojas do proprietario ou id nulo"
+            // Entao se passar LojaId filtro. Se null, retorna tudo (admin).
+            return produtos;
         }
 
         public async Task<Produto> ObterPorIdAsync(int id)
@@ -45,7 +57,8 @@ namespace Controle.Application.Services
                 // Mapear outros campos conforme necessário e disponível no DTO
                 // Preco e Categoria não estão na entidade Produto, mas no ProdutoLoja
                 URL_Imagem = dto.ImagemUrl,
-                Tipo = dto.Tipo
+                Tipo = dto.Tipo,
+                LojaId = dto.LojaId
             };
 
             await _produtoRepository.AddAsync(produto);

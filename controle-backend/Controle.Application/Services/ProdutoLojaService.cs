@@ -57,7 +57,8 @@ namespace Controle.Application.Services
                     Fabricante = dto.NovoProduto.Fabricante,
                     URL_Video = dto.NovoProduto.URL_Video,
                     URL_Audio = dto.NovoProduto.URL_Audio,
-                    URL_Documento = dto.NovoProduto.URL_Documento
+                    URL_Documento = dto.NovoProduto.URL_Documento,
+                    LojaId = dto.LojaId // Vincula o produto à loja se for criado neste fluxo
                 };
                 
                 await _produtoRepository.AddAsync(produto);

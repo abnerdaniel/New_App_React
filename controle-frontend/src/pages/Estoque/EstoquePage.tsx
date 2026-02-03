@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../../api/axios";
 import { useAuth } from "../../contexts/AuthContext";
-import { Plus, Search, Edit2, Trash2, X, RotateCcw } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, AlertCircle } from "lucide-react";
 
 interface ProdutoEstoqueDTO {
   produtoId: number;
@@ -11,6 +11,14 @@ interface ProdutoEstoqueDTO {
   preco: number;
   estoque: number;
   imagemUrl?: string;
+}
+
+interface ProdutoCatalogoDTO {
+    id: number;
+    nome: string;
+    tipo: string;
+    imagemUrl?: string;
+    lojaId?: string;
 }
 
 interface Loja {
@@ -30,12 +38,18 @@ export function EstoquePage() {
   const [lojas, setLojas] = useState<Loja[]>([]);
   const [selectedLojaId, setSelectedLojaId] = useState<string>("");
   const [produtos, setProdutos] = useState<ProdutoEstoqueDTO[]>([]);
+  const [catalogo, setCatalogo] = useState<ProdutoCatalogoDTO[]>([]); // Produtos disponíveis para cadastro
   const [loading, setLoading] = useState(false);
   const [filterTerm, setFilterTerm] = useState("");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduto, setEditingProduto] = useState<ProdutoEstoqueDTO | null>(null);
+  
+  // New Product Selection State
+  const [searchCatalogo, setSearchCatalogo] = useState("");
+  const [selectedCatalogoItem, setSelectedCatalogoItem] = useState<ProdutoCatalogoDTO | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -61,6 +75,7 @@ export function EstoquePage() {
   useEffect(() => {
     if (selectedLojaId) {
       loadEstoque();
+      loadCatalogo();
     }
   }, [selectedLojaId]);
 
@@ -75,6 +90,17 @@ export function EstoquePage() {
       setLoading(false);
     }
   };
+
+  const loadCatalogo = async () => {
+      try {
+          // Busca produtos globais ou da loja (LojaId=null OR LojaId=Current)
+          // O backend já filtra por LojaId se passado.
+          const res = await api.get(`/api/produtos?lojaId=${selectedLojaId}`);
+          setCatalogo(res.data);
+      } catch (error) {
+          console.error("Erro ao carregar catálogo", error);
+      }
+  }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,23 +117,32 @@ export function EstoquePage() {
         alert("Produto atualizado!");
       } else {
         // Create Logic
-        const payload = {
+        const payload: any = {
           lojaId: selectedLojaId,
-          novoProduto: {
-            nome: formData.nome,
-            descricao: formData.descricao,
-            tipo: formData.tipo,
-            imagemUrl: formData.imagemUrl
-          },
           preco: Number(formData.preco),
           estoque: Number(formData.estoque)
         };
+
+        if (selectedCatalogoItem && !isCreatingNew) {
+            // Vincula existente
+            payload.produtoId = selectedCatalogoItem.id;
+        } else {
+            // Cria novo
+            payload.novoProduto = {
+                nome: formData.nome,
+                descricao: formData.descricao,
+                tipo: formData.tipo,
+                imagemUrl: formData.imagemUrl
+            };
+        }
+
         await api.post("/api/produto-loja", payload);
         alert("Produto adicionado!");
       }
       
       closeModal();
       loadEstoque();
+      loadCatalogo(); // Recarregar catálogo pois pode ter novo produto
     } catch (error: any) {
         console.error(error);
         alert(error.response?.data?.message || "Erro ao salvar produto.");
@@ -118,7 +153,7 @@ export function EstoquePage() {
     setEditingProduto(prod);
     setFormData({
       nome: prod.nome,
-      descricao: "", // Descrição não vem no DTO de lista simples, precisaria buscar ou ignorar
+      descricao: "", 
       tipo: prod.tipo,
       preco: prod.preco.toString(),
       estoque: prod.estoque.toString(),
@@ -141,8 +176,30 @@ export function EstoquePage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduto(null);
+    setSelectedCatalogoItem(null);
+    setIsCreatingNew(false);
+    setSearchCatalogo("");
     setFormData({ nome: "", descricao: "", tipo: PRODUTO_TIPOS[0], preco: "", estoque: "", imagemUrl: "" });
   };
+
+  const handleSelectCatalogo = (item: ProdutoCatalogoDTO) => {
+      setSelectedCatalogoItem(item);
+      setIsCreatingNew(false);
+      setSearchCatalogo(item.nome);
+      // Pre-fill form (visual feedback)
+      setFormData(prev => ({ 
+          ...prev, 
+          nome: item.nome, 
+          tipo: item.tipo || PRODUTO_TIPOS[0],
+          imagemUrl: item.imagemUrl || ""
+      }));
+  }
+
+  const filteredCatalogo = catalogo.filter(c => 
+      c.nome.toLowerCase().includes(searchCatalogo.toLowerCase()) &&
+      // Não mostrar produtos já no estoque da loja
+      !produtos.some(p => p.produtoId === c.id)
+  ).slice(0, 5); // Limit suggestions
 
   const filteredProdutos = produtos.filter(p => 
     p.nome.toLowerCase().includes(filterTerm.toLowerCase()) || 
@@ -195,7 +252,7 @@ export function EstoquePage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden overflow-x-auto">
-        <table className="w-full text-left">
+        <table className="w-full text-left min-w-[600px]">
             <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                     <th className="p-4 text-xs font-bold text-gray-500 uppercase">Produto</th>
@@ -257,97 +314,172 @@ export function EstoquePage() {
       {/* Modal */}
         {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
                     <h3 className="text-xl font-bold text-gray-800">
-                        {editingProduto ? 'Editar Produto' : 'Novo Produto'}
+                        {editingProduto ? 'Editar Produto' : 'Adicionar Produto'}
                     </h3>
                     <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
                         <X size={24} />
                     </button>
                 </div>
                 
-                <form onSubmit={handleSave} className="p-6 space-y-4">
+                <div className="overflow-y-auto flex-1 p-6">
+                    {/* BUSCA DE PRODUTOS (Somente na Criação) */}
                     {!editingProduto && (
-                        <>
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="mb-6 space-y-2 relative">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Buscar Produto Existente</label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                                <input 
+                                    className="w-full h-10 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                                    placeholder="Comece a digitar o nome..."
+                                    value={searchCatalogo}
+                                    onChange={e => {
+                                        setSearchCatalogo(e.target.value);
+                                        setSelectedCatalogoItem(null);
+                                        setIsCreatingNew(false);
+                                        setFormData(prev => ({...prev, nome: e.target.value}));
+                                    }}
+                                />
+                            </div>
+
+                            {/* Suggestion Dropdown */}
+                            {searchCatalogo && !selectedCatalogoItem && !isCreatingNew && (
+                                <div className="absolute top-12 left-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl z-10 overflow-hidden">
+                                     {filteredCatalogo.map(item => (
+                                         <button 
+                                            key={item.id}
+                                            onClick={() => handleSelectCatalogo(item)}
+                                            className="w-full text-left px-4 py-3 hover:bg-gray-50 flex justify-between items-center border-b border-gray-50 last:border-0"
+                                         >
+                                             <span className="font-medium text-gray-700">{item.nome}</span>
+                                             <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">{item.tipo}</span>
+                                         </button>
+                                     ))}
+                                     <button 
+                                        onClick={() => { setIsCreatingNew(true); setSelectedCatalogoItem(null); }}
+                                        className="w-full text-left px-4 py-3 text-brand-primary font-bold hover:bg-brand-primary/5 flex items-center gap-2"
+                                     >
+                                        <Plus size={16} />
+                                        Cadastrar novo produto: "{searchCatalogo}"
+                                     </button>
+                                </div>
+                            )}
+
+                            {selectedCatalogoItem && (
+                                <div className="bg-green-50 text-green-700 p-3 rounded-lg flex justify-between items-center text-sm border border-green-100">
+                                    <span>Produto selecionado: <strong>{selectedCatalogoItem.nome}</strong></span>
+                                    <button onClick={() => { setSelectedCatalogoItem(null); setSearchCatalogo(""); }} className="text-green-600 hover:text-green-800 underline">Alterar</button>
+                                </div>
+                            )}
+                            
+                            {isCreatingNew && (
+                                <div className="bg-brand-primary/5 text-brand-primary p-3 rounded-lg flex justify-between items-center text-sm border border-brand-primary/10">
+                                    <span>Cadastrando novo produto: <strong>{formData.nome}</strong></span>
+                                    <button onClick={() => { setIsCreatingNew(false); }} className="text-brand-primary hover:underline">Voltar a buscar</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSave} className="space-y-4">
+                        {/* Se estiver editando ou criando novo, mostra campos detalhados */}
+                        {(editingProduto || isCreatingNew) && (
+                            <>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">Nome</label>
+                                        <input 
+                                            required
+                                            className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                                            value={formData.nome}
+                                            onChange={e => setFormData({...formData, nome: e.target.value})}
+                                            disabled={!!editingProduto && !isCreatingNew}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">Tipo</label>
+                                        <select 
+                                            className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none bg-white"
+                                            value={formData.tipo}
+                                            onChange={e => setFormData({...formData, tipo: e.target.value})}
+                                            disabled={!!editingProduto} 
+                                        >
+                                            {PRODUTO_TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Nome</label>
-                                    <input 
-                                        required
-                                        className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                                        value={formData.nome}
-                                        onChange={e => setFormData({...formData, nome: e.target.value})}
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Descrição</label>
+                                    <textarea 
+                                        className="w-full h-20 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none resize-none"
+                                        value={formData.descricao}
+                                        onChange={e => setFormData({...formData, descricao: e.target.value})}
+                                        placeholder="Descreva o produto..."
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Tipo</label>
-                                    <select 
-                                        className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none bg-white"
-                                        value={formData.tipo}
-                                        onChange={e => setFormData({...formData, tipo: e.target.value})}
-                                    >
-                                        {PRODUTO_TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
-                                    </select>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">URL da Imagem</label>
+                                    <input 
+                                        className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                                        value={formData.imagemUrl}
+                                        onChange={e => setFormData({...formData, imagemUrl: e.target.value})}
+                                        placeholder="https://..."
+                                    />
                                 </div>
-                            </div>
+                            </>
+                        )}
+                        
+                        {/* Se vinculando existente, mostra resumo */}
+                        {selectedCatalogoItem && !isCreatingNew && !editingProduto && (
+                             <div className="text-center py-4 text-gray-500 text-sm">
+                                 Defina o preço e estoque para adicionar <strong>{selectedCatalogoItem.nome}</strong> à sua loja.
+                             </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4 pt-2">
                             <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Descrição</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase">Preço (R$)</label>
                                 <input 
-                                    className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                                    value={formData.descricao}
-                                    onChange={e => setFormData({...formData, descricao: e.target.value})}
+                                    type="number" 
+                                    step="0.01"
+                                    required
+                                    className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none bg-yellow-50 font-bold text-gray-800"
+                                    value={formData.preco}
+                                    onChange={e => setFormData({...formData, preco: e.target.value})}
                                 />
                             </div>
-                        </>
-                    )}
-                    
-                    {editingProduto && (
-                         <div className="bg-blue-50 p-3 rounded-lg text-blue-800 text-sm mb-4 border border-blue-100">
-                            Editando: <strong>{editingProduto.nome}</strong>
-                         </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-gray-500 uppercase">Preço (R$)</label>
-                            <input 
-                                type="number" 
-                                step="0.01"
-                                required
-                                className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                                value={formData.preco}
-                                onChange={e => setFormData({...formData, preco: e.target.value})}
-                            />
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Qtd. Estoque</label>
+                                <input 
+                                    type="number"
+                                    required
+                                    className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none bg-blue-50 font-bold text-gray-800"
+                                    value={formData.estoque}
+                                    onChange={e => setFormData({...formData, estoque: e.target.value})}
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-gray-500 uppercase">Qtd. Estoque</label>
-                            <input 
-                                type="number"
-                                required
-                                className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                                value={formData.estoque}
-                                onChange={e => setFormData({...formData, estoque: e.target.value})}
-                            />
-                        </div>
-                    </div>
 
-                    <div className="pt-4 flex gap-3">
-                        <button 
-                            type="button" 
-                            onClick={closeModal}
-                            className="flex-1 h-11 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50"
-                        >
-                            Cancelar
-                        </button>
-                        <button 
-                            type="submit"
-                            className="flex-1 h-11 bg-brand-primary text-white font-bold rounded-lg hover:bg-brand-hover shadow-md"
-                        >
-                            Salvar
-                        </button>
-                    </div>
-                </form>
+                        <div className="pt-4 flex gap-3">
+                            <button 
+                                type="button" 
+                                onClick={closeModal}
+                                className="flex-1 h-11 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="submit"
+                                className="flex-1 h-11 bg-brand-primary text-white font-bold rounded-lg hover:bg-brand-hover shadow-md"
+                                disabled={!editingProduto && !selectedCatalogoItem && !isCreatingNew}
+                            >
+                                Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
         )}

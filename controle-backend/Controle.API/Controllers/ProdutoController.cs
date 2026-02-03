@@ -27,9 +27,9 @@ namespace Controle.API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> ObterTodos()
+        public async Task<IActionResult> ObterTodos([FromQuery] Guid? lojaId = null)
         {
-            var produtos = await _produtoService.ObterTodosAsync();
+            var produtos = await _produtoService.ObterTodosAsync(lojaId);
             return Ok(produtos);
         }
 

@@ -11,7 +11,7 @@ interface Props {
 export function Layout({ children }: Props) {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
 
   if (isLoginPage) {
     return <main className="page-content-full">{children}</main>;
@@ -21,7 +21,7 @@ export function Layout({ children }: Props) {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header onMobileMenuClick={() => setSidebarOpen(true)} />
       <div className="flex flex-1 overflow-hidden relative">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onToggle={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 overflow-y-auto w-full p-4 md:p-6">
             {children}
         </main>

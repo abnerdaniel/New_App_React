@@ -7,7 +7,7 @@ namespace Controle.Application.Interfaces
 {
     public interface IProdutoService
     {
-        Task<IEnumerable<Produto>> ObterTodosAsync();
+        Task<IEnumerable<Produto>> ObterTodosAsync(Guid? lojaId = null);
         Task<Produto> ObterPorIdAsync(int id);
         Task<IEnumerable<Produto>> ObterPorTipoAsync(string tipo);
         Task<Produto> AdicionarAsync(CreateProdutoDTO dto);
