@@ -119,15 +119,26 @@ export function SetupEmployee() {
     });
   };
 
-  const handleBlock = async (id: number) => {
-      if (!window.confirm("Tem certeza que deseja bloquear este funcionário?")) return;
+  const handleBlock = async (id: number, currentStatus: boolean) => {
+      const action = currentStatus ? "bloquear" : "desbloquear";
+      const confirmMsg = currentStatus 
+        ? "Tem certeza que deseja bloquear este funcionário?" 
+        : "Tem certeza que deseja desbloquear este funcionário?";
+
+      if (!window.confirm(confirmMsg)) return;
+
       try {
-          await api.put(`/api/funcionarios/${id}/bloquear`);
+          if (currentStatus) {
+              await api.put(`/api/funcionarios/${id}/bloquear`);
+              alert("Funcionário bloqueado com sucesso.");
+          } else {
+              await api.put(`/api/funcionarios/${id}/desbloquear`);
+              alert("Funcionário desbloqueado com sucesso.");
+          }
           loadEmployees(selectedLojaId); // Refresh list
-          alert("Funcionário bloqueado com sucesso.");
       } catch (error) {
-          console.error("Erro ao bloquear:", error);
-          alert("Erro ao bloquear funcionário.");
+          console.error(`Erro ao ${action}:`, error);
+          alert(`Erro ao ${action} funcionário.`);
       }
   };
 
@@ -282,7 +293,7 @@ export function SetupEmployee() {
                                         </td>
                                         <td className="p-4 text-right">
                                             <button 
-                                                onClick={() => handleBlock(emp.id)}
+                                                onClick={() => handleBlock(emp.id, emp.ativo)}
                                                 className={`text-xs font-bold px-3 py-1.5 rounded transition-colors ${
                                                     emp.ativo 
                                                     ? 'bg-red-50 text-red-600 hover:bg-red-100' 

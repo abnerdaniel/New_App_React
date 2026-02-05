@@ -125,5 +125,27 @@ namespace Controle.Application.Services
 
             return Result.Ok();
         }
+
+        public async Task<Result> DesbloquearAcessoAsync(int funcionarioId)
+        {
+            var funcionario = await _funcionarioRepository.GetByIdAsync(funcionarioId);
+            if (funcionario == null)
+            {
+                return Result.Fail("Funcionário não encontrado.");
+            }
+
+            // 1. Ativar Funcionario
+            funcionario.Ativo = true;
+            await _funcionarioRepository.UpdateAsync(funcionario);
+
+            // 2. Ativar Acesso do Usuário
+            var ativarUsuarioResult = await _authService.AtivarUsuarioAsync(funcionario.UsuarioId);
+            if (!ativarUsuarioResult.Success)
+            {
+                return Result.Fail("Funcionário ativado, mas erro ao ativar usuário: " + ativarUsuarioResult.Error);
+            }
+
+            return Result.Ok();
+        }
     }
 }

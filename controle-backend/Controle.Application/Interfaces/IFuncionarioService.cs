@@ -10,5 +10,6 @@ namespace Controle.Application.Interfaces
         Task<Result> CadastrarFuncionarioAsync(string nome, string email, string login, string password, string cargoNome, Guid lojaId);
         Task<IEnumerable<FuncionarioDTO>> ListarEquipeAsync(Guid lojaId);
         Task<Result> BloquearAcessoAsync(int funcionarioId);
+        Task<Result> DesbloquearAcessoAsync(int funcionarioId);
     }
 }

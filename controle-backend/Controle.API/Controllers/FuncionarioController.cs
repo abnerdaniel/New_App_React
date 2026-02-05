@@ -91,5 +91,28 @@ namespace Controle.API.Controllers
 
             return Ok(new { message = "Acesso do funcionário bloqueado com sucesso." });
         }
+
+        /// <summary>
+        /// Desbloqueia o acesso de um funcionário.
+        /// </summary>
+        /// <param name="id">ID do funcionário.</param>
+        /// <response code="200">Funcionário desbloqueado com sucesso.</response>
+        /// <response code="400">Erro ao desbloquear funcionário.</response>
+        /// <response code="401">Não autorizado.</response>
+        [HttpPut("{id}/desbloquear")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> DesbloquearAcesso(int id)
+        {
+            var result = await _funcionarioService.DesbloquearAcessoAsync(id);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.Error });
+            }
+
+            return Ok(new { message = "Acesso do funcionário desbloqueado com sucesso." });
+        }
     }
 }
