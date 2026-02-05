@@ -20,4 +20,16 @@ namespace Controle.Application.Services
         public static Result Fail(string error) => new(false, error);
     }
 
+    public class Result<T> : Result
+    {
+        public T? Data { get; }
+
+        protected Result(bool success, string? error, T? data) : base(success, error)
+        {
+            Data = data;
+        }
+
+        public static Result<T> Ok(T data) => new(true, null, data);
+        public static new Result<T> Fail(string error) => new(false, error, default);
+    }
 }

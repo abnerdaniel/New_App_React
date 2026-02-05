@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,6 +11,7 @@ namespace Controle.Infrastructure.Repositories
     public class CategoriaRepository : ICategoriaRepository
     {
         private readonly AppDbContext _context;
+
         public CategoriaRepository(AppDbContext context)
         {
             _context = context;
@@ -19,33 +19,41 @@ namespace Controle.Infrastructure.Repositories
 
         public async Task AddAsync(Categoria categoria)
         {
-            await _context.Categorias.AddAsync(categoria);
+            await _context.Set<Categoria>().AddAsync(categoria);
             await _context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(int id)
         {
-            var categoria = await _context.Categorias.FindAsync(id);
+            var categoria = await _context.Set<Categoria>().FindAsync(id);
             if (categoria != null)
             {
-                _context.Categorias.Remove(categoria);
+                _context.Set<Categoria>().Remove(categoria);
                 await _context.SaveChangesAsync();
             }
         }
 
         public async Task<IEnumerable<Categoria>> GetAllAsync()
         {
-            return await _context.Categorias.ToListAsync();
+            return await _context.Set<Categoria>().ToListAsync();
+        }
+
+        public async Task<IEnumerable<Categoria>> GetByCardapioIdAsync(int cardapioId)
+        {
+            return await _context.Set<Categoria>()
+                                 .Where(c => c.CardapioId == cardapioId)
+                                 .OrderBy(c => c.OrdemExibicao)
+                                 .ToListAsync();
         }
 
         public async Task<Categoria?> GetByIdAsync(int id)
         {
-            return await _context.Categorias.FirstOrDefaultAsync(p => p.Id == id);
+            return await _context.Set<Categoria>().FindAsync(id);
         }
 
         public async Task UpdateAsync(Categoria categoria)
         {
-            _context.Categorias.Update(categoria);
+            _context.Set<Categoria>().Update(categoria);
             await _context.SaveChangesAsync();
         }
     }

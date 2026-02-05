@@ -18,15 +18,31 @@ namespace Controle.API.Extensions
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
             // Services
-            services.AddScoped<IPessoaService, PessoaService>();
-            services.AddScoped<ITransacaoService, TransacaoService>();
-            services.AddScoped<ICategoriaService, CategoriaService>();
-            services.AddScoped<IConsultaTotaisService, ConsultaTotaisService>();
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ICardapioService, CardapioService>();
+            services.AddScoped<ICatalogoService, CatalogoService>();
+            services.AddScoped<IVitrineService, VitrineService>();
+            services.AddScoped<ILojaService, LojaService>();
+            services.AddScoped<IPedidoService, PedidoService>();
+            services.AddScoped<IFuncionarioService, FuncionarioService>();
+            services.AddScoped<IClienteService, ClienteService>();
+            services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<IProdutoService, ProdutoService>();
+            services.AddScoped<IProdutoLojaService, ProdutoLojaService>();
 
             // Repositories
-            services.AddScoped<IPessoaRepository, PessoaRepository>();
-            services.AddScoped<ITransacaoRepository, TransacaoRepository>();
-            services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+            // Repositories
+            services.AddScoped<IBloqueiosRepository, BloqueiosRepository>();
+            services.AddScoped<ICargoRepository, CargoRepository>();
+            services.AddScoped<IClienteFinalRepository, ClienteFinalRepository>();
+            services.AddScoped<IEnderecoRepository, EnderecoRepository>();
+            services.AddScoped<IFuncionarioRepository, FuncionarioRepository>();
+            services.AddScoped<ILojaRepository, LojaRepository>();
+            services.AddScoped<IPedidoRepository, PedidoRepository>();
+            services.AddScoped<IPedidoItemRepository, PedidoItemRepository>();
+            services.AddScoped<IProdutoRepository, ProdutoRepository>();
+            services.AddScoped<IProdutoLojaRepository, ProdutoLojaRepository>();
+            services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
             return services;
         }
