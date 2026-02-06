@@ -22,6 +22,7 @@ namespace Controle.Application.DTOs
         public int Id { get; set; }
         public string Nome { get; set; } = string.Empty;
         public List<ProdutoLojaDTO> Produtos { get; set; } = new();
+        public List<ComboDTO> Combos { get; set; } = new();
     }
 
     public class ProdutoLojaDTO

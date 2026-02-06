@@ -33,6 +33,10 @@ namespace Controle.Application.Services
                 .Where(c => c.LojaId == lojaId && c.Ativo)
                 .Include(c => c.Categorias.OrderBy(cat => cat.OrdemExibicao))
                 .ThenInclude(cat => cat.Produtos)
+                .Include(c => c.Categorias)
+                .ThenInclude(cat => cat.Combos)
+                .ThenInclude(cb => cb.Itens)
+                .ThenInclude(cbi => cbi.ProdutoLoja) // Optional: for description/price calculation if needed? Combo has fixed price.
                 .ToListAsync();
 
             // 3. Lógica de Seleção de Cardápio:
@@ -52,13 +56,17 @@ namespace Controle.Application.Services
                     if (!dias.Contains(diaSemanaAtual)) continue;
                 }
 
+                // Verifica Validade (Datas)
+                if (cardapio.DataInicio.HasValue && agora.Date < cardapio.DataInicio.Value.Date) continue;
+                if (cardapio.DataFim.HasValue && agora.Date > cardapio.DataFim.Value.Date) continue;
+
                 // Verifica horário (se definido)
                 if (cardapio.HorarioInicio.HasValue && cardapio.HorarioFim.HasValue)
                 {
                     if (horaAtual >= cardapio.HorarioInicio.Value && horaAtual <= cardapio.HorarioFim.Value)
                     {
                         cardapioSelecionado = cardapio;
-                        break; // Encontrou um específico, para. (Poderia ter lógica de prioridade, mas o primeiro que der correspondência serve por enquanto)
+                        break; 
                     }
                 }
             }
@@ -102,6 +110,22 @@ namespace Controle.Application.Services
                                             // Não pediu Include(Produto). Mas seria bom.
                                             // Vou deixar string.Empty por enquanto para não quebrar, pois não tenho a propriedade na entidade ProdutoLoja.
                             Esgotado = p.Estoque <= 0 // Lógica simples de esgotado
+                        }).ToList(),
+                        Combos = c.Combos.Where(cb => cb.Ativo).Select(cb => new ComboDTO
+                        {
+                            Id = cb.Id,
+                            Nome = cb.Nome,
+                            Descricao = cb.Descricao,
+                            Preco = cb.Preco,
+                            ImagemUrl = cb.ImagemUrl,
+                            Ativo = cb.Ativo,
+                            Itens = cb.Itens.Select(i => new ComboItemDTO
+                            {
+                                Id = i.Id,
+                                ProdutoLojaId = i.ProdutoLojaId,
+                                NomeProduto = i.ProdutoLoja?.Descricao ?? "Item",
+                                Quantidade = i.Quantidade
+                            }).ToList()
                         }).ToList()
                     }).ToList()
                 };

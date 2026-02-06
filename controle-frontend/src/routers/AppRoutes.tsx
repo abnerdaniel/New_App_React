@@ -13,12 +13,16 @@ import { DeliveryPage } from '../pages/Delivery/DeliveryPage'
 import { CardapioPage } from '../pages/Cardapio/CardapioPage'
 import { EstoquePage } from '../pages/Estoque/EstoquePage'
 import { FinanceiroPage } from '../pages/Financeiro/FinanceiroPage'
+import { VitrinePage } from '../pages/Vitrine/VitrinePage'
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<Navigate to="/dashboard" />} />
+      
+      <Route path="/" element={<Navigate to="/dashboard" />} />
+      <Route path="/vitrine/:lojaId" element={<VitrinePage />} />
       
       {/* Setup & Management */}
       <Route path="/setup" element={<PrivateRoute><SetupCompany /></PrivateRoute>} />

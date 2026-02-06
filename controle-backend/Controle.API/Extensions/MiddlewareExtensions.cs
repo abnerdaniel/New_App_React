@@ -4,7 +4,7 @@
     {
         public static WebApplication UseApplicationMiddleware(this WebApplication app)
         {
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();

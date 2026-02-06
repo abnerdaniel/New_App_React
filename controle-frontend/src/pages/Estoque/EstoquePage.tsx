@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../../api/axios";
 import { useAuth } from "../../contexts/AuthContext";
-import { Plus, Search, Edit2, Trash2, X, AlertCircle } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X } from "lucide-react";
 
 interface ProdutoEstoqueDTO {
   produtoId: number;

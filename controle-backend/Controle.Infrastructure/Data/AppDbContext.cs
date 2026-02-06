@@ -20,6 +20,8 @@ public class AppDbContext : DbContext
     public DbSet<PedidoItem> PedidoItems { get; set; }
     public DbSet<Cardapio> Cardapios { get; set; }
     public DbSet<Categoria> Categorias { get; set; }
+    public DbSet<Combo> Combos { get; set; }
+    public DbSet<ComboItem> ComboItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

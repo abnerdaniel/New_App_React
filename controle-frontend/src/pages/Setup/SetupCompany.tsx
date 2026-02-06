@@ -4,7 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { api } from "../../api/axios";
 
 export function SetupCompany() {
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
@@ -41,7 +41,7 @@ export function SetupCompany() {
     if (!isCreateMode && user && user.lojas && user.lojas.length > 0) {
       // Load current store data for editing
       const lojaAtual = user.lojas[0];
-      setFormData(prev => ({
+      setFormData((prev: any) => ({
         ...prev,
         nome: lojaAtual.nome === "Nova Loja" ? "" : lojaAtual.nome,
         // ... populate other fields if available in user.lojas (Address not yet in user context usually)

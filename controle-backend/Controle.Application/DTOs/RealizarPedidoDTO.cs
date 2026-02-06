@@ -12,7 +12,8 @@ namespace Controle.Application.DTOs
 
     public class ItemPedidoDTO
     {
-        public int IdProduto { get; set; }
+        public int? IdProduto { get; set; }
+        public int? IdCombo { get; set; }
         public int Qtd { get; set; }
     }
 }

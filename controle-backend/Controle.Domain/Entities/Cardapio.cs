@@ -11,6 +11,8 @@ public class Cardapio
     public TimeSpan? HorarioInicio { get; set; }
     public TimeSpan? HorarioFim { get; set; }
     public string DiasSemana { get; set; } = string.Empty;
+    public DateTime? DataInicio { get; set; } // Validade do cardápio (Sazonal)
+    public DateTime? DataFim { get; set; }
     public bool Ativo { get; set; }
     public bool Principal { get; set; }
     

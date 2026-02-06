@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { Usuario, AuthResponse, LojaResumo, FuncionarioResumo } from '../types/Usuario';
 
 interface AuthContextData {
@@ -20,28 +20,26 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<Usuario | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [activeLoja, setActiveLoja] = useState<LojaResumo | null>(null);
-  const [activeFuncionario, setActiveFuncionario] = useState<FuncionarioResumo | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('@App:token'));
+  
+  const [user, setUser] = useState<Usuario | null>(() => {
+      const storedUser = localStorage.getItem('@App:user');
+      return storedUser ? JSON.parse(storedUser) : null;
+  });
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('@App:token');
-    const storedUser = localStorage.getItem('@App:user');
-    const storedLoja = localStorage.getItem('@App:activeLoja');
-    const storedFuncionario = localStorage.getItem('@App:activeFuncionario');
+  const [activeLoja, setActiveLoja] = useState<LojaResumo | null>(() => {
+      const storedLoja = localStorage.getItem('@App:activeLoja');
+      return storedLoja ? JSON.parse(storedLoja) : null;
+  });
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      
-      if (storedLoja) setActiveLoja(JSON.parse(storedLoja));
-      if (storedFuncionario) setActiveFuncionario(JSON.parse(storedFuncionario));
-    }
+  const [activeFuncionario, setActiveFuncionario] = useState<FuncionarioResumo | null>(() => {
+      const storedFuncionario = localStorage.getItem('@App:activeFuncionario');
+      return storedFuncionario ? JSON.parse(storedFuncionario) : null;
+  });
 
-    setLoading(false);
-  }, []);
+  // Loading is no longer needed for init, but keeping it false to match interface if needed.
+  // Actually, if we init synchronously, no loading needed.
+  const [loading] = useState(false);
 
   const login = (authData: AuthResponse) => {
     const userData: Usuario = {

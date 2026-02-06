@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -25,7 +25,7 @@ interface FuncionarioDTO {
 
 export function SetupEmployee() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   
   // View State
   const [viewMode, setViewMode] = useState<'list' | 'create'>('list');

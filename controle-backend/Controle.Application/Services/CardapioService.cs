@@ -1,4 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Controle.Application.DTOs;
 using Controle.Application.Interfaces;
 using Controle.Domain.Entities;
 using Controle.Infrastructure.Data;
@@ -47,6 +50,41 @@ namespace Controle.Application.Services
                                                   // Devo checar o Categoria.cs novamente.
                                                   // Se estiver faltando, poderei ter que adicionar ou o Include não funcionará para "ThenInclude(cat => cat.Produtos)".
                 .FirstOrDefaultAsync(c => c.Id == cardapioId);
+        }
+
+        public async Task<List<Cardapio>> ListarPorLojaAsync(Guid lojaId)
+        {
+            return await _context.Cardapios
+                .Where(c => c.LojaId == lojaId)
+                .Include(c => c.Categorias)
+                .OrderBy(c => c.Nome)
+                .ToListAsync();
+        }
+
+        public async Task<Cardapio> AtualizarCardapioAsync(int id, CreateCardapioDTO dto)
+        {
+            var cardapio = await _context.Cardapios.FindAsync(id);
+            if (cardapio == null) throw new System.Exception("Cardápio não encontrado.");
+
+            cardapio.Nome = dto.Nome;
+            cardapio.HorarioInicio = dto.HorarioInicio;
+            cardapio.HorarioFim = dto.HorarioFim;
+            cardapio.DataInicio = dto.DataInicio;
+            cardapio.DataFim = dto.DataFim;
+            cardapio.DiasSemana = dto.DiasSemana;
+            cardapio.Ativo = dto.Ativo;
+
+            await _context.SaveChangesAsync();
+            return cardapio;
+        }
+
+        public async Task ExcluirCardapioAsync(int id)
+        {
+            var cardapio = await _context.Cardapios.FindAsync(id);
+            if (cardapio == null) throw new System.Exception("Cardápio não encontrado.");
+
+            _context.Cardapios.Remove(cardapio);
+            await _context.SaveChangesAsync();
         }
     }
 }
