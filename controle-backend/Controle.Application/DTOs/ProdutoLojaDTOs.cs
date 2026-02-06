@@ -1,5 +1,4 @@
-using System;
-using Controle.Application.DTOs;
+using System.Collections.Generic;
 
 namespace Controle.Application.DTOs
 {
@@ -23,6 +22,7 @@ namespace Controle.Application.DTOs
         public Guid LojaId { get; set; }
         public int ProdutoLojaId { get; set; }
         public int? CategoriaId { get; set; }
+        public List<int> CategoriaIds { get; set; } = new();
     }
 
     public class UpdateProdutoLojaRequest
@@ -31,6 +31,8 @@ namespace Controle.Application.DTOs
         public int? Estoque { get; set; }
         public int? Desconto { get; set; }
         public string? Descricao { get; set; }
-        public int? CategoriaId { get; set; }
+        public string? ImagemUrl { get; set; }
+        public int? CategoriaId { get; set; } // Legacy/Primary
+        public List<int> CategoriaIds { get; set; } = new();
     }
 }

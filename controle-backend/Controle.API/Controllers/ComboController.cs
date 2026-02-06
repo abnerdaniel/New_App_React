@@ -59,10 +59,32 @@ namespace Controle.API.Controllers
             var combo = await _context.Combos
                 .Include(c => c.Itens)
                 .ThenInclude(i => i.ProdutoLoja)
+                .ThenInclude(pl => pl.Produto)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (combo == null) return NotFound();
-            return Ok(combo);
+
+            var dto = new ComboDTO
+            {
+                Id = combo.Id,
+                Nome = combo.Nome,
+                Descricao = combo.Descricao,
+                Preco = combo.Preco,
+                ImagemUrl = combo.ImagemUrl,
+                Ativo = combo.Ativo,
+                CategoriaId = combo.CategoriaId,
+                Itens = combo.Itens.Select(i => new ComboItemDTO
+                {
+                    Id = i.Id,
+                    ProdutoLojaId = i.ProdutoLojaId,
+                    Quantidade = i.Quantidade,
+                    NomeProduto = !string.IsNullOrEmpty(i.ProdutoLoja?.Produto?.Nome)
+                        ? i.ProdutoLoja.Produto.Nome
+                        : (i.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível")
+                }).ToList()
+            };
+
+            return Ok(dto);
         }
         
         [HttpGet("loja/{lojaId}")]
@@ -72,9 +94,32 @@ namespace Controle.API.Controllers
                 .Where(c => c.LojaId == lojaId)
                 .Include(c => c.Itens)
                 .ThenInclude(i => i.ProdutoLoja)
+                .ThenInclude(pl => pl.Produto)
                 .ToListAsync();
+
+             // Map to DTO
+             var dtos = combos.Select(c => new ComboDTO
+             {
+                 Id = c.Id,
+                 Nome = c.Nome,
+                 Descricao = c.Descricao,
+                 Preco = c.Preco,
+                 ImagemUrl = c.ImagemUrl,
+                 Ativo = c.Ativo,
+                 CategoriaId = c.CategoriaId,
+                 Itens = c.Itens.Select(i => new ComboItemDTO
+                 {
+                     Id = i.Id,
+                     ProdutoLojaId = i.ProdutoLojaId,
+                     Quantidade = i.Quantidade,
+                     // Logic: Custom Description OR Global Product Name OR Fallback
+                     NomeProduto = !string.IsNullOrEmpty(i.ProdutoLoja?.Produto?.Nome) 
+                        ? i.ProdutoLoja.Produto.Nome 
+                        : (i.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível")
+                 }).ToList()
+             });
                 
-             return Ok(combos);
+             return Ok(dtos);
         }
 
         [HttpPut("{id}")]
@@ -106,6 +151,18 @@ namespace Controle.API.Controllers
             }
 
             await _context.SaveChangesAsync();
+            return Ok(combo);
+        }
+
+        [HttpPatch("{id}/categoria")]
+        public async Task<IActionResult> AtualizarCategoriaCombo(int id, [FromBody] UpdateComboCategoriaDTO dto)
+        {
+            var combo = await _context.Combos.FindAsync(id);
+            if (combo == null) return NotFound();
+
+            combo.CategoriaId = dto.CategoriaId;
+            await _context.SaveChangesAsync();
+
             return Ok(combo);
         }
 

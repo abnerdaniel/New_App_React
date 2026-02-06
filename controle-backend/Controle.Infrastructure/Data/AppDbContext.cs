@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<Categoria> Categorias { get; set; }
     public DbSet<Combo> Combos { get; set; }
     public DbSet<ComboItem> ComboItems { get; set; }
+    public DbSet<ProdutoCategoria> ProdutoCategorias { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,5 +35,18 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Usuario>()
             .Property(u => u.Id)
             .ValueGeneratedNever();
+
+        modelBuilder.Entity<ProdutoCategoria>()
+            .HasKey(pc => new { pc.ProdutoLojaId, pc.CategoriaId });
+
+        modelBuilder.Entity<ProdutoCategoria>()
+            .HasOne(pc => pc.ProdutoLoja)
+            .WithMany(p => p.ProdutoCategorias)
+            .HasForeignKey(pc => pc.ProdutoLojaId);
+
+        modelBuilder.Entity<ProdutoCategoria>()
+            .HasOne(pc => pc.Categoria)
+            .WithMany(c => c.ProdutoCategorias)
+            .HasForeignKey(pc => pc.CategoriaId);
     }
 }

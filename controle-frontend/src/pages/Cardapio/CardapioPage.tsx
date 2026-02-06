@@ -38,8 +38,13 @@ interface Combo {
 interface ComboItem {
   id: number;
   produtoLojaId: number;
-  nomeProduto: string; 
+  nomeProduto?: string; 
   quantidade: number;
+  produtoLoja?: {
+      nome?: string;
+      descricao?: string;
+      produto?: { nome: string }
+  };
 }
 
 interface ProdutoEstoqueDTO {
@@ -681,7 +686,7 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
                                         {combo.itens.map(item => (
                                             <li key={item.id} className="flex items-center gap-2">
                                                 <Check size={12} className="text-green-500" />
-                                                {item.quantidade}x {item.nomeProduto}
+                                                {item.quantidade}x {item.nomeProduto || item.produtoLoja?.nome || item.produtoLoja?.produto?.nome || 'Produto Indisponível'}
                                             </li>
                                         ))}
                                     </ul>

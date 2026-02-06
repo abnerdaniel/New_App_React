@@ -17,4 +17,7 @@ public class ProdutoLoja
     public int QuantidadeEstoque { get; set; }
     public int? CategoriaId { get; set; }
     public Categoria? Categoria { get; set; }
+    public Produto? Produto { get; set; }
+    
+    public ICollection<ProdutoCategoria> ProdutoCategorias { get; set; } = new List<ProdutoCategoria>();
 }

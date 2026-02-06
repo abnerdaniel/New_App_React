@@ -38,7 +38,9 @@ namespace Controle.Infrastructure.Repositories
 
         public async Task<ProdutoLoja?> GetByIdAsync(int id)
         {
-            return await _context.ProdutosLojas.FindAsync(id);
+            return await _context.ProdutosLojas
+                .Include(pl => pl.ProdutoCategorias)
+                .FirstOrDefaultAsync(pl => pl.Id == id);
         }
 
         public async Task UpdateAsync(ProdutoLoja produtoLoja)
@@ -49,6 +51,7 @@ namespace Controle.Infrastructure.Repositories
         public async Task<ProdutoLoja?> GetByProdutoAndLojaAsync(int produtoId, Guid lojaId)
         {
             return await _context.ProdutosLojas
+                .Include(pl => pl.ProdutoCategorias)
                 .FirstOrDefaultAsync(pl => pl.ProdutoId == produtoId && pl.LojaId == lojaId);
         }
 
@@ -56,6 +59,7 @@ namespace Controle.Infrastructure.Repositories
         {
             return await _context.ProdutosLojas
                 .Where(pl => pl.LojaId == lojaId)
+                .Include(pl => pl.ProdutoCategorias)
                 .ToListAsync();
         }
     }

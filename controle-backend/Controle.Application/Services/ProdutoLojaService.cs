@@ -105,7 +105,29 @@ namespace Controle.Application.Services
             if (dto.Estoque.HasValue) produtoLoja.Estoque = dto.Estoque.Value;
             if (dto.Desconto.HasValue) produtoLoja.Desconto = dto.Desconto.Value;
             if (!string.IsNullOrEmpty(dto.Descricao)) produtoLoja.Descricao = dto.Descricao;
-            if (dto.CategoriaId.HasValue) produtoLoja.CategoriaId = dto.CategoriaId.Value == 0 ? null : dto.CategoriaId.Value;
+            if (dto.Desconto.HasValue) produtoLoja.Desconto = dto.Desconto.Value;
+            if (!string.IsNullOrEmpty(dto.Descricao)) produtoLoja.Descricao = dto.Descricao;
+            
+            // Legacy CategoriaId update: If provided, clear and add. 
+            // Note: This overrides 'CategoriaIds' if both are present in the logic, but for now user sends specific update.
+            // Ideally should deprecate CategoriaId in UpdateProdutoLojaRequest.
+            if (dto.CategoriaId.HasValue) 
+            {
+                 produtoLoja.ProdutoCategorias.Clear();
+                 if(dto.CategoriaId.Value != 0) {
+                     produtoLoja.ProdutoCategorias.Add(new ProdutoCategoria { ProdutoLojaId = produtoLoja.Id, CategoriaId = dto.CategoriaId.Value });
+                 }
+            }
+            // Multi-category update (takes precedence if populated and CategoriaId is null/ignored?)
+            // Actually, let's allow CategoriaIds to add/replace.
+            if (dto.CategoriaIds != null && dto.CategoriaIds.Any())
+            {
+                 produtoLoja.ProdutoCategorias.Clear();
+                 foreach(var catId in dto.CategoriaIds)
+                 {
+                     produtoLoja.ProdutoCategorias.Add(new ProdutoCategoria { ProdutoLojaId = produtoLoja.Id, CategoriaId = catId });
+                 }
+            }
 
             await _produtoLojaRepository.UpdateAsync(produtoLoja);
             return produtoLoja;
@@ -140,11 +162,33 @@ namespace Controle.Application.Services
                         Estoque = pl.Estoque ?? 0,
                         LojaId = pl.LojaId,
                         ProdutoLojaId = pl.Id,
-                        CategoriaId = pl.CategoriaId
+                        CategoriaId = pl.ProdutoCategorias.FirstOrDefault()?.CategoriaId, // Pick first as primary/legacy
+                        CategoriaIds = pl.ProdutoCategorias.Select(pc => pc.CategoriaId).ToList()
                     });
                 }
             }
             return resultado;
+        }
+
+        public async Task AtualizarCategoriasProdutoAsync(int produtoLojaId, List<int> categoriaIds)
+        {
+            var produtoLoja = await _produtoLojaRepository.GetByIdAsync(produtoLojaId);
+            if (produtoLoja == null) throw new DomainException("Produto não encontrado.");
+
+            // Clear existing
+            produtoLoja.ProdutoCategorias.Clear();
+            
+            // Add new
+            foreach(var catId in categoriaIds)
+            {
+                produtoLoja.ProdutoCategorias.Add(new ProdutoCategoria 
+                { 
+                    ProdutoLojaId = produtoLojaId, 
+                    CategoriaId = catId 
+                });
+            }
+
+            await _produtoLojaRepository.UpdateAsync(produtoLoja);
         }
     }
 }
