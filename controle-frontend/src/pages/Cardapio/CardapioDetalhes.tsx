@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Trash2, Edit2, ArrowLeft, MoveRight, Package } from 'lucide-react';
+import { Plus, Trash2, Edit2, ArrowLeft } from 'lucide-react';
 
 // --- Interfaces ---
 interface Categoria {
@@ -90,7 +90,7 @@ export function CardapioDetalhes() {
             const catRes = await api.get(`/api/categorias/cardapio/${id}`);
             setCategorias(catRes.data);
 
-            // 3. Get All Store Products (Inventory) & Combos
+                // 3. Get All Store Products (Inventory) & Combos
             if(activeLoja) {
                 const [prodRes, comboRes] = await Promise.all([
                     api.get(`/api/produto-loja/loja/${activeLoja.id}/estoque`),
@@ -105,23 +105,23 @@ export function CardapioDetalhes() {
                     categoriaId: p.categoriaId,
                     categoriaIds: p.categoriaIds || (p.categoriaId ? [p.categoriaId] : []),
                     type: 'PRODUTO',
-                    produtoLoja: { // Propagate description if available
+                    produtoLoja: {
                          nome: p.nome,
-                         descricao: p.descricao, // Assuming DTO returns it now (restored in step 1066)
+                         descricao: p.descricao,
                          produto: { nome: p.nome }
                     }
                 }));
 
+                // Fetch ALL store combos. Do NOT filter by cardapioId yet, as they might be unassigned.
                 const mappedCombos: Combo[] = comboRes.data
-                    .filter((c: any) => c.cardapioId === Number(id))
                     .map((c: any) => ({
                         id: c.id,
                         nome: c.nome,
                         preco: c.preco,
                         categoriaId: c.categoriaId,
-                        categoriaIds: c.categoriaId ? [c.categoriaId] : [], // Combos still single cat
+                        categoriaIds: c.categoriaId ? [c.categoriaId] : [],
                         imagemUrl: c.imagemUrl,
-                        cardapioId: c.cardapioId,
+                        cardapioId: 0, // Placeholder, derived from Category later if needed
                         type: 'COMBO',
                         itens: c.itens
                     }));
@@ -137,6 +137,10 @@ export function CardapioDetalhes() {
     }
 
     if (loading) return <div className="p-8 text-center text-gray-500">Carregando detalhes...</div>;
+
+    // Filter Logic for Right Column
+    const availableProducts = items.filter(i => i.type === 'PRODUTO');
+    const availableCombos = items.filter(i => i.type === 'COMBO');
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
@@ -198,7 +202,7 @@ export function CardapioDetalhes() {
                                     </div>
                                 </div>
                                 <div className="p-3 bg-white min-h-[50px] space-y-2">
-                                    {items.filter(i => i.categoriaIds?.includes(cat.id)).map(item => (
+                                    {items.filter(i => (i.type === 'PRODUTO' ? i.categoriaIds?.includes(cat.id) : i.categoriaId === cat.id)).map(item => (
                                         <div key={`${item.type}-${item.id}`} className="flex justify-between items-center p-2 border rounded bg-gray-50 text-sm">
                                             <div className="flex items-center gap-2">
                                                 {item.type === 'COMBO' ? <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-1 rounded">COMBO</span> : <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1 rounded">PRODUTO</span>}
@@ -212,7 +216,7 @@ export function CardapioDetalhes() {
                                             </button>
                                         </div>
                                     ))}
-                                    {items.filter(i => i.categoriaIds?.includes(cat.id)).length === 0 && (
+                                    {items.filter(i => (i.type === 'PRODUTO' ? i.categoriaIds?.includes(cat.id) : i.categoriaId === cat.id)).length === 0 && (
                                         <p className="text-xs text-center text-gray-400 py-2">Sem itens nesta categoria.</p>
                                     )}
                                 </div>
@@ -225,51 +229,37 @@ export function CardapioDetalhes() {
                 </div>
 
                 {/* Right Column: All Items (Add to Category) */}
-                <div className="bg-white p-4 rounded-lg shadow h-fit border">
-                    <h2 className="text-lg font-semibold mb-4 text-gray-700">Adicionar ...</h2>
-                    <div className="space-y-2 max-h-[70vh] overflow-y-auto">
-                        {items.length === 0 && (
-                             <p className="text-sm text-gray-400 text-center py-4">Nenhum item disponível.</p>
-                        )}
-                        {items.map(item => (
-                             <div key={`${item.type}-${item.id}`} className="flex justify-between items-center p-2 border rounded hover:bg-gray-50">
-                                <div className="truncate flex-1">
-                                    <div className="flex items-center gap-1 mb-1">
-                                         {item.type === 'COMBO' ? <span className="bg-purple-100 text-purple-700 text-[9px] font-bold px-1 rounded">COMBO</span> : null}
-                                         <p className="font-medium text-sm truncate" title={item.nome}>{item.nome}</p>
-                                    </div>
-                                    <div className="flex gap-1 flex-wrap">
-                                        {item.categoriaIds && item.categoriaIds.length > 0 ? (
-                                             item.categoriaIds.map(cid => {
-                                                 const cName = categorias.find(c => c.id === cid)?.nome;
-                                                 if(!cName) return null;
-                                                 return <span key={cid} className="text-[10px] bg-gray-200 px-1 rounded text-gray-600">{cName}</span>
-                                             })
-                                        ) : <span className="text-[10px] text-gray-400 italic">Sem categoria</span>}
-                                    </div>
-                                    <p className="text-xs text-gray-500">{(item.preco/100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</p>
-                                </div>
-                                
-                                {/* Dropdown to ADD to category */}
-                                <div className="relative group ml-2">
-                                     <button className="p-1 text-gray-400 hover:text-brand-primary bg-gray-100 rounded"><Plus size={16} /></button>
-                                     <select 
-                                        className="absolute right-0 top-0 opacity-0 w-8 h-8 cursor-pointer"
-                                        onChange={(e) => addCategory(item, Number(e.target.value))}
-                                        value=""
-                                     >
-                                        <option value="" disabled>Adicionar a...</option>
-                                        {categorias.filter(c => !item.categoriaIds?.includes(c.id)).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                                     </select>
-                                </div>
-                             </div>
-                        ))}
+                <div className="bg-white p-4 rounded-lg shadow h-fit border flex flex-col max-h-[85vh]">
+                    <h2 className="text-lg font-semibold mb-4 text-gray-700">Adicionar Itens</h2>
+                    
+                    <div className="flex-1 overflow-y-auto space-y-6">
+                        {/* Section: Combos */}
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-purple-500"></span> Combos
+                            </h3>
+                            <div className="space-y-2">
+                                {availableCombos.length === 0 && <p className="text-xs text-gray-400 italic">Nenhum combo disponível.</p>}
+                                {availableCombos.map(item => renderItemRow(item))}
+                            </div>
+                        </div>
+
+                        {/* Section: Products */}
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Produtos Individuais
+                            </h3>
+                             <div className="space-y-2">
+                                {availableProducts.length === 0 && <p className="text-xs text-gray-400 italic">Nenhum produto disponível.</p>}
+                                {availableProducts.map(item => renderItemRow(item))}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     );
-    
+
     async function saveCategoria() {
         if(!catName.trim() || !id) return;
         try {
@@ -303,6 +293,55 @@ export function CardapioDetalhes() {
             console.error(e);
             alert("Erro ao excluir");
         }
+    }
+
+    function renderItemRow(item: ItemMenu) {
+        return (
+            <div key={`${item.type}-${item.id}`} className="flex justify-between items-center p-2 border rounded hover:bg-gray-50 bg-white">
+                <div className="truncate flex-1">
+                    <div className="flex items-center gap-1 mb-1">
+                            {item.type === 'COMBO' ? <span className="bg-purple-100 text-purple-700 text-[9px] font-bold px-1 rounded">COMBO</span> : null}
+                            <p className="font-medium text-sm truncate" title={item.nome}>{item.nome}</p>
+                    </div>
+                    <div className="flex gap-1 flex-wrap">
+                        {/* Logic for displaying badges differs slightly */}
+                        {item.type === 'PRODUTO' ? (
+                            item.categoriaIds && item.categoriaIds.length > 0 ? (
+                                    item.categoriaIds.map(cid => {
+                                        const cName = categorias.find(c => c.id === cid)?.nome;
+                                        if(!cName) return null;
+                                        return <span key={cid} className="text-[10px] bg-gray-200 px-1 rounded text-gray-600">{cName}</span>
+                                    })
+                            ) : <span className="text-[10px] text-gray-400 italic">Sem categoria</span>
+                        ) : (
+                            item.categoriaId ? (
+                                <span className="text-[10px] bg-gray-200 px-1 rounded text-gray-600">
+                                    {categorias.find(c => c.id === item.categoriaId)?.nome || '(Outro Menu)'}
+                                </span>
+                            ) : <span className="text-[10px] text-gray-400 italic">Sem categoria</span>
+                        )}
+                    </div>
+                    <p className="text-xs text-gray-500">{(item.preco/100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</p>
+                </div>
+                
+                {/* Dropdown to ADD to category */}
+                <div className="relative group ml-2">
+                        <button className="p-1 text-gray-400 hover:text-brand-primary bg-gray-100 rounded"><Plus size={16} /></button>
+                        <select 
+                        className="absolute right-0 top-0 opacity-0 w-8 h-8 cursor-pointer"
+                        onChange={(e) => addCategory(item, Number(e.target.value))}
+                        value=""
+                        >
+                        <option value="" disabled>Adicionar a...</option>
+                        {/* Only show categories the item is NOT already in */}
+                        {categorias.filter(c => {
+                            if (item.type === 'PRODUTO') return !item.categoriaIds?.includes(c.id);
+                            return item.categoriaId !== c.id; // For Combo, hide current category
+                        }).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                        </select>
+                </div>
+            </div>
+        );
     }
 
     async function addCategory(item: ItemMenu, categoriaId: number) {
