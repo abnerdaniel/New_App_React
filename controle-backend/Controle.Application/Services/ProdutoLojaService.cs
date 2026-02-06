@@ -145,29 +145,26 @@ namespace Controle.Application.Services
         public async Task<IEnumerable<ProdutoEstoqueDTO>> ObterEstoquePorLojaAsync(Guid lojaId)
         {
             var produtosLoja = await _produtoLojaRepository.GetByLojaIdAsync(lojaId);
-            var resultado = new List<ProdutoEstoqueDTO>();
 
-            foreach (var pl in produtosLoja)
+            // Now mapping is purely in-memory, no extra DB calls.
+            return produtosLoja.Select(pl => new ProdutoEstoqueDTO
             {
-                var produto = await _produtoRepository.GetByIdAsync(pl.ProdutoId);
-                if (produto != null)
-                {
-                    resultado.Add(new ProdutoEstoqueDTO
-                    {
-                        ProdutoId = produto.Id,
-                        Nome = produto.Nome,
-                        Tipo = produto.Tipo,
-                        ImagemUrl = produto.URL_Imagem,
-                        Preco = pl.Preco,
-                        Estoque = pl.Estoque ?? 0,
-                        LojaId = pl.LojaId,
-                        ProdutoLojaId = pl.Id,
-                        CategoriaId = pl.ProdutoCategorias.FirstOrDefault()?.CategoriaId, // Pick first as primary/legacy
-                        CategoriaIds = pl.ProdutoCategorias.Select(pc => pc.CategoriaId).ToList()
-                    });
-                }
-            }
-            return resultado;
+                ProdutoId = pl.ProdutoId,
+                // Fallback to empty if Produto is null (though it shouldn't be with valid data)
+                Nome = pl.Produto?.Nome ?? "Produto Desconhecido",
+                Tipo = pl.Produto?.Tipo ?? string.Empty,
+                ImagemUrl = pl.Produto?.URL_Imagem,
+                Preco = pl.Preco,
+                Estoque = pl.Estoque ?? 0,
+                LojaId = pl.LojaId,
+                ProdutoLojaId = pl.Id,
+                // Prefer 'Descricao' from ProdutoLoja if set, otherwise from Produto
+                // Actually DTO doesn't have Descricao? Checked DTO file, it only has Nome/Tipo/etc.
+                // Wait, checked previously: 'Nome' comes from Produto.
+                
+                CategoriaId = pl.ProdutoCategorias.FirstOrDefault()?.CategoriaId, 
+                CategoriaIds = pl.ProdutoCategorias.Select(pc => pc.CategoriaId).ToList()
+            }).ToList();
         }
 
         public async Task AtualizarCategoriasProdutoAsync(int produtoLojaId, List<int> categoriaIds)

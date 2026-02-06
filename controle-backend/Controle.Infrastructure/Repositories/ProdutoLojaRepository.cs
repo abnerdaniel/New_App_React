@@ -60,6 +60,8 @@ namespace Controle.Infrastructure.Repositories
             return await _context.ProdutosLojas
                 .Where(pl => pl.LojaId == lojaId)
                 .Include(pl => pl.ProdutoCategorias)
+                .Include(pl => pl.Produto) // Critical for performance
+                .AsNoTracking() // Optimization for read-only lists
                 .ToListAsync();
         }
     }
