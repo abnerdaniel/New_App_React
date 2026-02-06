@@ -3,7 +3,11 @@ using Controle.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => 
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 // 1. Banco de Dados/Injeção de Dependência
 builder.Services.AddApplicationServices(builder.Configuration);
 // 2. Autenticação JWT

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'; // Assuming we don't have this, I'll build a simple tab UI
@@ -97,6 +98,7 @@ export function CardapioPage() {
 // --- Menus Tab Component (Refactored from previous CardapioPage) ---
 
 function MenusTab({ activeLojaId }: { activeLojaId?: string }) {
+  const navigate = useNavigate();
   const [cardapios, setCardapios] = useState<Cardapio[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -128,7 +130,7 @@ function MenusTab({ activeLojaId }: { activeLojaId?: string }) {
 
   async function loadCardapios() {
     try {
-      const response = await api.get(`/cardapios/loja/${activeLojaId}`);
+      const response = await api.get(`/api/cardapios/loja/${activeLojaId}`);
       setCardapios(response.data);
     } catch (error) {
       console.error('Erro ao carregar cardápios:', error);
@@ -162,10 +164,10 @@ function MenusTab({ activeLojaId }: { activeLojaId?: string }) {
 
     try {
         if(editingId) {
-            await api.put(`/cardapios/${editingId}`, payload);
+            await api.put(`/api/cardapios/${editingId}`, payload);
             alert("Cardápio atualizado!");
         } else {
-            await api.post('/cardapios', payload);
+            await api.post('/api/cardapios', payload);
             alert("Cardápio criado!");
         }
         
@@ -193,7 +195,7 @@ function MenusTab({ activeLojaId }: { activeLojaId?: string }) {
   const handleDelete = async (id: number) => {
     if(!window.confirm("Deseja excluir este cardápio?")) return;
     try {
-        await api.delete(`/cardapios/${id}`);
+        await api.delete(`/api/cardapios/${id}`);
         loadCardapios();
     } catch(err) {
         console.error(err);
@@ -304,7 +306,8 @@ function MenusTab({ activeLojaId }: { activeLojaId?: string }) {
                             </p>
                         </div>
                         <div className="mt-4 flex gap-2">
-                            <button onClick={() => handleEdit(c)} className="flex-1 py-1.5 text-sm border border-brand-primary text-brand-primary rounded hover:bg-brand-primary/5 font-medium">Editar</button>
+                            <button onClick={() => navigate(`/cardapio/${c.id}/detalhes`)} className="flex-1 py-1.5 text-sm bg-brand-primary text-white rounded hover:bg-brand-hover font-medium shadow-sm">Gerenciar Itens</button>
+                            <button onClick={() => handleEdit(c)} className="p-1.5 border hover:bg-gray-50 rounded text-gray-600"><Edit2 size={16}/></button>
                             <button onClick={() => handleDelete(c.id)} className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
                         </div>
                     </div>
@@ -350,7 +353,7 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
 
     async function loadCardapios() {
         try {
-            const res = await api.get(`/cardapios/loja/${activeLojaId}`);
+            const res = await api.get(`/api/cardapios/loja/${activeLojaId}`);
             setCardapios(res.data);
             if(res.data.length > 0) {
                  setSelectedCardapioId(res.data[0].id.toString());
@@ -363,7 +366,7 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
     async function loadCombos() {
         setLoading(true);
         try {
-            const res = await api.get(`/combos/loja/${activeLojaId}`);
+            const res = await api.get(`/api/combos/loja/${activeLojaId}`);
             setCombos(res.data);
         } catch(err) {
             console.error(err);
@@ -441,10 +444,10 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
 
         try {
             if(editingComboId) {
-                await api.put(`/combos/${editingComboId}`, payload);
+                await api.put(`/api/combos/${editingComboId}`, payload);
                 alert("Combo atualizado!");
             } else {
-                await api.post('/combos', payload);
+                await api.post('/api/combos', payload);
                 alert("Combo criado!");
             }
             
@@ -499,7 +502,7 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
     const handleDeleteCombo = async (id: number) => {
         if(!window.confirm("Excluir este combo?")) return;
         try {
-             await api.delete(`/combos/${id}`);
+             await api.delete(`/api/combos/${id}`);
              loadCombos();
         } catch(err) {
              console.error(err);

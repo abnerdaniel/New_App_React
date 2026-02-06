@@ -22,6 +22,7 @@ namespace Controle.Application.DTOs
         public int Estoque { get; set; }
         public Guid LojaId { get; set; }
         public int ProdutoLojaId { get; set; }
+        public int? CategoriaId { get; set; }
     }
 
     public class UpdateProdutoLojaRequest
@@ -30,5 +31,6 @@ namespace Controle.Application.DTOs
         public int? Estoque { get; set; }
         public int? Desconto { get; set; }
         public string? Descricao { get; set; }
+        public int? CategoriaId { get; set; }
     }
 }

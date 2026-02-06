@@ -105,6 +105,7 @@ namespace Controle.Application.Services
             if (dto.Estoque.HasValue) produtoLoja.Estoque = dto.Estoque.Value;
             if (dto.Desconto.HasValue) produtoLoja.Desconto = dto.Desconto.Value;
             if (!string.IsNullOrEmpty(dto.Descricao)) produtoLoja.Descricao = dto.Descricao;
+            if (dto.CategoriaId.HasValue) produtoLoja.CategoriaId = dto.CategoriaId.Value == 0 ? null : dto.CategoriaId.Value;
 
             await _produtoLojaRepository.UpdateAsync(produtoLoja);
             return produtoLoja;
@@ -138,7 +139,8 @@ namespace Controle.Application.Services
                         Preco = pl.Preco,
                         Estoque = pl.Estoque ?? 0,
                         LojaId = pl.LojaId,
-                        ProdutoLojaId = pl.Id
+                        ProdutoLojaId = pl.Id,
+                        CategoriaId = pl.CategoriaId
                     });
                 }
             }

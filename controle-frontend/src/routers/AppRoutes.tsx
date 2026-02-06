@@ -11,6 +11,7 @@ import { Dashboard } from '../pages/Dashboard/Dashboard'
 import { MesasPage } from '../pages/Mesas/MesasPage'
 import { DeliveryPage } from '../pages/Delivery/DeliveryPage'
 import { CardapioPage } from '../pages/Cardapio/CardapioPage'
+import { CardapioDetalhes } from '../pages/Cardapio/CardapioDetalhes'
 import { EstoquePage } from '../pages/Estoque/EstoquePage'
 import { FinanceiroPage } from '../pages/Financeiro/FinanceiroPage'
 import { VitrinePage } from '../pages/Vitrine/VitrinePage'
@@ -34,6 +35,7 @@ export function AppRoutes() {
       <Route path="/mesas" element={<PrivateRoute><MesasPage /></PrivateRoute>} />
       <Route path="/delivery" element={<PrivateRoute><DeliveryPage /></PrivateRoute>} />
       <Route path="/cardapio" element={<PrivateRoute><CardapioPage /></PrivateRoute>} />
+      <Route path="/cardapio/:id/detalhes" element={<PrivateRoute><CardapioDetalhes /></PrivateRoute>} />
       <Route path="/estoque" element={<PrivateRoute><EstoquePage /></PrivateRoute>} />
       <Route path="/financeiro" element={<PrivateRoute><FinanceiroPage /></PrivateRoute>} />
       
