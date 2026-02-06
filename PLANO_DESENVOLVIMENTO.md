@@ -9,7 +9,7 @@ O projeto é um sistema de gestão para estabelecimentos alimentícios (Restaura
 - **Autenticação**: Pronta (Login, Roles: Admin, Gerente, Funcionario).
 - **Estrutura Base**: Controllers e Services para CRUDs principais (Loja, Funcionário, Produto, Categoria) implementados.
 - **Frontend**: Rotas e estrutura de páginas principais criadas.
-- **Banco de Dados**: Entidades principais definidas, incluindo suporte a Estoque (`ProdutoLoja`).
+- **Banco de Dados**: Entidades principais definidas, incluindo Estoque (`ProdutoLoja`) e suporte a **Multicategorias** (`ProdutoCategoria`).
 
 ---
 
@@ -23,6 +23,7 @@ O projeto é um sistema de gestão para estabelecimentos alimentícios (Restaura
 ### 📦 Catálogo e Estoque
 
 - **Produtos**: Base centralizada com variações por Loja (`ProdutoLoja`).
+- **Multicategorias**: Um produto pode pertencer a múltiplas categorias simultaneamente (ex: "Bebidas" e "Promoções") via tabela `ProdutoCategoria`.
 - **Lógica de Estoque (Novo)**:
   - **Estoque Físico**: Quantidade real no estabelecimento.
   - **Estoque Promessa/Reservado**: Quantidade comprometida em pedidos abertos, mas ainda não concluídos.
@@ -43,16 +44,14 @@ O projeto é um sistema de gestão para estabelecimentos alimentícios (Restaura
   - Painel/Avisos visuais chamando a senha.
 - **Fluxo**: O pedido tem um `Status` (string). Precisa de um fluxo definido: `Aberto` -> `Em Preparo` -> `Pronto/Enviado` -> `Concluído`.
 
-### 📋 Cardápio Digital e Vitrine
+### 📋 Cardápio Digital, Combos e Vitrine
 
-- **Estrutura**: O cardápio (Vitrine) organiza produtos por **Tipo** ou **Categoria** para exibição.
+- **Estrutura**: O cardápio organiza produtos por **Categorias** (N:N) e **Vitrines** personalizadas.
+- **Combos (Entidade `Combo`)**:
+  - Permite criar pacotes de produtos (`ComboItem`) com preço diferenciado.
+  - **Regra**: A venda do Combo deve baixar o estoque de cada item individual composto.
 - **Regras de Disponibilidade**:
-  - **Horário**: Definir horários específicos de disponibilidade (ex: apenas no jantar).
-  - **Dias da Semana**: Selecionar dias de funcionamento (ex: Seg-Sex ou Finais de Semana).
-  - **Prazo/Validade**: Período de vigência (Data Início e Fim) para cardápios sazonais.
-- **Combos e Promoções (Subcategoria)**:
-  - Permite agrupar múltiplos produtos sob um **Valor Único** promocional.
-  - **Lógica**: O Combo é vendido como um item, mas deve realizar a baixa de estoque dos produtos individuais que o compõem.
+  - **Horário/Dias**: Cardápios podem ser restritos por dia da semana ou horário.
 
 ---
 
@@ -64,10 +63,11 @@ Aqui está a organização sugerida para o desenvolvimento das funções restant
 
 O foco é permitir que uma venda aconteça do início ao fim.
 
-#### 1.1 Gestão de Estoque Inteligente
+#### 1.1 Gestão de Estoque e Categorização
 
 - **Tarefa**: Adicionar campo `QuantidadeReservada` na entidade `ProdutoLoja`.
-- **Lógica**: Implementar o decremento real apenas no status `Concluído`. Se cancelar, apenas estornar a reserva.
+- **Tarefa**: Ajustar cadastro de produtos para permitir seleção de **Múltiplas Categorias**.
+- **Lógica**: Implementar o decremento real apenas no status `Concluído`.
 - **UI**: Mostrar "Disponível para venda" (Físico - Reservado).
 
 #### 1.2 Fluxo de Pedidos e Senhas
