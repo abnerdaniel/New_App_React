@@ -9,7 +9,6 @@
 *.sln.docstates
 *.rsuser
 
-
 ## --- Node.js / React (ESSENCIAL) ---
 node_modules/
 npm-debug.log*
@@ -79,8 +78,7 @@ nunit-*.xml
 # Ignorar configurações de desenvolvimento que podem ter senhas locais
 appsettings.Development.json
 # Manter appsettings.json (template de produção)
-!appsettings.json
-
+!appsettings.jsons
 ## --- Sistema Operacional ---
 .DS_Store
 Thumbs.db
