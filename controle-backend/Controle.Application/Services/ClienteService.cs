@@ -12,6 +12,7 @@ using Controle.Domain.Entities;
 using Controle.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Google.Apis.Auth;
 
 namespace Controle.Application.Services
 {
@@ -152,6 +153,63 @@ namespace Controle.Application.Services
                 Token = token
             });
         }
+
+        public async Task<Result<ClienteLoginResponseDTO>> LoginWithGoogleAsync(string idToken)
+        {
+            try
+            {
+                // Valida o token do Google
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new List<string>() { _configuration["Google:ClientId"] }
+                };
+
+                var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
+
+                // Verifica se o cliente já existe pelo email
+                var cliente = await _clienteFinalRepository.GetByEmailAsync(payload.Email);
+
+                if (cliente == null)
+                {
+                    // Auto-registro: cria novo cliente
+                    cliente = new ClienteFinal
+                    {
+                        Nome = payload.Name,
+                        Email = payload.Email,
+                        PasswordHash = HashPassword(Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "!G1"), // Senha aleatória
+                        Ativo = true
+                    };
+
+                    await _clienteFinalRepository.AddAsync(cliente);
+                }
+
+                // Verifica se está ativo
+                if (!cliente.Ativo)
+                {
+                    return Result<ClienteLoginResponseDTO>.Fail("Conta inativa.");
+                }
+
+                // Gera token JWT
+                var token = GenerateJwtToken(cliente);
+
+                return Result<ClienteLoginResponseDTO>.Ok(new ClienteLoginResponseDTO
+                {
+                    Id = cliente.Id,
+                    Nome = cliente.Nome,
+                    Email = cliente.Email,
+                    Token = token
+                });
+            }
+            catch (InvalidJwtException ex)
+            {
+                return Result<ClienteLoginResponseDTO>.Fail($"Token do Google inválido: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return Result<ClienteLoginResponseDTO>.Fail($"Erro ao processar login com Google: {ex.Message}");
+            }
+        }
+
 
         private string GenerateJwtToken(ClienteFinal cliente)
         {

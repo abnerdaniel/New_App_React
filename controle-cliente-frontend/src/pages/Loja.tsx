@@ -1,12 +1,13 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom'; // Import Link
-import { ArrowLeft, Star, Clock, MapPin } from 'lucide-react';
+import { ArrowLeft, Star, Clock, MapPin, User, LogOut } from 'lucide-react';
 import type { Loja, Categoria, Combo } from '../types';
 import { lojaService } from '../services/loja.service';
 
 import { ProductModal } from '../components/ProductModal';
 import { useCart } from '../context/CartContext';
+import { useClientAuth } from '../context/ClientAuthContext';
 import type { Produto } from '../types';
 
 import { ComboModal } from '../components/ComboModal';
@@ -22,7 +23,7 @@ export function LojaPage() {
   
   // Product Modal State
   const [selectedProduct, setSelectedProduct] = useState<Produto | null>(null);
-  const [selectedCategoryName, setSelectedCategoryName] = useState<string>('');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Combo Modal State
@@ -31,6 +32,7 @@ export function LojaPage() {
 
   // Cart Context
   const { addItem, total, count } = useCart();
+  const { isAuthenticated, cliente, logout } = useClientAuth();
 
   useEffect(() => {
     if (id) {
@@ -52,9 +54,8 @@ export function LojaPage() {
     };
   }, [id]);
 
-  const handleProductClick = (produto: Produto, categoryName: string) => {
+  const handleProductClick = (produto: Produto) => {
     setSelectedProduct(produto);
-    setSelectedCategoryName(categoryName);
     setIsModalOpen(true);
   };
 
@@ -126,6 +127,29 @@ export function LojaPage() {
              <ArrowLeft className="w-6 h-6 text-gray-700" />
           </Link>
         </div>
+
+        <div className="absolute top-4 right-4 z-20">
+            {!isAuthenticated ? (
+                <Link to="/identificacao" className="bg-white/90 p-2 px-4 rounded-full shadow-lg hover:bg-white transition-colors flex items-center gap-2 text-gray-800 font-medium text-sm">
+                    <User className="w-5 h-5" />
+                    Entrar
+                </Link> 
+            ) : (
+                <div className="flex items-center gap-2">
+                     <div className="bg-white/90 p-2 px-3 rounded-full shadow-lg flex items-center gap-2 text-gray-800 font-medium text-sm">
+                        <User className="w-5 h-5 text-brand-primary" />
+                        <span>Olá, {cliente?.nome.split(' ')[0]}</span>
+                    </div>
+                     <button 
+                        onClick={logout}
+                        className="bg-white/90 p-2 rounded-full shadow-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                        title="Sair"
+                     >
+                        <LogOut className="w-5 h-5" />
+                     </button>
+                </div>
+            )}
+         </div>
         
         {isLojaFechada && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[2px]">
@@ -187,7 +211,7 @@ export function LojaPage() {
                                 className={`bg-white border border-gray-100 rounded-lg p-3 flex gap-4 transition-colors shadow-sm duration-100 relative
                                     ${indisponivel ? 'opacity-60 grayscale cursor-not-allowed bg-gray-50' : 'hover:border-gray-200 cursor-pointer active:scale-[0.99]'}
                                 `}
-                                onClick={() => !indisponivel && handleProductClick(produto, categoria.nome)}
+                                onClick={() => !indisponivel && handleProductClick(produto)}
                             >
                                 <div className="flex-1">
                                     <h3 className="font-semibold text-gray-900">{produto.nome}</h3>

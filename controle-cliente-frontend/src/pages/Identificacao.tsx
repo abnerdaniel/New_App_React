@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useClientAuth } from '../context/ClientAuthContext';
 import { ArrowLeft, Mail, Lock, User, Phone } from 'lucide-react';
 
 export function Identificacao() {
   const [isLogin, setIsLogin] = useState(true);
-  const { login, register } = useClientAuth();
+  const { login, register, loginWithGoogle } = useClientAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -42,6 +43,26 @@ export function Identificacao() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError('');
+    setLoading(true);
+    try {
+      await loginWithGoogle(credentialResponse.credential);
+      
+      const from = location.state?.from?.pathname || '/carrinho';
+      navigate(from, { replace: true });
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Erro ao fazer login com Google.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Erro ao fazer login com Google.');
   };
 
   return (
@@ -161,6 +182,26 @@ export function Identificacao() {
           >
             {loading ? 'Processando...' : (isLogin ? 'Entrar' : 'Cadastrar e Continuar')}
           </button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Ou continue com</span>
+            </div>
+          </div>
+
+          <div className="w-full">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              text="continue_with"
+              shape="rectangular"
+              size="large"
+              width="100%"
+            />
+          </div>
         </form>
       </div>
     </div>

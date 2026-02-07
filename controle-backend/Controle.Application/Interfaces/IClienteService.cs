@@ -12,5 +12,6 @@ namespace Controle.Application.Interfaces
         Task<IEnumerable<PedidoHistoricoDTO>> GetHistoricoPedidosAsync(int clienteId);
         Task<Result<ClienteLoginResponseDTO>> LoginAsync(ClienteLoginDTO dto);
         Task<Result<ClienteLoginResponseDTO>> RegisterAsync(ClienteRegisterDTO dto);
+        Task<Result<ClienteLoginResponseDTO>> LoginWithGoogleAsync(string idToken);
     }
 }

@@ -75,6 +75,32 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Realiza login do cliente usando o Google.
+        /// </summary>
+        /// <response code="200">Login realizado com sucesso.</response>
+        /// <response code="400">Token inválido ou erro no processo.</response>
+        [HttpPost("google-login")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ClienteLoginResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> LoginWithGoogle([FromBody] ClienteGoogleLoginRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _clienteService.LoginWithGoogleAsync(request.IdToken);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.Error });
+            }
+
+            return Ok(result.Data);
+        }
+
+        /// <summary>
         /// Adiciona um novo endereço para o cliente.
         /// </summary>
         /// <param name="clienteId">ID do cliente.</param>

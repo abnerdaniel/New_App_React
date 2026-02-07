@@ -46,6 +46,38 @@ export function CheckoutPage() {
     }
   };
 
+  const handleCepChange = async (cep: string) => {
+    // Remove caracteres não numéricos
+    const cepLimpo = cep.replace(/\D/g, '');
+    
+    // Atualiza o estado com o CEP formatado
+    setNovoEndereco({ ...novoEndereco, cep: cepLimpo });
+
+    // Se o CEP tiver 8 dígitos, busca os dados
+    if (cepLimpo.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+        const data = await response.json();
+
+        if (!data.erro) {
+          setNovoEndereco({
+            ...novoEndereco,
+            cep: cepLimpo,
+            logradouro: data.logradouro || '',
+            bairro: data.bairro || '',
+            cidade: data.localidade || '',
+            estado: data.uf || '',
+          });
+        } else {
+          alert('CEP não encontrado');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar CEP:', error);
+        alert('Erro ao buscar CEP. Tente novamente.');
+      }
+    }
+  };
+
   const handleSalvarEndereco = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -144,10 +176,16 @@ export function CheckoutPage() {
                 </div>
             ) : (
                 <form onSubmit={handleSalvarEndereco} className="space-y-3">
-                     <input placeholder="CEP" className="w-full p-2 border rounded" value={novoEndereco.cep} onChange={e => setNovoEndereco({...novoEndereco, cep: e.target.value})} />
+                     <input 
+                       placeholder="CEP" 
+                       className="w-full p-2 border rounded" 
+                       value={novoEndereco.cep} 
+                       onChange={e => handleCepChange(e.target.value)}
+                       maxLength={8}
+                     />
                      <div className="grid grid-cols-3 gap-2">
                         <input placeholder="Rua" className="col-span-2 w-full p-2 border rounded" value={novoEndereco.logradouro} onChange={e => setNovoEndereco({...novoEndereco, logradouro: e.target.value})} />
-                         <input placeholder="Padrão" className="w-full p-2 border rounded" value={novoEndereco.numero} onChange={e => setNovoEndereco({...novoEndereco, numero: e.target.value})} />
+                         <input placeholder="Numero" className="w-full p-2 border rounded" value={novoEndereco.numero} onChange={e => setNovoEndereco({...novoEndereco, numero: e.target.value})} />
                      </div>
                      <input placeholder="Complemento" className="w-full p-2 border rounded" value={novoEndereco.complemento} onChange={e => setNovoEndereco({...novoEndereco, complemento: e.target.value})} />
                      <input placeholder="Bairro" className="w-full p-2 border rounded" value={novoEndereco.bairro} onChange={e => setNovoEndereco({...novoEndereco, bairro: e.target.value})} />
