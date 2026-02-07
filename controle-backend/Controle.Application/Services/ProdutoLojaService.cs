@@ -92,9 +92,8 @@ namespace Controle.Application.Services
                 ProdutoId = produto.Id,
                 Preco = (int)dto.Preco, 
                 Estoque = dto.Estoque,
-                Descricao = dto.NovoProduto?.Descricao ?? produto.Descricao ?? string.Empty 
-                // Usar a descrição do produto como padrão se não fornecida.
-                // ProdutoLoja tem sua própria descrição.
+                Descricao = dto.NovoProduto?.Descricao ?? produto.Descricao ?? string.Empty,
+                Disponivel = dto.Disponivel
             };
 
             // Se CategoriaId foi informado, já cria o vínculo
@@ -126,6 +125,7 @@ namespace Controle.Application.Services
             if (!string.IsNullOrEmpty(dto.Descricao)) produtoLoja.Descricao = dto.Descricao;
             if (dto.Desconto.HasValue) produtoLoja.Desconto = dto.Desconto.Value;
             if (!string.IsNullOrEmpty(dto.Descricao)) produtoLoja.Descricao = dto.Descricao;
+            if (dto.Disponivel.HasValue) produtoLoja.Disponivel = dto.Disponivel.Value;
             
             // Legacy CategoriaId update: If provided, clear and add. 
             // Note: This overrides 'CategoriaIds' if both are present in the logic, but for now user sends specific update.
@@ -212,7 +212,8 @@ namespace Controle.Application.Services
                 CategoriaId = pl.ProdutoCategorias.FirstOrDefault()?.CategoriaId, 
                 CategoriaIds = pl.ProdutoCategorias.Select(pc => pc.CategoriaId).ToList(),
                 IsAdicional = pl.Produto?.IsAdicional ?? false,
-                AdicionaisIds = pl.Produto?.Adicionais.Select(pa => pa.ProdutoFilhoId).ToList() ?? new List<int>()
+                AdicionaisIds = pl.Produto?.Adicionais.Select(pa => pa.ProdutoFilhoId).ToList() ?? new List<int>(),
+                Disponivel = pl.Disponivel
             }).ToList();
         }
 

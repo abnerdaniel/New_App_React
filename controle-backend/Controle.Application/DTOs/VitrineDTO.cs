@@ -35,6 +35,7 @@ namespace Controle.Application.DTOs
         public bool Esgotado { get; set; }
         public Guid LojaId { get; set; }
         public bool IsAdicional { get; set; }
+        public bool Disponivel { get; set; }
         public List<ProdutoLojaDTO> Adicionais { get; set; } = new(); // Lista de produtos extras disponíveis
     }
 }

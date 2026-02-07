@@ -31,10 +31,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('cart', JSON.stringify(items));
   }, [items]);
 
-  const generateItemId = (produtoId: string, extras: Produto[] = []) => {
-    const extrasIds = extras.map(e => e.id).sort().join('-');
-    return `${produtoId}-${extrasIds}`;
-  };
+
 
   const addItem = (produto: Produto, quantidade: number, observacao?: string, extras: Produto[] = []) => {
     setItems(current => {

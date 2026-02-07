@@ -13,6 +13,7 @@ public class ProdutoLoja
     public int? Desconto { get; set; }
     public int? Estoque { get; set; }
     public int? Vendas { get; set; }
+    public bool Disponivel { get; set; } = true;
     public int ProdutoId { get; set; }
     public int QuantidadeEstoque { get; set; }
     public int? CategoriaId { get; set; }

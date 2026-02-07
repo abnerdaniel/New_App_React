@@ -10,6 +10,7 @@ namespace Controle.Application.DTOs
         public decimal Preco { get; set; }
         public int? CategoriaId { get; set; }
         public int Estoque { get; set; }
+        public bool Disponivel { get; set; } = true;
     }
 
     public class ProdutoEstoqueDTO
@@ -26,6 +27,7 @@ namespace Controle.Application.DTOs
         public List<int> CategoriaIds { get; set; } = new();
         public bool IsAdicional { get; set; }
         public List<int> AdicionaisIds { get; set; } = new();
+        public bool Disponivel { get; set; }
     }
 
     public class UpdateProdutoLojaRequest
@@ -39,5 +41,6 @@ namespace Controle.Application.DTOs
         public List<int> CategoriaIds { get; set; } = new();
         public bool? IsAdicional { get; set; }
         public List<int>? AdicionaisIds { get; set; }
+        public bool? Disponivel { get; set; }
     }
 }

@@ -49,6 +49,28 @@ namespace Controle.Application.Services
             var categoria = await _context.Categorias.FindAsync(id);
             if (categoria == null) throw new System.Exception("Categoria não encontrada.");
             
+            // 1. Remover vínculos com Produtos (ProdutoCategoria - Many-to-Many)
+            var vinculosProdutos = await _context.ProdutoCategorias.Where(pc => pc.CategoriaId == id).ToListAsync();
+            _context.ProdutoCategorias.RemoveRange(vinculosProdutos);
+
+            // 1.1 Remover vínculo direto na tabela ProdutoLoja (Legacy/Simple approach)
+            var produtosVinculados = await _context.ProdutosLojas.Where(pl => pl.CategoriaId == id).ToListAsync();
+            foreach(var pl in produtosVinculados)
+            {
+                pl.CategoriaId = null;
+            }
+
+            // 2. Desvincular Combos (Setar CategoriaId = null)
+            var combosVinculados = await _context.Combos.Where(c => c.CategoriaId == id).ToListAsync();
+            foreach(var combo in combosVinculados)
+            {
+                combo.CategoriaId = null;
+            }
+
+            // Save updates to relationships FIRST to satisfy FK constraints
+            await _context.SaveChangesAsync();
+
+            // 3. Excluir a categoria
              _context.Categorias.Remove(categoria);
             await _context.SaveChangesAsync();
         }

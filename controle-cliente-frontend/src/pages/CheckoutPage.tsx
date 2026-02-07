@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClientAuth } from '../context/ClientAuthContext';
 import { useCart } from '../context/CartContext';
-import { ArrowLeft, MapPin, CreditCard, DollarSign } from 'lucide-react';
+import { ArrowLeft, MapPin, DollarSign } from 'lucide-react';
 import { api } from '../services/api';
 
 export function CheckoutPage() {
@@ -10,7 +10,7 @@ export function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(1); // 1: Endereço, 2: Pagamento
+  // const [step, setStep] = useState(1); // Unused for now, single page checkout? // 1: Endereço, 2: Pagamento
   const [loading, setLoading] = useState(false);
 
   // Endereço

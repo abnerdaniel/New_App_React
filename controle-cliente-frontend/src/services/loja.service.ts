@@ -64,9 +64,10 @@ export const lojaService = {
               nome: prod.nome || prod.descricao, // Fallback
               descricao: prod.descricao,
               preco: prod.preco / 100, // Convertendo centavos para reais
-              imagemUrl: prod.urlImagem || 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=500', // Mock fallback se vazio
+              imagemUrl: prod.urlImagem || 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=500', 
               categoriaId: cat.id.toString(),
-              lojaId: id, // O ID da loja vem do parametro da função, que é o mesmo da URL
+              lojaId: id,
+              disponivel: prod.disponivel,
               adicionais: prod.adicionais ? prod.adicionais.map((extra: any) => ({
                   id: extra.id.toString(),
                   nome: extra.nome,
@@ -82,6 +83,7 @@ export const lojaService = {
               descricao: combo.descricao,
               preco: combo.preco / 100, // Convertendo centavos para reais
               imagemUrl: combo.imagemUrl,
+              ativo: combo.ativo,
               itens: combo.itens ? combo.itens.map((item: any) => ({
                   id: item.id.toString(),
                   produtoLojaId: item.produtoLojaId,

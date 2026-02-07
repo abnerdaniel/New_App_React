@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Trash2, Edit2, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Edit2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 // --- Interfaces ---
 interface Categoria {
@@ -26,6 +26,7 @@ interface ProdutoLoja {
         descricao?: string;
         produto?: { nome: string }
     };
+    disponivel?: boolean;
 }
 
 interface Combo {
@@ -46,6 +47,7 @@ interface Combo {
     cardapioId: number;
     type: 'COMBO';
     itens: any[];
+    ativo?: boolean;
 }
 
 interface Cardapio {
@@ -106,10 +108,11 @@ export function CardapioDetalhes() {
                     categoriaIds: p.categoriaIds || (p.categoriaId ? [p.categoriaId] : []),
                     type: 'PRODUTO',
                     produtoLoja: {
-                         nome: p.nome,
-                         descricao: p.descricao,
-                         produto: { nome: p.nome }
-                    }
+                        nome: p.nome,
+                        descricao: p.descricao,
+                        produto: { nome: p.nome }
+                   },
+                    disponivel: p.disponivel
                 }));
 
                 // Fetch ALL store combos. Do NOT filter by cardapioId yet, as they might be unassigned.
@@ -123,7 +126,8 @@ export function CardapioDetalhes() {
                         imagemUrl: c.imagemUrl,
                         cardapioId: 0, // Placeholder, derived from Category later if needed
                         type: 'COMBO',
-                        itens: c.itens
+                        itens: c.itens,
+                        ativo: c.ativo
                     }));
                 
                 setItems([...mappedProds, ...mappedCombos]);
@@ -207,12 +211,32 @@ export function CardapioDetalhes() {
                                             <div className="flex items-center gap-2">
                                                 {item.type === 'COMBO' ? <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-1 rounded">COMBO</span> : <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1 rounded">PRODUTO</span>}
                                                 <span>{item.nome || (item.type === 'COMBO' ? 'Combo sem nome' : 'Produto sem nome')} {item.type === 'COMBO' ? <span className="text-xs text-gray-400">({(item as Combo).itens?.length} itens)</span> : '' }</span>
+                                                {item.type === 'PRODUTO' && (item as ProdutoLoja).disponivel === false && (
+                                                    <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded font-bold">Indisponível</span>
+                                                )}
                                             </div>
                                             <button 
                                                 onClick={() => removeCategory(item, cat.id)}
                                                 className="text-red-500 hover:underline text-xs"
+                                                title="Remover item desta categoria"
                                             >
-                                                Remover desta Categoria
+                                                <Trash2 size={14} />
+                                            </button>
+                                            
+                                            <button 
+                                                onClick={() => toggleDisponibilidade(item)}
+                                                className="ml-2 text-gray-500 hover:text-brand-primary"
+                                                title="Alternar visibilidade"
+                                            >
+                                                {item.type === 'PRODUTO' ? (
+                                                    (item as ProdutoLoja).disponivel !== false 
+                                                        ? <Eye size={16} className="text-green-600" /> 
+                                                        : <EyeOff size={16} className="text-gray-400" />
+                                                ) : (
+                                                    (item as Combo).ativo
+                                                        ? <Eye size={16} className="text-green-600" />
+                                                        : <EyeOff size={16} className="text-gray-400" />
+                                                )}
                                             </button>
                                         </div>
                                     ))}
@@ -302,6 +326,9 @@ export function CardapioDetalhes() {
                     <div className="flex items-center gap-1 mb-1">
                             {item.type === 'COMBO' ? <span className="bg-purple-100 text-purple-700 text-[9px] font-bold px-1 rounded">COMBO</span> : null}
                             <p className="font-medium text-sm truncate" title={item.nome}>{item.nome}</p>
+                            {item.type === 'PRODUTO' && (item as ProdutoLoja).disponivel === false && (
+                                <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded font-bold ml-1">Indisponível</span>
+                            )}
                     </div>
                     <div className="flex gap-1 flex-wrap">
                         {/* Logic for displaying badges differs slightly */}
@@ -325,20 +352,39 @@ export function CardapioDetalhes() {
                 </div>
                 
                 {/* Dropdown to ADD to category */}
-                <div className="relative group ml-2">
-                        <button className="p-1 text-gray-400 hover:text-brand-primary bg-gray-100 rounded"><Plus size={16} /></button>
-                        <select 
-                        className="absolute right-0 top-0 opacity-0 w-8 h-8 cursor-pointer"
-                        onChange={(e) => addCategory(item, Number(e.target.value))}
-                        value=""
-                        >
-                        <option value="" disabled>Adicionar a...</option>
-                        {/* Only show categories the item is NOT already in */}
-                        {categorias.filter(c => {
-                            if (item.type === 'PRODUTO') return !item.categoriaIds?.includes(c.id);
-                            return item.categoriaId !== c.id; // For Combo, hide current category
-                        }).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                        </select>
+                <div className="flex items-center gap-2 ml-2">
+                     {/* Toggle Disponibilidade (Produtos e Combos) */}
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); toggleDisponibilidade(item); }}
+                        className="p-1 rounded hover:bg-gray-100"
+                        title="Alternar Visibilidade no Cardápio"
+                    >
+                        {item.type === 'PRODUTO' ? (
+                            (item as ProdutoLoja).disponivel !== false 
+                                ? <Eye size={18} className="text-green-600" /> 
+                                : <EyeOff size={18} className="text-gray-400" />
+                        ) : (
+                            (item as Combo).ativo
+                                ? <Eye size={18} className="text-green-600" />
+                                : <EyeOff size={18} className="text-gray-400" />
+                        )}
+                    </button>
+
+                    <div className="relative group">
+                            <button className="p-1 text-gray-400 hover:text-brand-primary bg-gray-100 rounded"><Plus size={16} /></button>
+                            <select 
+                            className="absolute right-0 top-0 opacity-0 w-8 h-8 cursor-pointer"
+                            onChange={(e) => addCategory(item, Number(e.target.value))}
+                            value=""
+                            >
+                            <option value="" disabled>Adicionar a...</option>
+                            {/* Only show categories the item is NOT already in */}
+                            {categorias.filter(c => {
+                                if (item.type === 'PRODUTO') return !item.categoriaIds?.includes(c.id);
+                                return item.categoriaId !== c.id; // For Combo, hide current category
+                            }).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                            </select>
+                    </div>
                 </div>
             </div>
         );
@@ -374,17 +420,82 @@ export function CardapioDetalhes() {
             if(item.type === 'PRODUTO') {
                  const currentIds = item.categoriaIds || [];
                  const newIds = currentIds.filter(id => id !== categoriaId);
+                 
+                 // Optimistic Update
+                 setItems(prev => prev.map(i => {
+                     if (i.type === 'PRODUTO' && i.id === item.id) {
+                         return { ...i, categoriaIds: newIds };
+                     }
+                     return i;
+                 }));
+
                  await api.put(`/api/produto-loja/${item.id}/categorias`, newIds);
             } else {
                 // Combos - remove means set to null
                 if(item.categoriaId === categoriaId) {
+                     // Optimistic Update
+                     setItems(prev => prev.map(i => {
+                        if (i.type === 'COMBO' && i.id === item.id) {
+                            return { ...i, categoriaId: null };
+                        }
+                        return i;
+                    }));
                      await api.patch(`/api/combos/${item.id}/categoria`, { categoriaId: null });
                 }
             }
+            // loadData(); // No longer strictly needed if optimistic update works, but good for sync. 
+            // Better to debouce or just rely on optimistic for immediate UI feedback.
+            // Let's keep it but the UI should already be updated.
             loadData();
         } catch(e) {
             console.error(e);
             alert("Erro ao remover categoria");
+            loadData(); // Revert on error
+        }
+    }
+
+    async function toggleDisponibilidade(item: ItemMenu) {
+        if (item.type === 'PRODUTO') {
+            const produto = item as ProdutoLoja;
+            const novoStatus = produto.disponivel === false ? true : false; 
+
+            try {
+                setItems(prev => prev.map(i => {
+                    if(i.type === 'PRODUTO' && i.id === item.id) {
+                        return { ...i, disponivel: novoStatus };
+                    }
+                    return i;
+                }));
+
+                await api.put(`/api/produto-loja/${item.id}`, {
+                    disponivel: novoStatus
+                });
+            } catch(e) {
+                console.error(e);
+                alert("Erro ao alterar disponibilidade");
+                loadData();
+            }
+        } else {
+            // COMBO
+            const combo = item as Combo;
+            const novoStatus = !combo.ativo;
+
+            try {
+                setItems(prev => prev.map(i => {
+                    if (i.type === 'COMBO' && i.id === item.id) {
+                        return { ...i, ativo: novoStatus };
+                    }
+                    return i;
+                }));
+
+                await api.patch(`/api/combos/${item.id}/status`, {
+                    ativo: novoStatus
+                });
+            } catch(e) {
+                console.error(e);
+                alert("Erro ao alterar disponibilidade do combo");
+                loadData();
+            }
         }
     }
 }

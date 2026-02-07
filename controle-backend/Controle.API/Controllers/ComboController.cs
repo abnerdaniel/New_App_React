@@ -195,6 +195,18 @@ namespace Controle.API.Controllers
             return Ok(combo);
         }
 
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> AtualizarStatusCombo(int id, [FromBody] UpdateComboStatusDTO dto)
+        {
+            var combo = await _context.Combos.FindAsync(id);
+            if (combo == null) return NotFound();
+
+            combo.Ativo = dto.Ativo;
+            await _context.SaveChangesAsync();
+
+            return Ok(combo);
+        }
+
         [HttpPatch("{id}/categoria")]
         public async Task<IActionResult> AtualizarCategoriaCombo(int id, [FromBody] UpdateComboCategoriaDTO dto)
         {

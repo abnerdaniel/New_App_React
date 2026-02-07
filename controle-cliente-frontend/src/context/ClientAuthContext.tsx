@@ -63,7 +63,7 @@ export const ClientAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const logout = () => {
     localStorage.removeItem('@App:clientToken');
     localStorage.removeItem('@App:clientUser');
-    api.defaults.headers.Authorization = undefined;
+    api.defaults.headers.Authorization = null;
     setCliente(null);
   };
 

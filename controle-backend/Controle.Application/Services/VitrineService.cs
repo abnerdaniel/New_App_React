@@ -64,10 +64,20 @@ namespace Controle.Application.Services
                 .AsNoTracking()
                 .Where(c => c.LojaId == lojaId && c.Ativo)
                 .Include(c => c.Categorias.OrderBy(cat => cat.OrdemExibicao))
-                .ThenInclude(cat => cat.Produtos)
+                .ThenInclude(cat => cat.ProdutoCategorias) 
+                .ThenInclude(pc => pc.ProdutoLoja)
                 .ThenInclude(pl => pl.Produto)
-                .ThenInclude(p => p.Adicionais) // Include Adicionais configuration
+                .ThenInclude(p => p.Adicionais)
                 .ThenInclude(pa => pa.ProdutoFilho)
+                // Keep original Includes for safety if needed, or replace. 
+                // The original "ThenInclude(cat => cat.Produtos)" might still be useful if someone uses direct FK, 
+                // but we are switching to ProdutoCategorias. Let's keep both or just add the new chain.
+                // EF Core requires separate Include chains for different paths.
+                
+                // Chain 1: Categoria -> ProdutoCategorias -> ProdutoLoja -> Produto -> Adicionais
+                .Include(c => c.Categorias)
+                .ThenInclude(cat => cat.Produtos) // Legacy fallback?
+                .ThenInclude(pl => pl.Produto) // Needed?
                 .Include(c => c.Categorias)
                 .ThenInclude(cat => cat.Combos)
                 .ThenInclude(cb => cb.Itens)
@@ -131,39 +141,52 @@ namespace Controle.Application.Services
                     {
                         Id = c.Id,
                         Nome = c.Nome,
-                        Produtos = c.Produtos.Select(p => new ProdutoLojaDTO
-                        {
-                            Id = p.Id,
-                            Nome = p.Produto?.Nome ?? p.Descricao, // Usando Nome do Produto, com fallback para Descricao
-                            Descricao = p.Descricao,
-                            Preco = p.Preco,
-                            UrlImagem = "", 
-                            Esgotado = p.Estoque <= 0,
-                            LojaId = loja.Id,
-                            Adicionais = p.Produto?.Adicionais?
-                                .Where(pa => todosProdutosLoja.ContainsKey(pa.ProdutoFilhoId)) // Filtra apenas se existir na loja
-                                .Select(pa => {
-                                    var extraLoja = todosProdutosLoja[pa.ProdutoFilhoId];
-                                    return new ProdutoLojaDTO {
-                                        Id = extraLoja.Id,
-                                        Nome = extraLoja.Nome ?? extraLoja.Descricao,
-                                        Descricao = extraLoja.Descricao,
-                                        Preco = extraLoja.Preco,
-                                        Esgotado = (extraLoja.Estoque ?? 0) <= 0,
-                                        LojaId = loja.Id
-                                    };
-                                })
-                                .Where(ex => !ex.Esgotado) // Opcional: só mostrar se tiver estoque? Requisito: Estoque > 0 e Ativo = true (Ativo já implícito na query todosProdutosLoja?)
-                                .ToList() ?? new List<ProdutoLojaDTO>()
-                        }).ToList(),
-                        Combos = c.Combos.Where(cb => cb.Ativo).Select(cb => new ComboDTO
+                        Produtos = c.ProdutoCategorias
+                            .Select(pc => pc.ProdutoLoja)
+                            .Where(p => p != null && p.LojaId == lojaId) // Ensure correct store and not null
+                            // Execute query to memory first to allow complex mapping and logging
+                            .ToList() 
+                            .Select(p => 
+                            {
+                                var prodDto = new ProdutoLojaDTO
+                                {
+                                    Id = p.Id,
+                                    Nome = p.Produto?.Nome ?? p.Descricao,
+                                    Descricao = p.Descricao,
+                                    Preco = p.Preco,
+                                    UrlImagem = "", 
+                                    Esgotado = p.Estoque <= 0,
+                                    LojaId = loja.Id,
+                                    Disponivel = p.Disponivel,
+                                    Adicionais = p.Produto?.Adicionais?
+                                        .Where(pa => todosProdutosLoja.ContainsKey(pa.ProdutoFilhoId)) 
+                                        .Select(pa => {
+                                            var extraLoja = todosProdutosLoja[pa.ProdutoFilhoId];
+                                            return new ProdutoLojaDTO {
+                                                Id = extraLoja.Id,
+                                                Nome = extraLoja.Nome ?? extraLoja.Descricao,
+                                                Descricao = extraLoja.Descricao,
+                                                Preco = extraLoja.Preco,
+                                                Esgotado = (extraLoja.Estoque ?? 0) <= 0,
+                                                LojaId = loja.Id
+                                            };
+                                        })
+                                        .Where(ex => !ex.Esgotado) 
+                                        .ToList() ?? new List<ProdutoLojaDTO>()
+                                };
+                                Console.WriteLine($"[DEBUG VITRINE] Produto: {prodDto.Nome}, ID: {prodDto.Id}, Disponivel (DB): {p.Disponivel}, Disponivel (DTO): {prodDto.Disponivel}");
+                                return prodDto;
+                            }).ToList(),
+                        Combos = c.Combos
+                        // Removed filtering: .Where(cb => cb.Ativo)
+                        .Select(cb => new ComboDTO
                         {
                             Id = cb.Id,
                             Nome = cb.Nome,
                             Descricao = cb.Descricao,
                             Preco = cb.Preco,
                             ImagemUrl = cb.ImagemUrl,
-                            Ativo = cb.Ativo,
+                            Ativo = cb.Ativo, // Map Status
                             Itens = cb.Itens.Select(i => new ComboItemDTO
                             {
                                 Id = i.Id,

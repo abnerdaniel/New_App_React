@@ -14,6 +14,19 @@ interface ProdutoEstoqueDTO {
   isAdicional?: boolean;
   adicionaisIds?: number[];
   categoriaId?: number;
+  disponivel?: boolean;
+}
+
+
+interface CardapioDTO {
+    id: number;
+    nome: string;
+    ativo: boolean;
+}
+
+interface CategoriaDTO {
+    id: number;
+    nome: string;
 }
 
 interface ProdutoCatalogoDTO {
@@ -126,7 +139,8 @@ export function EstoquePage() {
     isAdicional: false,
     adicionaisIds: [] as number[],
     cardapioId: "",
-    categoriaId: ""
+    categoriaId: "",
+    disponivel: true
   });
 
   // Load data when activeLoja changes
@@ -219,7 +233,8 @@ export function EstoquePage() {
           estoque: Number(formData.estoque),
           isAdicional: formData.isAdicional,
           adicionaisIds: formData.adicionaisIds,
-          categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null
+          categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
+          disponivel: formData.disponivel
           // descricao: formData.descricao 
         });
         alert("Produto atualizado!");
@@ -229,7 +244,8 @@ export function EstoquePage() {
           lojaId: activeLoja.id,
           preco: precoCentavos,
           estoque: Number(formData.estoque),
-          categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null
+          categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
+          disponivel: formData.disponivel
         };
 
         if (selectedCatalogoItem && !isCreatingNew) {
@@ -272,7 +288,8 @@ export function EstoquePage() {
       isAdicional: prod.isAdicional || false,
       adicionaisIds: prod.adicionaisIds || [],
       cardapioId: "", // Reset menu selection on edit
-      categoriaId: prod.categoriaId ? prod.categoriaId.toString() : ""
+      categoriaId: prod.categoriaId ? prod.categoriaId.toString() : "",
+      disponivel: prod.disponivel !== false // Default true if undefined
     });
     setIsModalOpen(true);
   };
@@ -288,13 +305,29 @@ export function EstoquePage() {
       }
   }
 
+  const handleToggleDisponibilidade = async (prod: ProdutoEstoqueDTO) => {
+      try {
+          const novoStatus = !prod.disponivel;
+          // Optimistic update
+          setProdutos(prev => prev.map(p => p.produtoLojaId === prod.produtoLojaId ? { ...p, disponivel: novoStatus } : p));
+          
+          await api.put(`/api/produto-loja/${prod.produtoLojaId}`, {
+              disponivel: novoStatus
+          });
+      } catch (error) {
+          console.error(error);
+          alert("Erro ao alterar disponibilidade.");
+          loadEstoque(); // Revert on error
+      }
+  }
+
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduto(null);
     setSelectedCatalogoItem(null);
     setIsCreatingNew(false);
     setSearchCatalogo("");
-    setFormData({ nome: "", descricao: "", tipo: PRODUTO_TIPOS[0], preco: "", estoque: "", imagemUrl: "", isAdicional: false, adicionaisIds: [], cardapioId: "", categoriaId: "" });
+    setFormData({ nome: "", descricao: "", tipo: PRODUTO_TIPOS[0], preco: "", estoque: "", imagemUrl: "", isAdicional: false, adicionaisIds: [], cardapioId: "", categoriaId: "", disponivel: true });
   };
 
   const handleSelectCatalogo = (item: ProdutoCatalogoDTO) => {
@@ -371,6 +404,7 @@ export function EstoquePage() {
                     <th className="p-4 text-xs font-bold text-gray-500 uppercase">Tipo</th>
                     <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">Preço</th>
                     <th className="p-4 text-xs font-bold text-gray-500 uppercase text-center">Estoque</th>
+                    <th className="p-4 text-xs font-bold text-gray-500 uppercase text-center">Disponível</th>
                     <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">Ações</th>
                 </tr>
             </thead>
@@ -397,6 +431,14 @@ export function EstoquePage() {
                                 <span className={`font-bold ${prod.estoque < 5 ? 'text-red-500' : 'text-green-600'}`}>
                                     {prod.estoque}
                                 </span>
+                            </td>
+                            <td className="p-4 text-center">
+                                <button 
+                                    onClick={() => handleToggleDisponibilidade(prod)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-primary/50 ${prod.disponivel !== false ? 'bg-green-500' : 'bg-gray-300'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${prod.disponivel !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
                             </td>
                             <td className="p-4 text-right">
                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -541,6 +583,19 @@ export function EstoquePage() {
                                         />
                                     </div>
                                     
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <input 
+                                            type="checkbox"
+                                            id="disponivel"
+                                            className="w-4 h-4 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+                                            checked={formData.disponivel}
+                                            onChange={e => setFormData({...formData, disponivel: e.target.checked})}
+                                        />
+                                        <label htmlFor="disponivel" className="text-sm font-medium text-gray-700 select-none">
+                                            Produto Disponível para venda?
+                                        </label>
+                                    </div>
+
                                     <div className="flex items-center gap-2 pt-2">
                                         <input 
                                             type="checkbox"

@@ -56,7 +56,7 @@ export function Home() {
                         <StoreCard 
                             key={loja.id} 
                             loja={loja} 
-                            onClick={(id) => {
+                            onClick={() => {
                                 const slug = loja.nome.toLowerCase().replace(/ /g, '-');
                                 navigate(`/loja/${slug}`);
                             }} 
