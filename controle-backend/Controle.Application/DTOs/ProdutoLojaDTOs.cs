@@ -8,6 +8,7 @@ namespace Controle.Application.DTOs
         public int? ProdutoId { get; set; }
         public CreateProdutoDTO? NovoProduto { get; set; }
         public decimal Preco { get; set; }
+        public int? CategoriaId { get; set; }
         public int Estoque { get; set; }
     }
 

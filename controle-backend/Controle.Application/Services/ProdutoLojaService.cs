@@ -96,6 +96,15 @@ namespace Controle.Application.Services
                 // Usar a descrição do produto como padrão se não fornecida.
                 // ProdutoLoja tem sua própria descrição.
             };
+
+            // Se CategoriaId foi informado, já cria o vínculo
+            if (dto.CategoriaId.HasValue && dto.CategoriaId.Value > 0)
+            {
+                produtoLoja.ProdutoCategorias.Add(new ProdutoCategoria 
+                { 
+                    CategoriaId = dto.CategoriaId.Value 
+                });
+            }
             
             // Se CreateProdutoLojaRequest não tiver descrição específica para a relação com a loja, usamos a do produto.
             // O DTO tem 'NovoProduto' que tem 'Descricao'.

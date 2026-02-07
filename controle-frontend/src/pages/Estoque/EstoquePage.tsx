@@ -13,6 +13,7 @@ interface ProdutoEstoqueDTO {
   imagemUrl?: string;
   isAdicional?: boolean;
   adicionaisIds?: number[];
+  categoriaId?: number;
 }
 
 interface ProdutoCatalogoDTO {
@@ -42,8 +43,9 @@ function AdicionaisSearch({ catalogo, currentIds, onAdd, onCreateNew }: {
     const [showDropdown, setShowDropdown] = useState(false);
 
     // Filtra produtos que SÃO adicionais e ainda NÃO estão vinculados
+    // Verifica isAdicional (novo campo) OU se o tipo é "Adicionais" (legado)
     const suggestions = catalogo.filter(c => 
-        c.isAdicional && 
+        (c.isAdicional || c.tipo === "Adicionais") && 
         !currentIds.includes(c.id) && 
         c.nome.toLowerCase().includes(term.toLowerCase())
     );
@@ -100,6 +102,10 @@ export function EstoquePage() {
   const [loading, setLoading] = useState(false);
   const [filterTerm, setFilterTerm] = useState("");
 
+  // Cardapio & Categoria State
+  const [cardapios, setCardapios] = useState<CardapioDTO[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaDTO[]>([]);
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduto, setEditingProduto] = useState<ProdutoEstoqueDTO | null>(null);
@@ -119,6 +125,8 @@ export function EstoquePage() {
     imagemUrl: "",
     isAdicional: false,
     adicionaisIds: [] as number[],
+    cardapioId: "",
+    categoriaId: ""
   });
 
   // Load data when activeLoja changes
@@ -126,11 +134,22 @@ export function EstoquePage() {
     if (activeLoja?.id) {
       loadEstoque();
       loadCatalogo();
+      loadCardapios();
     } else {
         setProdutos([]);
         setCatalogo([]);
+        setCardapios([]);
     }
   }, [activeLoja]);
+
+  // Load Categories when Cardapio changes
+  useEffect(() => {
+    if (formData.cardapioId) {
+        loadCategorias(Number(formData.cardapioId));
+    } else {
+        setCategorias([]);
+    }
+  }, [formData.cardapioId]);
 
   const loadEstoque = async () => {
     if (!activeLoja?.id) return;
@@ -148,12 +167,29 @@ export function EstoquePage() {
   const loadCatalogo = async () => {
       if (!activeLoja?.id) return;
       try {
-          // Busca produtos globais ou da loja (LojaId=null OR LojaId=Current)
-          // O backend já filtra por LojaId se passado.
           const res = await api.get(`/api/produtos?lojaId=${activeLoja.id}`);
           setCatalogo(res.data);
       } catch (error) {
           console.error("Erro ao carregar catálogo", error);
+      }
+  }
+
+  const loadCardapios = async () => {
+      if (!activeLoja?.id) return;
+      try {
+          const res = await api.get(`/api/cardapios/loja/${activeLoja.id}`);
+          setCardapios(res.data);
+      } catch (error) {
+          console.error("Erro ao carregar cardápios", error);
+      }
+  }
+
+  const loadCategorias = async (cardapioId: number) => {
+      try {
+          const res = await api.get(`/api/categorias/cardapio/${cardapioId}`);
+          setCategorias(res.data);
+      } catch (error) {
+          console.error("Erro ao carregar categorias", error);
       }
   }
 
@@ -182,7 +218,8 @@ export function EstoquePage() {
           preco: precoCentavos,
           estoque: Number(formData.estoque),
           isAdicional: formData.isAdicional,
-          adicionaisIds: formData.adicionaisIds
+          adicionaisIds: formData.adicionaisIds,
+          categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null
           // descricao: formData.descricao 
         });
         alert("Produto atualizado!");
@@ -191,7 +228,8 @@ export function EstoquePage() {
         const payload: any = {
           lojaId: activeLoja.id,
           preco: precoCentavos,
-          estoque: Number(formData.estoque)
+          estoque: Number(formData.estoque),
+          categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null
         };
 
         if (selectedCatalogoItem && !isCreatingNew) {
@@ -232,7 +270,9 @@ export function EstoquePage() {
       estoque: prod.estoque.toString(),
       imagemUrl: prod.imagemUrl || "",
       isAdicional: prod.isAdicional || false,
-      adicionaisIds: prod.adicionaisIds || []
+      adicionaisIds: prod.adicionaisIds || [],
+      cardapioId: "", // Reset menu selection on edit
+      categoriaId: prod.categoriaId ? prod.categoriaId.toString() : ""
     });
     setIsModalOpen(true);
   };
@@ -254,7 +294,7 @@ export function EstoquePage() {
     setSelectedCatalogoItem(null);
     setIsCreatingNew(false);
     setSearchCatalogo("");
-    setFormData({ nome: "", descricao: "", tipo: PRODUTO_TIPOS[0], preco: "", estoque: "", imagemUrl: "", isAdicional: false, adicionaisIds: [] });
+    setFormData({ nome: "", descricao: "", tipo: PRODUTO_TIPOS[0], preco: "", estoque: "", imagemUrl: "", isAdicional: false, adicionaisIds: [], cardapioId: "", categoriaId: "" });
   };
 
   const handleSelectCatalogo = (item: ProdutoCatalogoDTO) => {
@@ -512,6 +552,33 @@ export function EstoquePage() {
                                         <label htmlFor="isAdicional" className="text-sm font-medium text-gray-700 select-none">
                                             Este produto é um Adicional/Extra?
                                         </label>
+                                    </div>
+
+                                    {/* CARDÁPIO E CATEGORIA */}
+                                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-dashed border-gray-200 mt-2">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-gray-500 uppercase">Cardápio (Opcional)</label>
+                                            <select 
+                                                className="w-full text-sm h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none bg-white"
+                                                value={formData.cardapioId}
+                                                onChange={e => setFormData({...formData, cardapioId: e.target.value, categoriaId: ""})}
+                                            >
+                                                <option value="">Selecione...</option>
+                                                {cardapios.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-gray-500 uppercase">Categoria</label>
+                                            <select 
+                                                className="w-full text-sm h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none bg-white"
+                                                value={formData.categoriaId}
+                                                onChange={e => setFormData({...formData, categoriaId: e.target.value})}
+                                                disabled={!formData.cardapioId}
+                                            >
+                                                <option value="">Selecione...</option>
+                                                {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                                            </select>
+                                        </div>
                                     </div>
                                 </>
                             )}
