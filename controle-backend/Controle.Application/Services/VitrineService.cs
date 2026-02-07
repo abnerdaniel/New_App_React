@@ -18,12 +18,37 @@ namespace Controle.Application.Services
             _context = context;
         }
 
-        public async Task<VitrineDTO?> ObterLojaParaClienteAsync(Guid lojaId)
+        public async Task<VitrineDTO?> ObterLojaParaClienteAsync(string lojaIdentifier)
         {
-            // 1. Usar AsNoTracking() em todas as consultas.
-            var loja = await _context.Lojas
+            // 1. Tentar parsear como GUID
+            bool isGuid = Guid.TryParse(lojaIdentifier, out Guid lojaId);
+
+            // 2. Usar AsNoTracking() em todas as consultas.
+            Loja? loja = null;
+
+            if (isGuid)
+            {
+               loja = await _context.Lojas
                 .AsNoTracking()
                 .FirstOrDefaultAsync(l => l.Id == lojaId);
+            }
+            else
+            {
+                // Buscar por nome (Slug simples: substitui espaços por - e lowercase)
+                // OBS: Para produção, ideal é ter coluna 'Slug' indexada e única. 
+                // Aqui faremos uma busca aproximada para atender o requisito funcional imediato.
+                // Trazemos todas as lojas ativas para memória para comparar o slug (não performático para muitos registros, mas resolve agora)
+                // Ou melhor: tentar filtrar no banco com ToLower se possível.
+                
+                var nomeBusca = lojaIdentifier.Replace("-", " ").Trim();
+                
+                loja = await _context.Lojas
+                    .AsNoTracking()
+                    .Where(l => l.Nome.ToLower() == nomeBusca.ToLower())
+                    .FirstOrDefaultAsync();
+            }
+
+            if (loja != null) lojaId = loja.Id; // Garante que temos o ID real se achou pelo nome
 
             if (loja == null) return null;
 
@@ -81,7 +106,6 @@ namespace Controle.Application.Services
             var vitrineDTO = new VitrineDTO
             {
                 LojaId = loja.Id,
-                NomeLoja = loja.Nome,
                 NomeLoja = loja.Nome,
                 Aberta = loja.AbertaManualmente ?? (cardapioSelecionado != null) // Respeita manual, senão verifica cardápio
             };

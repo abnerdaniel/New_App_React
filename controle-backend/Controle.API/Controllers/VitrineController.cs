@@ -33,12 +33,12 @@ namespace Controle.API.Controllers
         /// <summary>
         /// Obtém a vitrine da loja para o cliente (cardápio ativo).
         /// </summary>
-        [HttpGet("{lojaId}")]
+        [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ObterVitrine(Guid lojaId)
+        public async Task<IActionResult> ObterVitrine(string id)
         {
-            var vitrine = await _vitrineService.ObterLojaParaClienteAsync(lojaId);
+            var vitrine = await _vitrineService.ObterLojaParaClienteAsync(id);
             if (vitrine == null) return NotFound();
             return Ok(vitrine);
         }

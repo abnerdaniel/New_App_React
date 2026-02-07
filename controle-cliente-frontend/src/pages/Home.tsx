@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import type { Loja } from '../types';
 import { lojaService } from '../services/loja.service';
 import { StoreCard } from '../components/StoreCard';
 
 export function Home() {
+  const navigate = useNavigate();
   const [lojas, setLojas] = useState<Loja[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -54,7 +56,10 @@ export function Home() {
                         <StoreCard 
                             key={loja.id} 
                             loja={loja} 
-                            onClick={(id) => console.log('Navigate to store', id)} 
+                            onClick={(id) => {
+                                const slug = loja.nome.toLowerCase().replace(/ /g, '-');
+                                navigate(`/loja/${slug}`);
+                            }} 
                         />
                     ))}
                 </div>
