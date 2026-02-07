@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Minus, Plus, ShoppingBag } from 'lucide-react';
 import type { Produto, Combo } from '../types';
+import { ProductImage } from './ProductImage';
 
 interface ComboModalProps {
   isOpen: boolean;
@@ -68,17 +69,12 @@ export function ComboModal({ isOpen, onClose, combo, onAddToCart, isStoreClosed 
             
             {/* Header */}
             <div className="relative h-48 bg-orange-100 shrink-0">
-              {combo.imagemUrl ? (
-                <img 
+               <ProductImage 
                   src={combo.imagemUrl} 
                   alt={combo.nome} 
                   className="w-full h-full object-cover"
+                  isCombo={true}
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-orange-300">
-                   <ShoppingBag size={48} />
-                </div>
-              )}
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 p-2 bg-white/90 rounded-full hover:bg-white shadow-sm transition-colors z-10"

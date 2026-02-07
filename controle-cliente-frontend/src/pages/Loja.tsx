@@ -11,6 +11,8 @@ import type { Produto } from '../types';
 
 import { ComboModal } from '../components/ComboModal';
 
+import { ProductImage } from '../components/ProductImage';
+
 export function LojaPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ export function LojaPage() {
   
   // Product Modal State
   const [selectedProduct, setSelectedProduct] = useState<Produto | null>(null);
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Combo Modal State
@@ -37,13 +40,21 @@ export function LojaPage() {
       ]).then(([lojaData, cardapioData]) => {
         setLoja(lojaData || null);
         setCardapio(cardapioData);
+        if (lojaData) {
+            document.title = lojaData.nome;
+        }
         setLoading(false);
       });
     }
+    
+    return () => {
+        document.title = 'Delivery App';
+    };
   }, [id]);
 
-  const handleProductClick = (produto: Produto) => {
+  const handleProductClick = (produto: Produto, categoryName: string) => {
     setSelectedProduct(produto);
+    setSelectedCategoryName(categoryName);
     setIsModalOpen(true);
   };
 
@@ -79,10 +90,7 @@ export function LojaPage() {
           descricao: combo.descricao,
           preco: combo.preco + totalExtras, 
           imagemUrl: combo.imagemUrl,
-          categoriaId: combo.categoriaId?.toString() || '', // Combo pode ter CategoriaId int, Produto usa string? Verificar types.
-          // types.ts: Produto.categoriaId is string. Combo CategoriaId is likely int in backend but unknown in frontend interface
-          // Frontend Combo interface doesn't explicitly have categoriaId yet, assume backend sends it or ignore.
-          // Vamos usar string vazia ou converter se existir no objeto combo runtime.
+          categoriaId: combo.categoriaId?.toString() || '', 
           lojaId: loja?.id || '',
           adicionais: [], 
           isAdicional: false
@@ -172,8 +180,6 @@ export function LojaPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Produtos */}
                     {categoria.produtos.map(produto => {
-                        // Debug log to verify if 'disponivel' is being received
-                        console.log(`Produto: ${produto.nome}, Disponivel: ${produto.disponivel}`); 
                         const indisponivel = produto.disponivel === false;
                         return (
                             <div 
@@ -181,7 +187,7 @@ export function LojaPage() {
                                 className={`bg-white border border-gray-100 rounded-lg p-3 flex gap-4 transition-colors shadow-sm duration-100 relative
                                     ${indisponivel ? 'opacity-60 grayscale cursor-not-allowed bg-gray-50' : 'hover:border-gray-200 cursor-pointer active:scale-[0.99]'}
                                 `}
-                                onClick={() => !indisponivel && handleProductClick(produto)}
+                                onClick={() => !indisponivel && handleProductClick(produto, categoria.nome)}
                             >
                                 <div className="flex-1">
                                     <h3 className="font-semibold text-gray-900">{produto.nome}</h3>
@@ -191,13 +197,12 @@ export function LojaPage() {
                                     </span>
                                     {indisponivel && <span className="text-xs font-bold text-red-500 ml-2 border border-red-200 bg-red-50 px-1 rounded">Indisponível</span>}
                                 </div>
-                                {produto.imagemUrl && (
-                                    <img 
+                                    <ProductImage 
                                         src={produto.imagemUrl} 
                                         alt={produto.nome} 
                                         className="w-24 h-24 object-cover rounded-md bg-gray-100"
+                                        productType={produto.tipo}
                                     />
-                                )}
                             </div>
                         );
                     })}
@@ -236,13 +241,12 @@ export function LojaPage() {
                                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(combo.preco)}
                                     </span>
                                 </div>
-                                {combo.imagemUrl && (
-                                    <img 
+                                    <ProductImage 
                                         src={combo.imagemUrl} 
                                         alt={combo.nome} 
                                         className="w-24 h-24 object-cover rounded-md bg-gray-100"
+                                        isCombo={true}
                                     />
-                                )}
                             </div>
                         );
                     })}

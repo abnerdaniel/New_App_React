@@ -31,6 +31,7 @@ namespace Controle.Application.DTOs
         public string Nome { get; set; } = string.Empty;
         public string Descricao { get; set; } = string.Empty;
         public decimal Preco { get; set; }
+        public string Tipo { get; set; } = string.Empty;
         public string UrlImagem { get; set; } = string.Empty;
         public bool Esgotado { get; set; }
         public Guid LojaId { get; set; }

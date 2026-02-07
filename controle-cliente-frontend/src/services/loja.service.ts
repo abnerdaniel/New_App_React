@@ -63,8 +63,9 @@ export const lojaService = {
               id: prod.id.toString(),
               nome: prod.nome || prod.descricao, // Fallback
               descricao: prod.descricao,
+              tipo: prod.tipo,
               preco: prod.preco / 100, // Convertendo centavos para reais
-              imagemUrl: prod.urlImagem || 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=500', 
+              imagemUrl: prod.urlImagem, 
               categoriaId: cat.id.toString(),
               lojaId: id,
               disponivel: prod.disponivel,

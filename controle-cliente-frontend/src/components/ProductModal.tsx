@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Minus, Plus } from 'lucide-react';
 import type { Produto } from '../types';
+import { ProductImage } from './ProductImage';
 
 interface ProductModalProps {
   produto: Produto | null;
@@ -56,17 +57,14 @@ export function ProductModal({ produto, isOpen, onClose, onAddToCart, isStoreClo
         
         {/* Header Imagem ou Titulo */}
         <div className="relative">
-          {produto.imagemUrl ? (
-            <div className="h-48 md:h-56 w-full">
-              <img 
-                src={produto.imagemUrl} 
-                alt={produto.nome} 
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="h-16 bg-red-600"></div>
-          )}
+          <div className="h-48 md:h-56 w-full">
+            <ProductImage 
+              src={produto.imagemUrl} 
+              alt={produto.nome} 
+              className="w-full h-full object-cover"
+              productType={produto.tipo}
+            />
+          </div>
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 bg-white/90 p-2 rounded-full shadow-md hover:bg-white transition-colors"

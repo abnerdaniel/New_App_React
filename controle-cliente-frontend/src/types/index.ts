@@ -17,6 +17,7 @@ export interface Produto {
   nome: string;
   descricao: string;
   preco: number;
+  tipo?: string;
   imagemUrl?: string;
   categoriaId: string;
   lojaId: string;
