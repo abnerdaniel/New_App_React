@@ -36,7 +36,7 @@ export const lojaService = {
         descricao: 'Loja parceira', 
         imagemUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=1000', 
         bannerUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000', 
-        avaliacao: 4.8,
+        avaliacao: 5,
         tempoEntregaMin: 30,
         tempoEntregaMax: 45,
         taxaEntrega: 5.00,
@@ -63,11 +63,24 @@ export const lojaService = {
               id: prod.id.toString(),
               nome: prod.nome || prod.descricao, // Fallback
               descricao: prod.descricao,
-              preco: prod.preco,
+              preco: prod.preco / 100, // Convertendo centavos para reais
               imagemUrl: prod.urlImagem || 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=500', // Mock fallback se vazio
               categoriaId: cat.id.toString(),
               lojaId: id // O ID da loja vem do parametro da função, que é o mesmo da URL
-          }))
+          })),
+          combos: cat.combos ? cat.combos.map((combo: any) => ({
+              id: combo.id.toString(),
+              nome: combo.nome,
+              descricao: combo.descricao,
+              preco: combo.preco / 100, // Convertendo centavos para reais
+              imagemUrl: combo.imagemUrl,
+              itens: combo.itens ? combo.itens.map((item: any) => ({
+                  id: item.id.toString(),
+                  produtoLojaId: item.produtoLojaId,
+                  nomeProduto: item.nomeProduto,
+                  quantidade: item.quantidade
+              })) : []
+          })) : []
       }));
 
     } catch (error) {

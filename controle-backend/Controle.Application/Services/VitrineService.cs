@@ -58,10 +58,12 @@ namespace Controle.Application.Services
                 .Where(c => c.LojaId == lojaId && c.Ativo)
                 .Include(c => c.Categorias.OrderBy(cat => cat.OrdemExibicao))
                 .ThenInclude(cat => cat.Produtos)
+                .ThenInclude(pl => pl.Produto)
                 .Include(c => c.Categorias)
                 .ThenInclude(cat => cat.Combos)
                 .ThenInclude(cb => cb.Itens)
-                .ThenInclude(cbi => cbi.ProdutoLoja) // Optional: for description/price calculation if needed? Combo has fixed price.
+                .ThenInclude(cbi => cbi.ProdutoLoja)
+                .ThenInclude(pl => pl.Produto) // Ensure combo items also have product loaded if needed
                 .ToListAsync();
 
             // 3. Lógica de Seleção de Cardápio:
@@ -123,7 +125,7 @@ namespace Controle.Application.Services
                         Produtos = c.Produtos.Select(p => new ProdutoLojaDTO
                         {
                             Id = p.Id,
-                            Nome = p.Descricao, // Usando Descricao como Nome se não tiver Nome específico no ProdutoLoja, ou ajustar conforme Entidade
+                            Nome = p.Produto?.Nome ?? p.Descricao, // Usando Nome do Produto, com fallback para Descricao
                             Descricao = p.Descricao,
                             Preco = p.Preco,
                             UrlImagem = "", 
@@ -142,7 +144,7 @@ namespace Controle.Application.Services
                             {
                                 Id = i.Id,
                                 ProdutoLojaId = i.ProdutoLojaId,
-                                NomeProduto = i.ProdutoLoja?.Descricao ?? "Item",
+                                NomeProduto = i.ProdutoLoja?.Produto?.Nome ?? i.ProdutoLoja?.Descricao ?? "Item",
                                 Quantidade = i.Quantidade
                             }).ToList()
                         }).ToList()

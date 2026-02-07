@@ -107,9 +107,10 @@ export function LojaPage() {
             <div key={categoria.id} id={categoria.id} className="mb-8">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">{categoria.nome}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Produtos */}
                     {categoria.produtos.map(produto => (
                         <div 
-                            key={produto.id} 
+                            key={`prod-${produto.id}`} 
                             className="bg-white border border-gray-100 rounded-lg p-3 flex gap-4 hover:border-gray-200 transition-colors cursor-pointer shadow-sm active:scale-[0.99] duration-100"
                             onClick={() => handleProductClick(produto)}
                         >
@@ -124,6 +125,46 @@ export function LojaPage() {
                                 <img 
                                     src={produto.imagemUrl} 
                                     alt={produto.nome} 
+                                    className="w-24 h-24 object-cover rounded-md bg-gray-100"
+                                />
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Combos */}
+                    {categoria.combos && categoria.combos.map(combo => (
+                        <div 
+                            key={`combo-${combo.id}`} 
+                            className="bg-orange-50 border border-orange-100 rounded-lg p-3 flex gap-4 hover:border-orange-200 transition-colors cursor-pointer shadow-sm active:scale-[0.99] duration-100"
+                            // onClick={() => handleComboClick(combo)} // TODO: Add logic for Combo click/modal
+                        >
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded">COMBO</span>
+                                    <h3 className="font-semibold text-gray-900">{combo.nome}</h3>
+                                </div>
+                                <p className="text-sm text-gray-500 line-clamp-2 mt-1 mb-2">{combo.descricao}</p>
+                                
+                                {/* Lista de Itens do Combo */}
+                                {combo.itens && combo.itens.length > 0 && (
+                                    <ul className="mb-2 space-y-1">
+                                        {combo.itens.map(item => (
+                                            <li key={item.id} className="text-xs text-gray-600 flex items-center gap-1">
+                                                <span className="font-medium text-gray-800">{item.quantidade}x</span>
+                                                <span>{item.nomeProduto}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                                <span className="text-green-700 font-medium">
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(combo.preco)}
+                                </span>
+                            </div>
+                            {combo.imagemUrl && (
+                                <img 
+                                    src={combo.imagemUrl} 
+                                    alt={combo.nome} 
                                     className="w-24 h-24 object-cover rounded-md bg-gray-100"
                                 />
                             )}

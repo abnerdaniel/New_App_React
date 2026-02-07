@@ -22,8 +22,25 @@ export interface Produto {
   lojaId: string;
 }
 
+export interface ComboItem {
+  id: string;
+  produtoLojaId: number;
+  nomeProduto: string;
+  quantidade: number;
+}
+
+export interface Combo {
+  id: string;
+  nome: string;
+  descricao: string;
+  preco: number;
+  imagemUrl?: string;
+  itens: ComboItem[];
+}
+
 export interface Categoria {
   id: string;
   nome: string;
   produtos: Produto[];
+  combos: Combo[];
 }
