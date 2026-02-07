@@ -57,6 +57,17 @@ namespace Controle.Application.Services
             return await _context.Cardapios
                 .Where(c => c.LojaId == lojaId)
                 .Include(c => c.Categorias)
+                    .ThenInclude(cat => cat.Produtos)
+                    .ThenInclude(pl => pl.Produto) // Para produtos normais da categoria
+                        .ThenInclude(p => p.Adicionais)
+                            .ThenInclude(pa => pa.ProdutoFilho)
+                .Include(c => c.Categorias)
+                    .ThenInclude(cat => cat.Combos)
+                        .ThenInclude(cb => cb.Itens)
+                            .ThenInclude(i => i.ProdutoLoja)
+                                .ThenInclude(pl => pl.Produto)
+                                    .ThenInclude(p => p.Adicionais)
+                                        .ThenInclude(pa => pa.ProdutoFilho)
                 .OrderBy(c => c.Nome)
                 .ToListAsync();
         }

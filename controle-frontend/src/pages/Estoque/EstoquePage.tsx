@@ -24,10 +24,7 @@ interface ProdutoCatalogoDTO {
     isAdicional?: boolean;
 }
 
-interface Loja {
-  id: string;
-  nome: string;
-}
+
 
 const PRODUTO_TIPOS = [
   "Pratos", "Lanches", "Porções/Petiscos", "Bebidas", "Sobremesas", 
@@ -95,11 +92,9 @@ function AdicionaisSearch({ catalogo, currentIds, onAdd, onCreateNew }: {
 }
 
 export function EstoquePage() {
-  const { user } = useAuth();
+  const { activeLoja } = useAuth();
   
   // Data State
-  const [lojas, setLojas] = useState<Loja[]>([]);
-  const [selectedLojaId, setSelectedLojaId] = useState<string>("");
   const [produtos, setProdutos] = useState<ProdutoEstoqueDTO[]>([]);
   const [catalogo, setCatalogo] = useState<ProdutoCatalogoDTO[]>([]); // Produtos disponíveis para cadastro
   const [loading, setLoading] = useState(false);
@@ -126,28 +121,22 @@ export function EstoquePage() {
     adicionaisIds: [] as number[],
   });
 
+  // Load data when activeLoja changes
   useEffect(() => {
-    if (user) {
-      api.get(`/api/loja/usuario/${user.id}`)
-        .then(res => {
-          setLojas(res.data);
-          if (res.data.length > 0) setSelectedLojaId(res.data[0].id);
-        })
-        .catch(console.error);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (selectedLojaId) {
+    if (activeLoja?.id) {
       loadEstoque();
       loadCatalogo();
+    } else {
+        setProdutos([]);
+        setCatalogo([]);
     }
-  }, [selectedLojaId]);
+  }, [activeLoja]);
 
   const loadEstoque = async () => {
+    if (!activeLoja?.id) return;
     setLoading(true);
     try {
-      const res = await api.get(`/api/produto-loja/loja/${selectedLojaId}/estoque`);
+      const res = await api.get(`/api/produto-loja/loja/${activeLoja.id}/estoque`);
       setProdutos(res.data);
     } catch (error) {
       console.error("Erro ao carregar estoque", error);
@@ -157,10 +146,11 @@ export function EstoquePage() {
   };
 
   const loadCatalogo = async () => {
+      if (!activeLoja?.id) return;
       try {
           // Busca produtos globais ou da loja (LojaId=null OR LojaId=Current)
           // O backend já filtra por LojaId se passado.
-          const res = await api.get(`/api/produtos?lojaId=${selectedLojaId}`);
+          const res = await api.get(`/api/produtos?lojaId=${activeLoja.id}`);
           setCatalogo(res.data);
       } catch (error) {
           console.error("Erro ao carregar catálogo", error);
@@ -179,7 +169,7 @@ export function EstoquePage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedLojaId) return;
+    if (!activeLoja?.id) return;
 
     // Extrair centavos diretamente dos dígitos (Ex: "10,00" -> "1000" -> 1000)
     // Se o campo estiver vazio ou "0,00", será 0
@@ -199,7 +189,7 @@ export function EstoquePage() {
       } else {
         // Create Logic
         const payload: any = {
-          lojaId: selectedLojaId,
+          lojaId: activeLoja.id,
           preco: precoCentavos,
           estoque: Number(formData.estoque)
         };
@@ -298,26 +288,21 @@ export function EstoquePage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Controle de Estoque</h1>
-          <p className="text-gray-500 mt-1">Gerencie produtos, preços e disponibilidade.</p>
+          <p className="text-gray-500 mt-1">
+             {activeLoja ? `Gerenciando: ${activeLoja.nome}` : 'Selecione uma loja no topo para gerenciar.'}
+          </p>
         </div>
         
         <div className="flex gap-4 w-full md:w-auto">
-             <div className="flex-1 md:w-64">
-                <select 
-                    value={selectedLojaId}
-                    onChange={(e) => setSelectedLojaId(e.target.value)}
-                    className="w-full h-11 px-4 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none shadow-sm"
+            {activeLoja && (
+                <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="h-11 px-6 bg-brand-primary text-white rounded-lg font-bold hover:bg-brand-hover shadow-md flex items-center gap-2 transition-all active:scale-95"
                 >
-                    {lojas.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
-                </select>
-            </div>
-            <button 
-                onClick={() => setIsModalOpen(true)}
-                className="h-11 px-6 bg-brand-primary text-white rounded-lg font-bold hover:bg-brand-hover shadow-md flex items-center gap-2 transition-all active:scale-95"
-            >
-                <Plus size={20} />
-                Novo Produto
-            </button>
+                    <Plus size={20} />
+                    Novo Produto
+                </button>
+            )}
         </div>
       </div>
 
@@ -574,7 +559,7 @@ export function EstoquePage() {
                                                     tipo: "Adicionais",
                                                     isAdicional: true,
                                                     preco: 0,
-                                                    lojaId: selectedLojaId
+                                                    lojaId: activeLoja?.id
                                                 });
                                                 const novoId = res.data.id;
                                                 await loadCatalogo(); // Recarrega para ter os dados

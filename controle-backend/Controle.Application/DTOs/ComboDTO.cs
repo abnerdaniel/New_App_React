@@ -21,5 +21,6 @@ namespace Controle.Application.DTOs
         public int ProdutoLojaId { get; set; }
         public string NomeProduto { get; set; } = string.Empty; // Útil para exibir no front
         public int Quantidade { get; set; }
+        public List<ProdutoDTO> AdicionaisDisponiveis { get; set; } = new();
     }
 }

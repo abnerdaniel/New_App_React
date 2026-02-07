@@ -60,9 +60,23 @@ namespace Controle.API.Controllers
                 .Include(c => c.Itens)
                 .ThenInclude(i => i.ProdutoLoja)
                 .ThenInclude(pl => pl.Produto)
+                .ThenInclude(p => p.Adicionais)
+                .ThenInclude(pa => pa.ProdutoFilho)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (combo == null) return NotFound();
+
+            // Buscar preços dos adicionais na loja do combo
+            var adicionalIds = combo.Itens
+                .Where(i => i.ProdutoLoja?.Produto?.Adicionais != null)
+                .SelectMany(i => i.ProdutoLoja.Produto.Adicionais)
+                .Select(pa => pa.ProdutoFilhoId)
+                .Distinct()
+                .ToList();
+
+            var precosAdicionais = await _context.ProdutosLojas
+                .Where(pl => pl.LojaId == combo.LojaId && adicionalIds.Contains(pl.ProdutoId))
+                .ToDictionaryAsync(pl => pl.ProdutoId, pl => pl.Preco);
 
             var dto = new ComboDTO
             {
@@ -80,7 +94,13 @@ namespace Controle.API.Controllers
                     Quantidade = i.Quantidade,
                     NomeProduto = !string.IsNullOrEmpty(i.ProdutoLoja?.Produto?.Nome)
                         ? i.ProdutoLoja.Produto.Nome
-                        : (i.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível")
+                        : (i.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível"),
+                    AdicionaisDisponiveis = i.ProdutoLoja?.Produto?.Adicionais?.Select(pa => new ProdutoDTO
+                    {
+                        Id = pa.ProdutoFilhoId,
+                        Nome = pa.ProdutoFilho?.Nome ?? "Adicional",
+                        Preco = precosAdicionais.ContainsKey(pa.ProdutoFilhoId) ? precosAdicionais[pa.ProdutoFilhoId] : 0
+                    }).ToList() ?? new List<ProdutoDTO>()
                 }).ToList()
             };
 
@@ -95,7 +115,22 @@ namespace Controle.API.Controllers
                 .Include(c => c.Itens)
                 .ThenInclude(i => i.ProdutoLoja)
                 .ThenInclude(pl => pl.Produto)
+                .ThenInclude(p => p.Adicionais)
+                .ThenInclude(pa => pa.ProdutoFilho)
                 .ToListAsync();
+
+             // Buscar preços dos adicionais para ESTA loja
+             var adicionalIds = combos
+                .SelectMany(c => c.Itens)
+                .Where(i => i.ProdutoLoja?.Produto?.Adicionais != null)
+                .SelectMany(i => i.ProdutoLoja.Produto.Adicionais)
+                .Select(pa => pa.ProdutoFilhoId)
+                .Distinct()
+                .ToList();
+
+             var precosAdicionais = await _context.ProdutosLojas
+                .Where(pl => pl.LojaId == lojaId && adicionalIds.Contains(pl.ProdutoId))
+                .ToDictionaryAsync(pl => pl.ProdutoId, pl => pl.Preco);
 
              // Map to DTO
              var dtos = combos.Select(c => new ComboDTO
@@ -112,10 +147,16 @@ namespace Controle.API.Controllers
                      Id = i.Id,
                      ProdutoLojaId = i.ProdutoLojaId,
                      Quantidade = i.Quantidade,
-                     // Logic: Custom Description OR Global Product Name OR Fallback
                      NomeProduto = !string.IsNullOrEmpty(i.ProdutoLoja?.Produto?.Nome) 
                         ? i.ProdutoLoja.Produto.Nome 
-                        : (i.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível")
+                        : (i.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível"),
+                     
+                     AdicionaisDisponiveis = i.ProdutoLoja?.Produto?.Adicionais?.Select(pa => new ProdutoDTO
+                     {
+                         Id = pa.ProdutoFilhoId,
+                         Nome = pa.ProdutoFilho?.Nome ?? "Adicional",
+                         Preco = precosAdicionais.ContainsKey(pa.ProdutoFilhoId) ? precosAdicionais[pa.ProdutoFilhoId] : 0
+                     }).ToList() ?? new List<ProdutoDTO>()
                  }).ToList()
              });
                 

@@ -2,12 +2,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom'; // Import Link
 import { ArrowLeft, Star, Clock, MapPin } from 'lucide-react';
-import type { Loja, Categoria } from '../types';
+import type { Loja, Categoria, Combo } from '../types';
 import { lojaService } from '../services/loja.service';
 
 import { ProductModal } from '../components/ProductModal';
 import { useCart } from '../context/CartContext';
 import type { Produto } from '../types';
+
+import { ComboModal } from '../components/ComboModal';
 
 export function LojaPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,9 +18,13 @@ export function LojaPage() {
   const [cardapio, setCardapio] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Modal State
+  // Product Modal State
   const [selectedProduct, setSelectedProduct] = useState<Produto | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Combo Modal State
+  const [selectedCombo, setSelectedCombo] = useState<Combo | null>(null);
+  const [isComboModalOpen, setIsComboModalOpen] = useState(false);
 
   // Cart Context
   const { addItem, total, count } = useCart();
@@ -41,10 +47,51 @@ export function LojaPage() {
     setIsModalOpen(true);
   };
 
+  const handleComboClick = (combo: Combo) => {
+      setSelectedCombo(combo);
+      setIsComboModalOpen(true);
+  }
+
   const handleAddToCart = (produto: Produto, quantidade: number, observacao: string, extras: Produto[]) => {
     addItem(produto, quantidade, observacao, extras);
     setIsModalOpen(false);
   };
+
+  const handleAddComboToCart = (combo: Combo, quantidade: number, extrasMap: { [itemId: number]: Produto[] }, observacao: string) => {
+      // Calculando preço total dos extras
+      const totalExtras = Object.values(extrasMap).flat().reduce((acc, e) => acc + e.preco, 0);
+      
+      // Cria uma descrição detalhada do combo
+      const detalheItens = combo.itens.map((item) => {
+          // Extraindo extras para este item (usando type assertion se necessário ou assumindo que extrasMap usa number)
+          // O ComboModal passa extrasMap com chaves numéricas (IDs dos itens)
+          const itemExtras = extrasMap[Number(item.id)] || [];
+          const extraText = itemExtras.length > 0 ? ` (+ ${itemExtras.map(e => e.nome).join(', ')})` : '';
+          return `${item.quantidade}x ${item.nomeProduto}${extraText}`;
+      }).join('\n');
+
+      const fullObservacao = `[COMBO: ${combo.nome}]\n${detalheItens}${observacao ? `\nObs: ${observacao}` : ''}`;
+
+      // Produto "fictício" representando o Combo no carrinho
+      const produtoCombo: Produto = {
+          id: `combo-${combo.id}-${Date.now()}`, 
+          nome: `Combo: ${combo.nome}`,
+          descricao: combo.descricao,
+          preco: combo.preco + totalExtras, 
+          imagemUrl: combo.imagemUrl,
+          categoriaId: combo.categoriaId?.toString() || '', // Combo pode ter CategoriaId int, Produto usa string? Verificar types.
+          // types.ts: Produto.categoriaId is string. Combo CategoriaId is likely int in backend but unknown in frontend interface
+          // Frontend Combo interface doesn't explicitly have categoriaId yet, assume backend sends it or ignore.
+          // Vamos usar string vazia ou converter se existir no objeto combo runtime.
+          lojaId: loja?.id || '',
+          adicionais: [], 
+          isAdicional: false
+      };
+
+      // Adiciona ao carrinho
+      addItem(produtoCombo, quantidade, fullObservacao, []);
+      setIsComboModalOpen(false);
+  }
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
@@ -136,7 +183,7 @@ export function LojaPage() {
                         <div 
                             key={`combo-${combo.id}`} 
                             className="bg-orange-50 border border-orange-100 rounded-lg p-3 flex gap-4 hover:border-orange-200 transition-colors cursor-pointer shadow-sm active:scale-[0.99] duration-100"
-                            // onClick={() => handleComboClick(combo)} // TODO: Add logic for Combo click/modal
+                            onClick={() => handleComboClick(combo)}
                         >
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
@@ -147,7 +194,7 @@ export function LojaPage() {
                                 {/* Lista de Itens do Combo */}
                                 {combo.itens && combo.itens.length > 0 && (
                                     <ul className="mb-2 space-y-1">
-                                        {combo.itens.map(item => (
+                                        {combo.itens.map((item) => (
                                             <li key={item.id} className="text-xs text-gray-600 flex items-center gap-1">
                                                 <span className="font-medium text-gray-800">{item.quantidade}x</span>
                                                 <span>{item.nomeProduto}</span>
@@ -179,6 +226,13 @@ export function LojaPage() {
         onClose={() => setIsModalOpen(false)}
         produto={selectedProduct}
         onAddToCart={handleAddToCart}
+      />
+
+      <ComboModal 
+        isOpen={isComboModalOpen}
+        onClose={() => setIsComboModalOpen(false)}
+        combo={selectedCombo}
+        onAddToCart={handleAddComboToCart}
       />
 
         {count > 0 && (

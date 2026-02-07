@@ -21,6 +21,7 @@ export interface Produto {
   categoriaId: string;
   lojaId: string;
   adicionais?: Produto[]; // Produtos extras
+  isAdicional?: boolean;
 }
 
 export interface ComboItem {
@@ -28,6 +29,7 @@ export interface ComboItem {
   produtoLojaId: number;
   nomeProduto: string;
   quantidade: number;
+  adicionaisDisponiveis?: Produto[];
 }
 
 export interface Combo {
@@ -37,6 +39,7 @@ export interface Combo {
   preco: number;
   imagemUrl?: string;
   itens: ComboItem[];
+  categoriaId?: string;
 }
 
 export interface Categoria {
