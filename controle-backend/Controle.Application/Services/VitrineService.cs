@@ -82,7 +82,8 @@ namespace Controle.Application.Services
             {
                 LojaId = loja.Id,
                 NomeLoja = loja.Nome,
-                Aberta = cardapioSelecionado != null // Se tem cardápio, consideramos aberta para pedidos (simplificação)
+                NomeLoja = loja.Nome,
+                Aberta = loja.AbertaManualmente ?? (cardapioSelecionado != null) // Respeita manual, senão verifica cardápio
             };
 
             if (cardapioSelecionado != null)
@@ -101,15 +102,9 @@ namespace Controle.Application.Services
                             Nome = p.Descricao, // Usando Descricao como Nome se não tiver Nome específico no ProdutoLoja, ou ajustar conforme Entidade
                             Descricao = p.Descricao,
                             Preco = p.Preco,
-                            UrlImagem = "", // Entidade ProdutoLoja não tem UrlImagem explícita no código visto anteriormente, talvez precise pegar de ProdutoGlobal ou adicionar. 
-                                            // No DTO tem UrlImagem. Na Entidade ProdutoLoja (Step 17) não vi UrlImagem.
-                                            // Vou deixar vazio ou ajustar se achar a propriedade.
-                                            // Vendo ProdutoLoja.cs (Step 17): não tem UrlImagem. Tem ProdutoId.
-                                            // Talvez devesse incluir ProdutoGlobal para pegar a imagem?
-                                            // O user pediu "Busque todos os cardápios ativos da loja (com seus includes: Categorias e Produtos)".
-                                            // Não pediu Include(Produto). Mas seria bom.
-                                            // Vou deixar string.Empty por enquanto para não quebrar, pois não tenho a propriedade na entidade ProdutoLoja.
-                            Esgotado = p.Estoque <= 0 // Lógica simples de esgotado
+                            UrlImagem = "", 
+                            Esgotado = p.Estoque <= 0,
+                            LojaId = loja.Id
                         }).ToList(),
                         Combos = c.Combos.Where(cb => cb.Ativo).Select(cb => new ComboDTO
                         {
@@ -132,6 +127,30 @@ namespace Controle.Application.Services
             }
 
             return vitrineDTO;
+        }
+
+        public async Task<List<LojaResumoDTO>> ListarLojasAtivasAsync()
+        {
+            var lojas = await _context.Lojas
+                .AsNoTracking()
+                .Where(l => l.Ativo) // Filtrar apenas ativas
+                .Select(l => new LojaResumoDTO
+                {
+                    Id = l.Id,
+                    Nome = l.Nome,
+                    Descricao = "",
+                    ImagemUrl = l.LogoUrl,
+                    BannerUrl = l.LogoUrl, // Fallback pois não tem Capa
+                    Avaliacao = 4.8, 
+                    TempoEntregaMin = l.TempoMinimoEntrega ?? 30,
+                    TempoEntregaMax = l.TempoMaximoEntrega ?? 45,
+                    TaxaEntrega = l.TaxaEntregaFixa ?? 5.0m,
+                    Categoria = "Diversos", // Não tem categoria na entidade Loja
+                    Aberta = l.AbertaManualmente ?? true
+                })
+                .ToListAsync();
+
+            return lojas;
         }
     }
 }

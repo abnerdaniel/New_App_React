@@ -6,5 +6,6 @@ namespace Controle.Application.Interfaces
     public interface IVitrineService
     {
         Task<VitrineDTO?> ObterLojaParaClienteAsync(Guid lojaId);
+        Task<List<LojaResumoDTO>> ListarLojasAtivasAsync();
     }
 }

@@ -140,10 +140,22 @@ namespace Controle.Application.Services
 
             if (dto.Ativo.HasValue) loja.Ativo = dto.Ativo.Value;
 
+            // Configurações
+            if (!string.IsNullOrEmpty(dto.Categoria)) loja.Categoria = dto.Categoria;
+            if (dto.Avaliacao.HasValue) loja.Avaliacao = dto.Avaliacao.Value;
+            if (dto.TempoMinimoEntrega.HasValue) loja.TempoMinimoEntrega = dto.TempoMinimoEntrega.Value;
+            if (dto.TempoMaximoEntrega.HasValue) loja.TempoMaximoEntrega = dto.TempoMaximoEntrega.Value;
+            if (dto.TaxaEntregaFixa.HasValue) loja.TaxaEntregaFixa = dto.TaxaEntregaFixa.Value;
+
             _context.Lojas.Update(loja);
             await _context.SaveChangesAsync();
 
             return loja;
+        }
+
+        public async Task<Loja?> GetLojaByIdAsync(Guid lojaId)
+        {
+            return await _context.Lojas.FindAsync(lojaId);
         }
 
         public async Task<IEnumerable<Loja>> GetLojasByUsuarioIdAsync(Guid usuarioId)

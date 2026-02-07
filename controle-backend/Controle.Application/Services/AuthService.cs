@@ -70,7 +70,7 @@ namespace Controle.Application.Services
             {
                 Id = l.Id,
                 Nome = l.Nome,
-                LogoUrl = l.LogoUrl
+                ImagemUrl = l.LogoUrl
             }).ToList();
 
             // Buscar Funcionários vinculados (Equipe)
@@ -272,7 +272,7 @@ namespace Controle.Application.Services
                 {
                     Id = l.Id,
                     Nome = l.Nome,
-                    LogoUrl = l.LogoUrl
+                    ImagemUrl = l.LogoUrl
                 }).ToList();
 
                 var funcionarios = await _funcionarioRepository.GetByUsuarioIdAsync(usuario.Id);

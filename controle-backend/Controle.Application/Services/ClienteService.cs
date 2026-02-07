@@ -1,11 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Controle.Application.DTOs;
 using Controle.Application.Interfaces;
 using Controle.Domain.Entities;
 using Controle.Domain.Interfaces;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Controle.Application.Services
 {
@@ -14,15 +20,18 @@ namespace Controle.Application.Services
         private readonly IEnderecoRepository _enderecoRepository;
         private readonly IPedidoRepository _pedidoRepository;
         private readonly IClienteFinalRepository _clienteFinalRepository;
+        private readonly IConfiguration _configuration;
 
         public ClienteService(
             IEnderecoRepository enderecoRepository,
             IPedidoRepository pedidoRepository,
-            IClienteFinalRepository clienteFinalRepository)
+            IClienteFinalRepository clienteFinalRepository,
+            IConfiguration configuration)
         {
             _enderecoRepository = enderecoRepository;
             _pedidoRepository = pedidoRepository;
             _clienteFinalRepository = clienteFinalRepository;
+            _configuration = configuration;
         }
 
         public async Task<Result> AdicionarEnderecoAsync(int clienteId, EnderecoDTO enderecoDto)
@@ -85,8 +94,101 @@ namespace Controle.Application.Services
                 ValorTotal = p.ValorTotal ?? 0,
                 Status = p.Status ?? "Indefinido",
                 QuantidadeItens = p.Quantidade,
-                ResumoItens = p.Descricao ?? string.Empty // Assumindo que Descricao contém um resumo ou concatenar itens se necessário
+                ResumoItens = p.Descricao ?? string.Empty 
             });
+        }
+
+        public async Task<Result<ClienteLoginResponseDTO>> RegisterAsync(ClienteRegisterDTO dto)
+        {
+            var existingUser = await _clienteFinalRepository.GetByEmailAsync(dto.Email);
+            if (existingUser != null)
+            {
+                return Result<ClienteLoginResponseDTO>.Fail("Email já cadastrado.");
+            }
+
+            var cliente = new ClienteFinal
+            {
+                Nome = dto.Nome,
+                Email = dto.Email,
+                Telefone = dto.Telefone,
+                PasswordHash = HashPassword(dto.Password),
+                Ativo = true
+            };
+
+            await _clienteFinalRepository.AddAsync(cliente);
+
+            // Auto-login
+            var token = GenerateJwtToken(cliente);
+
+            return Result<ClienteLoginResponseDTO>.Ok(new ClienteLoginResponseDTO
+            {
+                Id = cliente.Id,
+                Nome = cliente.Nome,
+                Email = cliente.Email,
+                Token = token
+            });
+        }
+
+        public async Task<Result<ClienteLoginResponseDTO>> LoginAsync(ClienteLoginDTO dto)
+        {
+            var cliente = await _clienteFinalRepository.GetByEmailAsync(dto.Email);
+            if (cliente == null || !VerifyPasswordHash(dto.Password, cliente.PasswordHash))
+            {
+                return Result<ClienteLoginResponseDTO>.Fail("Email ou senha inválidos.");
+            }
+
+            if (!cliente.Ativo)
+            {
+                return Result<ClienteLoginResponseDTO>.Fail("Conta inativa.");
+            }
+
+            var token = GenerateJwtToken(cliente);
+
+            return Result<ClienteLoginResponseDTO>.Ok(new ClienteLoginResponseDTO
+            {
+                Id = cliente.Id,
+                Nome = cliente.Nome,
+                Email = cliente.Email,
+                Token = token
+            });
+        }
+
+        private string GenerateJwtToken(ClienteFinal cliente)
+        {
+            var secretKey = _configuration["Jwt:Key"] ?? "MinhaSuperChaveSecretaParaJWT1234567890";
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, cliente.Id.ToString()),
+                new Claim(ClaimTypes.Email, cliente.Email ?? ""),
+                new Claim(ClaimTypes.Name, cliente.Nome),
+                new Claim(ClaimTypes.Role, "ClienteFinal") // Role específica para clientes
+            };
+
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.UtcNow.AddDays(30), // Sessão mais longa para clientes
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private string HashPassword(string password)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                return Convert.ToBase64String(hashedBytes);
+            }
+        }
+
+        private bool VerifyPasswordHash(string password, string hash)
+        {
+            var hashOfInput = HashPassword(password);
+            return hashOfInput == hash;
         }
     }
 }

@@ -11,6 +11,7 @@ namespace Controle.Application.Interfaces
         Task<Loja> AbrirFecharLojaAsync(Guid lojaId, bool? aberta);
         Task<Loja> CriarLojaAsync(CreateLojaDTO dto);
         Task<Loja> AtualizarLojaAsync(Guid lojaId, UpdateLojaDTO dto);
+        Task<Loja?> GetLojaByIdAsync(Guid lojaId);
         Task<IEnumerable<Loja>> GetLojasByUsuarioIdAsync(Guid usuarioId);
     }
 }

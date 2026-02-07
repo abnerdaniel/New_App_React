@@ -21,6 +21,19 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Obtém os dados completos de uma loja pelo ID.
+        /// </summary>
+        [HttpGet("{lojaId}")]
+        [ProducesResponseType(typeof(Loja), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLojaById(Guid lojaId)
+        {
+            var loja = await _lojaService.GetLojaByIdAsync(lojaId);
+            if (loja == null) return NotFound();
+            return Ok(loja);
+        }
+
+        /// <summary>
         /// Lista as lojas do usuário logado.
         /// </summary>
         [HttpGet("usuario/{usuarioId}")]

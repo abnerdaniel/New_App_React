@@ -31,24 +31,60 @@ export function SetupCompany() {
     complemento: "",
     bairro: "",
     cidade: "",
-    estado: ""
+    estado: "",
+    abertaManualmente: true
   });
 
   useEffect(() => {
-    // Check if we are in "Create Mode" forced via navigation state
-    const isCreateMode = location.state?.mode === 'create';
+    const fetchLojaDetails = async () => {
+      if (user && user.lojas && user.lojas.length > 0) {
+        const lojaId = user.lojas[0].id;
+        try {
+          // Fetch full details
+          const response = await api.get(`/api/loja/${lojaId}`);
+          const lojaDetalhada = response.data;
+          
+          setFormData((prev: any) => ({
+            ...prev,
+            nome: lojaDetalhada.nome || "",
+            cpfCnpj: lojaDetalhada.cpfCnpj || "",
+            telefone: lojaDetalhada.telefone || "",
+            email: lojaDetalhada.email || user.email || "",
+            instagram: lojaDetalhada.instagram || "",
+            facebook: lojaDetalhada.facebook || "",
+            twitter: lojaDetalhada.twitter || "",
+            linkedIn: lojaDetalhada.linkedIn || "",
+            whatsApp: lojaDetalhada.whatsApp || "",
+            telegram: lojaDetalhada.telegram || "",
+            youTube: lojaDetalhada.youTube || "",
+            twitch: lojaDetalhada.twitch || "",
+            tikTok: lojaDetalhada.tikTok || "",
+            // Endereço
+            cep: lojaDetalhada.cep || "",
+            logradouro: lojaDetalhada.logradouro || "",
+            numero: lojaDetalhada.numero || "",
+            complemento: lojaDetalhada.complemento || "",
+            bairro: lojaDetalhada.bairro || "",
+            cidade: lojaDetalhada.cidade || "",
+            estado: lojaDetalhada.estado || "",
+            // Configurações
+            categoria: lojaDetalhada.categoria,
+            avaliacao: lojaDetalhada.avaliacao,
+            tempoMinimoEntrega: lojaDetalhada.tempoMinimoEntrega,
+            tempoMaximoEntrega: lojaDetalhada.tempoMaximoEntrega,
+            taxaEntregaFixa: lojaDetalhada.taxaEntregaFixa,
+            abertaManualmente: lojaDetalhada.abertaManualmente
+          }));
+        } catch (error) {
+          console.error("Erro ao buscar detalhes da loja:", error);
+          // Fallback to basic info if fail, or just log
+        }
+      }
+    };
 
-    if (!isCreateMode && user && user.lojas && user.lojas.length > 0) {
-      // Load current store data for editing
-      const lojaAtual = user.lojas[0];
-      setFormData((prev: any) => ({
-        ...prev,
-        nome: lojaAtual.nome === "Nova Loja" ? "" : lojaAtual.nome,
-        // ... populate other fields if available in user.lojas (Address not yet in user context usually)
-        email: user.email || ""
-      }));
-      // Note: Full store details (address) might need a separate fetch if not in AuthContext
-      // But keeping simple for now.
+    const isCreateMode = location.state?.mode === 'create';
+    if (!isCreateMode) {
+        fetchLojaDetails();
     }
   }, [user, location.state]);
 
@@ -249,6 +285,79 @@ export function SetupCompany() {
                </div>
             </div>
           </div>
+
+            <div className="border-t border-gray-100 pt-6">
+            <h3 className="text-lg font-semibold text-text-dark mb-4">Configurações da Loja</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-text-dark mb-1">Categoria</label>
+                  <input
+                    type="text"
+                    name="categoria"
+                    value={formData.categoria || ''}
+                    onChange={handleChange}
+                    placeholder="Ex: Lanches, Pizzaria"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+                  />
+                </div>
+                
+                 <div>
+                  <label className="block text-sm font-medium text-text-dark mb-1">Tempo Mín. Entrega (min)</label>
+                  <input
+                    type="number"
+                    name="tempoMinimoEntrega"
+                    value={formData.tempoMinimoEntrega || ''}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+                  />
+                </div>
+                 <div>
+                  <label className="block text-sm font-medium text-text-dark mb-1">Tempo Máx. Entrega (min)</label>
+                  <input
+                    type="number"
+                    name="tempoMaximoEntrega"
+                    value={formData.tempoMaximoEntrega || ''}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-dark mb-1">Taxa de Entrega (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="taxaEntregaFixa"
+                    value={formData.taxaEntregaFixa || ''}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all"
+                  />
+                </div>
+            </div>
+            
+             <div className="mt-6">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div>
+                        <h4 className="text-base font-medium text-gray-900">Status da Loja</h4>
+                        <p className="text-sm text-gray-500">Defina se sua loja está aberta ou fechada para pedidos.</p>
+                    </div>
+                    <div className="flex items-center">
+                         <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                name="abertaManualmente"
+                                checked={formData.abertaManualmente === true} 
+                                onChange={(e) => setFormData((prev: any) => ({ ...prev, abertaManualmente: e.target.checked }))}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                            <span className="ml-3 text-sm font-medium text-gray-900">{formData.abertaManualmente ? 'Aberta' : 'Fechada'}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+          </div>
+
+
 
           <div className="border-t border-gray-100 pt-6">
             <h3 className="text-lg font-semibold text-text-dark mb-4">Redes Sociais</h3>

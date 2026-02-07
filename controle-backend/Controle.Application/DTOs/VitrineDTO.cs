@@ -33,5 +33,6 @@ namespace Controle.Application.DTOs
         public decimal Preco { get; set; }
         public string UrlImagem { get; set; } = string.Empty;
         public bool Esgotado { get; set; }
+        public Guid LojaId { get; set; }
     }
 }

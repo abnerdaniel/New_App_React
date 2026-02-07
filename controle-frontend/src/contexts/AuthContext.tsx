@@ -10,6 +10,7 @@ interface AuthContextData {
   login: (authData: AuthResponse) => void;
   logout: () => void;
   selectLoja: (lojaId: string) => void;
+  updateActiveLoja: (dados: Partial<LojaResumo>) => void;
   isAuthenticated: boolean;
 }
 
@@ -103,6 +104,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.removeItem('@App:activeFuncionario');
   };
 
+  const updateActiveLoja = (dados: Partial<LojaResumo>) => {
+      if (!activeLoja) return;
+  
+      const novaLoja = { ...activeLoja, ...dados };
+      setActiveLoja(novaLoja);
+      localStorage.setItem('@App:activeLoja', JSON.stringify(novaLoja));
+      
+      if (user && user.lojas) {
+          const lojasAtualizadas = user.lojas.map(l => l.id === novaLoja.id ? novaLoja : l);
+          const novoUser = { ...user, lojas: lojasAtualizadas };
+          setUser(novoUser);
+          localStorage.setItem('@App:user', JSON.stringify(novoUser));
+      }
+  };
+
   const isAuthenticated = !!token && !!user;
 
   return (
@@ -116,6 +132,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         login,
         logout,
         selectLoja,
+        updateActiveLoja,
         isAuthenticated,
       }}
     >

@@ -44,6 +44,11 @@ namespace Controle.Infrastructure.Repositories
             return await _context.CientesFinais.FindAsync(id);
         }
 
+        public async Task<ClienteFinal?> GetByEmailAsync(string email)
+        {
+            return await _context.CientesFinais.FirstOrDefaultAsync(c => c.Email == email);
+        }
+
         public async Task UpdateAsync(ClienteFinal clienteFinal)
         {
             _context.CientesFinais.Update(clienteFinal);

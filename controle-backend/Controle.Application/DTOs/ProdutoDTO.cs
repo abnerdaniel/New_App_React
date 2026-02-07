@@ -9,7 +9,8 @@ namespace Controle.Application.DTOs
         public string? Categoria { get; set; }
         public string? ImagemUrl { get; set; }
         public bool Ativo { get; set; }
-        public string? Tipo { get; set; } // Adicionado para suportar busca por tipo
+        public string? Tipo { get; set; }
+        public Guid LojaId { get; set; }
     }
 
     public class CreateProdutoDTO

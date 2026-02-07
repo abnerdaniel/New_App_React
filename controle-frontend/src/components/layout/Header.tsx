@@ -1,17 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Menu, Store } from "lucide-react";
+import { api } from "../../api/axios";
 
 interface HeaderProps {
   onMobileMenuClick?: () => void;
 }
 
 export function Header({ onMobileMenuClick }: HeaderProps) {
-  const { user, logout, activeLoja, selectLoja } = useAuth();
+  const { user, logout, activeLoja, selectLoja, updateActiveLoja } = useAuth();
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const [showStoreMenu, setShowStoreMenu] = useState(false);
+  const storeMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close store menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (storeMenuRef.current && !storeMenuRef.current.contains(event.target as Node)) {
+        setShowStoreMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  async function handleToggleStatus() {
+      if (!activeLoja) return;
+
+      const novoStatus = !activeLoja.aberta;
+      
+      try {
+          // O backend espera status bool no body
+          await api.patch(`/api/loja/${activeLoja.id}/status`, novoStatus, {
+              headers: { 'Content-Type': 'application/json' }
+          });
+          
+          updateActiveLoja({ aberta: novoStatus });
+      } catch (error) {
+          console.error("Erro ao atualizar status da loja", error);
+          alert("Não foi possível atualizar o status da loja.");
+      }
+  }
 
   function handleLogout() {
     logout();
@@ -38,9 +71,28 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
       </div>
       {user && (
       <div className="flex items-center gap-4">
+        
+        {/* Status Toggle */}
+        {activeLoja && (
+            <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
+                <span className="text-xs font-semibold uppercase tracking-wider opacity-80">
+                    {activeLoja.aberta ? 'Aberta' : 'Fechada'}
+                </span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        checked={activeLoja.aberta || false} 
+                        onChange={handleToggleStatus}
+                        className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-black/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                </label>
+            </div>
+        )}
+
         {/* Store Selector */}
         {user?.lojas && user.lojas.length > 0 && (
-            <div className="relative">
+            <div className="relative" ref={storeMenuRef}>
                 <button 
                   onClick={() => setShowStoreMenu(!showStoreMenu)}
                   className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors border border-white/20"

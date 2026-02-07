@@ -42,4 +42,6 @@ public class Loja
     public decimal? TaxaEntregaFixa { get; set; }
     public decimal? TaxaPorKm { get; set; }
     public bool? AbertaManualmente { get; set; } // Null = Segue horário, True = Forçar Aberta, False = Forçar Fechada
+    public string? Categoria { get; set; } // Ex: Lanches, Japonesa
+    public double? Avaliacao { get; set; } // Ex: 4.8
 }

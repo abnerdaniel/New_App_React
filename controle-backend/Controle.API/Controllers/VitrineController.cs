@@ -20,6 +20,17 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Lista todas as lojas ativas para a home page do cliente.
+        /// </summary>
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> ListarLojas()
+        {
+            var lojas = await _vitrineService.ListarLojasAtivasAsync();
+            return Ok(lojas);
+        }
+
+        /// <summary>
         /// Obtém a vitrine da loja para o cliente (cardápio ativo).
         /// </summary>
         [HttpGet("{lojaId}")]

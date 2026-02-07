@@ -45,12 +45,7 @@ namespace Controle.Application.DTOs
         public List<FuncionarioResumoDTO> Funcionarios { get; set; } = new();
     }
 
-    public class LojaResumoDTO
-    {
-        public Guid Id { get; set; }
-        public string Nome { get; set; } = string.Empty;
-        public string? LogoUrl { get; set; }
-    }
+
 
     public class FuncionarioResumoDTO
     {

@@ -8,6 +8,7 @@ namespace Controle.Domain.Interfaces
     {
         Task<IEnumerable<ClienteFinal>> GetAllAsync();
         Task<ClienteFinal?> GetByIdAsync(int id);
+        Task<ClienteFinal?> GetByEmailAsync(string email);
         Task AddAsync(ClienteFinal clienteFinal);
         Task UpdateAsync(ClienteFinal clienteFinal);
         Task DeleteAsync(int id);

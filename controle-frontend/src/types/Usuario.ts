@@ -1,7 +1,15 @@
 export interface LojaResumo {
   id: string;
   nome: string;
-  logoUrl?: string;
+  imagemUrl?: string;
+  bannerUrl?: string;
+  descricao?: string;
+  categoria?: string;
+  avaliacao?: number;
+  tempoEntregaMin?: number;
+  tempoEntregaMax?: number;
+  taxaEntrega?: number;
+  aberta?: boolean;
 }
 
 export interface FuncionarioResumo {
