@@ -52,13 +52,22 @@ namespace Controle.Application.Services
 
             if (loja == null) return null;
 
-            // 2. Buscar todos os cardápios ativos da loja (com seus includes: Categorias e Produtos).
+            // 2. Buscar todos os produtos da loja para Lookup de Adicionais (Preço/Estoque)
+            var todosProdutosLoja = await _context.ProdutosLojas
+                .AsNoTracking()
+                .Where(pl => pl.LojaId == lojaId)
+                .Select(pl => new { pl.ProdutoId, pl.Id, pl.Preco, pl.Descricao, pl.Estoque, pl.Produto.Nome })
+                .ToDictionaryAsync(x => x.ProdutoId, x => x);
+
+            // 3. Buscar todos os cardápios ativos da loja (com seus includes: Categorias e Produtos).
             var cardapios = await _context.Cardapios
                 .AsNoTracking()
                 .Where(c => c.LojaId == lojaId && c.Ativo)
                 .Include(c => c.Categorias.OrderBy(cat => cat.OrdemExibicao))
                 .ThenInclude(cat => cat.Produtos)
                 .ThenInclude(pl => pl.Produto)
+                .ThenInclude(p => p.Adicionais) // Include Adicionais configuration
+                .ThenInclude(pa => pa.ProdutoFilho)
                 .Include(c => c.Categorias)
                 .ThenInclude(cat => cat.Combos)
                 .ThenInclude(cb => cb.Itens)
@@ -66,7 +75,7 @@ namespace Controle.Application.Services
                 .ThenInclude(pl => pl.Produto) // Ensure combo items also have product loaded if needed
                 .ToListAsync();
 
-            // 3. Lógica de Seleção de Cardápio:
+            // 4. Lógica de Seleção de Cardápio:
             var agora = DateTime.Now;
             var diaSemanaAtual = (int)agora.DayOfWeek; // 0 = Dom, 1 = Seg, ...
             var horaAtual = agora.TimeOfDay;
@@ -104,7 +113,7 @@ namespace Controle.Application.Services
                 cardapioSelecionado = cardapios.FirstOrDefault(c => c.Principal);
             }
 
-            // 4. Mapear e retornar o VitrineDTO.
+            // 5. Mapear e retornar o VitrineDTO.
             var vitrineDTO = new VitrineDTO
             {
                 LojaId = loja.Id,
@@ -130,7 +139,22 @@ namespace Controle.Application.Services
                             Preco = p.Preco,
                             UrlImagem = "", 
                             Esgotado = p.Estoque <= 0,
-                            LojaId = loja.Id
+                            LojaId = loja.Id,
+                            Adicionais = p.Produto?.Adicionais?
+                                .Where(pa => todosProdutosLoja.ContainsKey(pa.ProdutoFilhoId)) // Filtra apenas se existir na loja
+                                .Select(pa => {
+                                    var extraLoja = todosProdutosLoja[pa.ProdutoFilhoId];
+                                    return new ProdutoLojaDTO {
+                                        Id = extraLoja.Id,
+                                        Nome = extraLoja.Nome ?? extraLoja.Descricao,
+                                        Descricao = extraLoja.Descricao,
+                                        Preco = extraLoja.Preco,
+                                        Esgotado = (extraLoja.Estoque ?? 0) <= 0,
+                                        LojaId = loja.Id
+                                    };
+                                })
+                                .Where(ex => !ex.Esgotado) // Opcional: só mostrar se tiver estoque? Requisito: Estoque > 0 e Ativo = true (Ativo já implícito na query todosProdutosLoja?)
+                                .ToList() ?? new List<ProdutoLojaDTO>()
                         }).ToList(),
                         Combos = c.Combos.Where(cb => cb.Ativo).Select(cb => new ComboDTO
                         {

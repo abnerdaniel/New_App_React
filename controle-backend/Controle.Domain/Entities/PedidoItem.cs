@@ -13,4 +13,6 @@ public class PedidoItem
     
     public int? ComboId { get; set; } // Se o item for um combo
     public Combo? Combo { get; set; }
+
+    public ICollection<PedidoItemAdicional> Adicionais { get; set; } = new List<PedidoItemAdicional>();
 }

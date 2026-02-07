@@ -10,6 +10,10 @@ O projeto é um sistema de gestão para estabelecimentos alimentícios (Restaura
 - **Estrutura Base**: Controllers e Services para CRUDs principais (Loja, Funcionário, Produto, Categoria) implementados.
 - **Frontend**: Rotas e estrutura de páginas principais criadas.
 - **Banco de Dados**: Entidades principais definidas, incluindo Estoque (`ProdutoLoja`) e suporte a **Multicategorias** (`ProdutoCategoria`).
+- **Cardápio Digital**:
+  - URLs amigáveis (Slug) implementadas para lojas (`/loja/nome-da-loja`).
+  - **Adicionais/Extras**: Implementado no backend e frontend (Cliente) ✅.
+  - **Combos**: Listagem e exibição de itens implementada ✅.
 
 ---
 
@@ -103,10 +107,18 @@ O foco é permitir que uma venda aconteça do início ao fim.
 
 #### 2.3 Gestão de Cardápio e Combos
 
-- **Objetivo**: Permitir vitrines dinâmicas e promoções (Combos).
+- **Objetivo**: Permitir vitrines dinâmicas, promoções (Combos) e personalização (Adicionais).
 - **Funcionalidades**:
   - **Configuração de Vitrine**: Cadastro de regras de exibição (Dias, Horários, Validade).
   - **Cadastro de Combos**: Interface para selecionar produtos e definir preço único.
+  - **Cadastro de Combos**: Interface para selecionar produtos e definir preço único.
+  - **Gestão de Adicionais** (Admin):
+    - Interface no cadastro/edição de produtos para vincular extras.
+    - **Funcionalidade**: Listar extras disponíveis (Produtos com flag `IsAdicional`).
+    - **Criação Rápida**: Opção de "Criar Novo Adicional" diretamente na tela de vínculo, caso o extra desejado não exista (ex: "Ovo", "Bacon").
+    - **Reutilização**: Um adicional criado fica disponível para ser vinculado a `N` produtos da loja.
+    - **Preço**: O preço do adicional é somado ao produto principal no momento da venda.
+  - **Persistência de Pedido**: Salvar e buscar extras no pedido (Backend e Frontend Cliente ✅).
 - **Regra de Negócio**: O sistema deve validar se o item/combo está dentro do horário/dia permitido antes de vender.
 
 ### Fase 3: Financeiro e Gestão 🟢 Prioridade Planejada

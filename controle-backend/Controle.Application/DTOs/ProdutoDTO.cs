@@ -11,6 +11,9 @@ namespace Controle.Application.DTOs
         public bool Ativo { get; set; }
         public string? Tipo { get; set; }
         public Guid LojaId { get; set; }
+        
+        public bool IsAdicional { get; set; }
+        public List<int> AdicionaisIds { get; set; } = new();
     }
 
     public class CreateProdutoDTO
@@ -33,6 +36,9 @@ namespace Controle.Application.DTOs
         public string? URL_Audio { get; set; }
         public string? URL_Documento { get; set; }
         public Guid? LojaId { get; set; }
+        
+        public bool IsAdicional { get; set; }
+        public List<int> AdicionaisIds { get; set; } = new();
     }
 
     public class UpdateProdutoDTO
@@ -43,6 +49,10 @@ namespace Controle.Application.DTOs
         public string? Categoria { get; set; }
         public string? ImagemUrl { get; set; }
         public bool? Ativo { get; set; }
+
         public string? Tipo { get; set; }
+        
+        public bool? IsAdicional { get; set; }
+        public List<int>? AdicionaisIds { get; set; }
     }
 }

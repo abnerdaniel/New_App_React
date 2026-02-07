@@ -11,6 +11,8 @@ interface ProdutoEstoqueDTO {
   preco: number;
   estoque: number;
   imagemUrl?: string;
+  isAdicional?: boolean;
+  adicionaisIds?: number[];
 }
 
 interface ProdutoCatalogoDTO {
@@ -19,6 +21,7 @@ interface ProdutoCatalogoDTO {
     tipo: string;
     imagemUrl?: string;
     lojaId?: string;
+    isAdicional?: boolean;
 }
 
 interface Loja {
@@ -30,6 +33,66 @@ const PRODUTO_TIPOS = [
   "Pratos", "Lanches", "Porções/Petiscos", "Bebidas", "Sobremesas", 
   "Adicionais", "Combos", "Infantil", "Especiais"
 ];
+
+// Componente auxiliar para busca de adicionais
+function AdicionaisSearch({ catalogo, currentIds, onAdd, onCreateNew }: {
+    catalogo: ProdutoCatalogoDTO[],
+    currentIds: number[],
+    onAdd: (id: number) => void,
+    onCreateNew: (nome: string) => void
+}) {
+    const [term, setTerm] = useState("");
+    const [showDropdown, setShowDropdown] = useState(false);
+
+    // Filtra produtos que SÃO adicionais e ainda NÃO estão vinculados
+    const suggestions = catalogo.filter(c => 
+        c.isAdicional && 
+        !currentIds.includes(c.id) && 
+        c.nome.toLowerCase().includes(term.toLowerCase())
+    );
+
+    return (
+        <div className="relative">
+            <div className="relative">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                <input 
+                    placeholder="Buscar ou criar adicional..." 
+                    className="w-full h-9 pl-9 pr-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                    value={term}
+                    onChange={e => { setTerm(e.target.value); setShowDropdown(true); }}
+                    onFocus={() => setShowDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowDropdown(false), 200)} // Delay para clique funcionar
+                />
+            </div>
+            
+            {showDropdown && term && (
+                <div className="absolute top-10 left-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl z-20 max-h-48 overflow-y-auto">
+                    {suggestions.map(s => (
+                        <button
+                            key={s.id}
+                            type="button"
+                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex justify-between group"
+                            onClick={() => { onAdd(s.id); setTerm(""); }}
+                        >
+                            <span>{s.nome}</span>
+                            <span className="text-xs text-gray-400 group-hover:text-brand-primary">Adicionar</span>
+                        </button>
+                    ))}
+                    
+                    {suggestions.length === 0 && (
+                        <button
+                            type="button"
+                            className="w-full text-left px-4 py-2 hover:bg-brand-primary/5 text-sm text-brand-primary font-bold"
+                            onClick={() => { onCreateNew(term); setTerm(""); }}
+                        >
+                            + Criar novo: "{term}"
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 export function EstoquePage() {
   const { user } = useAuth();
@@ -58,7 +121,9 @@ export function EstoquePage() {
     tipo: PRODUTO_TIPOS[0],
     preco: "",
     estoque: "",
-    imagemUrl: ""
+    imagemUrl: "",
+    isAdicional: false,
+    adicionaisIds: [] as number[],
   });
 
   useEffect(() => {
@@ -126,6 +191,8 @@ export function EstoquePage() {
         await api.put(`/api/produto-loja/${editingProduto.produtoLojaId}`, {
           preco: precoCentavos,
           estoque: Number(formData.estoque),
+          isAdicional: formData.isAdicional,
+          adicionaisIds: formData.adicionaisIds
           // descricao: formData.descricao 
         });
         alert("Produto atualizado!");
@@ -146,7 +213,9 @@ export function EstoquePage() {
                 nome: formData.nome,
                 descricao: formData.descricao,
                 tipo: formData.tipo,
-                imagemUrl: formData.imagemUrl
+                imagemUrl: formData.imagemUrl,
+                isAdicional: formData.isAdicional,
+                adicionaisIds: formData.adicionaisIds
             };
         }
 
@@ -171,7 +240,9 @@ export function EstoquePage() {
       tipo: prod.tipo,
       preco: (prod.preco / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 }), // Formata para 0,00
       estoque: prod.estoque.toString(),
-      imagemUrl: prod.imagemUrl || ""
+      imagemUrl: prod.imagemUrl || "",
+      isAdicional: prod.isAdicional || false,
+      adicionaisIds: prod.adicionaisIds || []
     });
     setIsModalOpen(true);
   };
@@ -193,7 +264,7 @@ export function EstoquePage() {
     setSelectedCatalogoItem(null);
     setIsCreatingNew(false);
     setSearchCatalogo("");
-    setFormData({ nome: "", descricao: "", tipo: PRODUTO_TIPOS[0], preco: "", estoque: "", imagemUrl: "" });
+    setFormData({ nome: "", descricao: "", tipo: PRODUTO_TIPOS[0], preco: "", estoque: "", imagemUrl: "", isAdicional: false, adicionaisIds: [] });
   };
 
   const handleSelectCatalogo = (item: ProdutoCatalogoDTO) => {
@@ -202,10 +273,12 @@ export function EstoquePage() {
       setSearchCatalogo(item.nome);
       // Pre-fill form (visual feedback)
       setFormData(prev => ({ 
-          ...prev, 
+           ...prev, 
           nome: item.nome, 
           tipo: item.tipo || PRODUTO_TIPOS[0],
-          imagemUrl: item.imagemUrl || ""
+          imagemUrl: item.imagemUrl || "",
+          isAdicional: item.isAdicional || false,
+          adicionaisIds: [] // Reset extras when selecting from catalog
       }));
   }
 
@@ -433,17 +506,87 @@ export function EstoquePage() {
                                         placeholder="Descreva o produto..."
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">URL da Imagem</label>
-                                    <input 
-                                        className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                                        value={formData.imagemUrl}
-                                        onChange={e => setFormData({...formData, imagemUrl: e.target.value})}
-                                        placeholder="https://..."
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">URL da Imagem</label>
+                                        <input 
+                                            className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                                            value={formData.imagemUrl}
+                                            onChange={e => setFormData({...formData, imagemUrl: e.target.value})}
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <input 
+                                            type="checkbox"
+                                            id="isAdicional"
+                                            className="w-4 h-4 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+                                            checked={formData.isAdicional}
+                                            onChange={e => setFormData({...formData, isAdicional: e.target.checked})}
+                                        />
+                                        <label htmlFor="isAdicional" className="text-sm font-medium text-gray-700 select-none">
+                                            Este produto é um Adicional/Extra?
+                                        </label>
+                                    </div>
+                                </>
+                            )}
+                            
+                            {/* SEÇÃO DE ADICIONAIS (Somente se NÃO for um adicional) */}
+                            {!formData.isAdicional && (editingProduto || isCreatingNew) && (
+                                <div className="space-y-3 pt-2 border-t border-dashed border-gray-200">
+                                    <h4 className="text-sm font-bold text-gray-700">Adicionais permitidos</h4>
+                                    <p className="text-xs text-gray-500">Selecione quais extras o cliente pode adicionar a este produto.</p>
+                                    
+                                    {/* Lista de selecionados */}
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {formData.adicionaisIds.map(id => {
+                                            const prod = catalogo.find(p => p.id === id); // Tenta achar no catalogo
+                                            const nome = prod ? prod.nome : `Adicional #${id}`;
+                                            return (
+                                                <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-50 text-yellow-700 text-xs rounded-full border border-yellow-200">
+                                                    {nome}
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setFormData(prev => ({ ...prev, adicionaisIds: prev.adicionaisIds.filter(x => x !== id) }))}
+                                                        className="hover:text-red-500"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            );
+                                        })}
+                                        {formData.adicionaisIds.length === 0 && (
+                                            <span className="text-xs text-gray-400 italic">Nenhum adicional vinculado.</span>
+                                        )}
+                                    </div>
+
+                                    {/* Busca para adicionar novo */}
+                                    <AdicionaisSearch 
+                                        catalogo={catalogo} 
+                                        currentIds={formData.adicionaisIds}
+                                        onAdd={(id) => setFormData(prev => ({ ...prev, adicionaisIds: [...prev.adicionaisIds, id] }))}
+                                        onCreateNew={async (nome) => {
+                                            if(!window.confirm(`Deseja criar um novo adicional "${nome}"?`)) return;
+                                            try {
+                                                // Cria produto base tipo Adicional
+                                                const res = await api.post("/api/produtos", {
+                                                    nome,
+                                                    tipo: "Adicionais",
+                                                    isAdicional: true,
+                                                    preco: 0,
+                                                    lojaId: selectedLojaId
+                                                });
+                                                const novoId = res.data.id;
+                                                await loadCatalogo(); // Recarrega para ter os dados
+                                                setFormData(prev => ({ ...prev, adicionaisIds: [...prev.adicionaisIds, novoId] }));
+                                            } catch (err) {
+                                                console.error(err);
+                                                alert("Erro ao criar adicional rápido.");
+                                            }
+                                        }}
                                     />
                                 </div>
-                            </>
-                        )}
+                            )}
                         
                         {/* Se vinculando existente, mostra resumo */}
                         {selectedCatalogoItem && !isCreatingNew && !editingProduto && (

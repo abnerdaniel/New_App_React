@@ -119,8 +119,49 @@ namespace Controle.Application.Services
                             ProdutoLojaId = produtoLoja.Id,
                             NomeProduto = produtoLoja.Descricao,
                             PrecoVenda = produtoLoja.Preco,
-                            Quantidade = itemDto.Qtd
+                            Quantidade = itemDto.Qtd,
+                            Adicionais = new List<PedidoItemAdicional>()
                         };
+
+                        // LÓGICA DE ADICIONAIS
+                        if (itemDto.AdicionaisIds != null && itemDto.AdicionaisIds.Any())
+                        {
+                            // Buscar os produtosloja dos adicionais para pegar preço e estoque atual
+                            var adicionaisLojas = await _context.ProdutosLojas
+                                .Where(pl => itemDto.AdicionaisIds.Contains(pl.Id))
+                                .ToListAsync();
+
+                            foreach (var idAdicional in itemDto.AdicionaisIds)
+                            {
+                                var adicionalLoja = adicionaisLojas.FirstOrDefault(pl => pl.Id == idAdicional);
+                                if (adicionalLoja == null) continue; // Ou lançar erro
+
+                                // Validar Estoque do Adicional (Considerando que cada unidade do item principal leva 1 do adicional)
+                                int qtdAdicionalNecessaria = itemDto.Qtd; 
+                                if (adicionalLoja.QuantidadeEstoque < qtdAdicionalNecessaria)
+                                {
+                                     throw new DomainException($"Estoque insuficiente para o adicional {adicionalLoja.Descricao}.");
+                                }
+
+                                // Baixar Estoque do Adicional
+                                adicionalLoja.QuantidadeEstoque -= qtdAdicionalNecessaria;
+                                adicionalLoja.Vendas += qtdAdicionalNecessaria;
+
+                                // Adicionar ao PedidoItem
+                                pedidoItem.Adicionais.Add(new PedidoItemAdicional
+                                {
+                                    ProdutoLojaId = adicionalLoja.Id,
+                                    PrecoVenda = adicionalLoja.Preco
+                                });
+
+                                // Somar ao total do item (ou do pedido?)
+                                // O PreçoVenda do PedidoItem geralmente é unitário ou total? 
+                                // No modelo atual: pedidoItem.PrecoVenda é unitário do produto principal.
+                                // O valorTotal do pedido soma (PrecoItem + PrecoAdicionais) * Quantidade?
+                                // Vamos somar o valor dos adicionais ao valorTotal do pedido diretamente.
+                                valorTotal += (decimal)adicionalLoja.Preco * itemDto.Qtd;
+                            }
+                        }
 
                         pedido.Sacola.Add(pedidoItem);
                         valorTotal += (decimal)pedidoItem.PrecoVenda * pedidoItem.Quantidade;

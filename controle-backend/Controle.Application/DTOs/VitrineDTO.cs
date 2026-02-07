@@ -34,5 +34,7 @@ namespace Controle.Application.DTOs
         public string UrlImagem { get; set; } = string.Empty;
         public bool Esgotado { get; set; }
         public Guid LojaId { get; set; }
+        public bool IsAdicional { get; set; }
+        public List<ProdutoLojaDTO> Adicionais { get; set; } = new(); // Lista de produtos extras disponíveis
     }
 }

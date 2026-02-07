@@ -23,6 +23,8 @@ public class AppDbContext : DbContext
     public DbSet<Combo> Combos { get; set; }
     public DbSet<ComboItem> ComboItems { get; set; }
     public DbSet<ProdutoCategoria> ProdutoCategorias { get; set; }
+    public DbSet<ProdutoAdicional> ProdutoAdicionais { get; set; }
+    public DbSet<PedidoItemAdicional> PedidoItemAdicionais { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,5 +50,21 @@ public class AppDbContext : DbContext
             .HasOne(pc => pc.Categoria)
             .WithMany(c => c.ProdutoCategorias)
             .HasForeignKey(pc => pc.CategoriaId);
+
+        // Configuração ProdutoAdicional (Many-to-Many Self Referencing)
+        modelBuilder.Entity<ProdutoAdicional>()
+            .HasKey(pa => new { pa.ProdutoPaiId, pa.ProdutoFilhoId });
+
+        modelBuilder.Entity<ProdutoAdicional>()
+            .HasOne(pa => pa.ProdutoPai)
+            .WithMany(p => p.Adicionais)
+            .HasForeignKey(pa => pa.ProdutoPaiId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ProdutoAdicional>()
+            .HasOne(pa => pa.ProdutoFilho)
+            .WithMany()
+            .HasForeignKey(pa => pa.ProdutoFilhoId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

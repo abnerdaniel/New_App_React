@@ -23,6 +23,8 @@ namespace Controle.Application.DTOs
         public int ProdutoLojaId { get; set; }
         public int? CategoriaId { get; set; }
         public List<int> CategoriaIds { get; set; } = new();
+        public bool IsAdicional { get; set; }
+        public List<int> AdicionaisIds { get; set; } = new();
     }
 
     public class UpdateProdutoLojaRequest
@@ -34,5 +36,7 @@ namespace Controle.Application.DTOs
         public string? ImagemUrl { get; set; }
         public int? CategoriaId { get; set; } // Legacy/Primary
         public List<int> CategoriaIds { get; set; } = new();
+        public bool? IsAdicional { get; set; }
+        public List<int>? AdicionaisIds { get; set; }
     }
 }

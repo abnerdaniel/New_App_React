@@ -40,6 +40,8 @@ namespace Controle.Infrastructure.Repositories
         {
             return await _context.ProdutosLojas
                 .Include(pl => pl.ProdutoCategorias)
+                .Include(pl => pl.Produto)
+                    .ThenInclude(p => p.Adicionais)
                 .FirstOrDefaultAsync(pl => pl.Id == id);
         }
 
@@ -60,7 +62,8 @@ namespace Controle.Infrastructure.Repositories
             return await _context.ProdutosLojas
                 .Where(pl => pl.LojaId == lojaId)
                 .Include(pl => pl.ProdutoCategorias)
-                .Include(pl => pl.Produto) // Critical for performance
+                .Include(pl => pl.Produto)
+                    .ThenInclude(p => p.Adicionais) // Load extras!
                 .AsNoTracking() // Optimization for read-only lists
                 .ToListAsync();
         }

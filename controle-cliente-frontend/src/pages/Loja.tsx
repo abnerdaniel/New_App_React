@@ -41,8 +41,8 @@ export function LojaPage() {
     setIsModalOpen(true);
   };
 
-  const handleAddToCart = (produto: Produto, quantidade: number, observacao: string) => {
-    addItem(produto, quantidade, observacao);
+  const handleAddToCart = (produto: Produto, quantidade: number, observacao: string, extras: Produto[]) => {
+    addItem(produto, quantidade, observacao, extras);
     setIsModalOpen(false);
   };
 
@@ -140,7 +140,6 @@ export function LojaPage() {
                         >
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded">COMBO</span>
                                     <h3 className="font-semibold text-gray-900">{combo.nome}</h3>
                                 </div>
                                 <p className="text-sm text-gray-500 line-clamp-2 mt-1 mb-2">{combo.descricao}</p>

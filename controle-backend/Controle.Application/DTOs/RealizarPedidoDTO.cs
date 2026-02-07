@@ -15,5 +15,6 @@ namespace Controle.Application.DTOs
         public int? IdProduto { get; set; }
         public int? IdCombo { get; set; }
         public int Qtd { get; set; }
+        public List<int> AdicionaisIds { get; set; } = new(); // Lista de IDs de adicionais (ProdutoAdicional.Id ou ProdutoLoja.Id? Provavelmente ProdutoLojaId dos extras)
     }
 }

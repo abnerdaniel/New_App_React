@@ -76,7 +76,8 @@ export function CheckoutPage() {
             enderecoEntregaId: selectedEndereco,
             itens: items.map(item => ({
                 idProduto: item.produto.id,
-                qtd: item.quantidade
+                qtd: item.quantidade,
+                adicionaisIds: item.extras ? item.extras.map(e => parseInt(e.id)) : [] // Mapping extras IDs
             })),
             // Obs: Backend atual não tem campo estruturado para pagamento no DTO de entrada principal, 
             // talvez precise enviar como observação ou ajustar o backend.

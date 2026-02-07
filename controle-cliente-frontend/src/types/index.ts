@@ -20,6 +20,7 @@ export interface Produto {
   imagemUrl?: string;
   categoriaId: string;
   lojaId: string;
+  adicionais?: Produto[]; // Produtos extras
 }
 
 export interface ComboItem {

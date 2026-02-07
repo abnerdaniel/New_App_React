@@ -6,18 +6,20 @@ interface ProductModalProps {
   produto: Produto | null;
   isOpen: boolean;
   onClose: () => void;
-  onAddToCart: (produto: Produto, quantidade: number, observacao: string) => void;
+  onAddToCart: (produto: Produto, quantidade: number, observacao: string, extras: Produto[]) => void;
 }
 
 export function ProductModal({ produto, isOpen, onClose, onAddToCart }: ProductModalProps) {
   const [quantidade, setQuantidade] = useState(1);
   const [observacao, setObservacao] = useState('');
+  const [selectedExtras, setSelectedExtras] = useState<Produto[]>([]);
 
   // Reset state when modal opens with new product
   useEffect(() => {
     if (isOpen) {
       setQuantidade(1);
       setObservacao('');
+      setSelectedExtras([]);
     }
   }, [isOpen, produto]);
 
@@ -27,7 +29,22 @@ export function ProductModal({ produto, isOpen, onClose, onAddToCart }: ProductM
     if (e.target === e.currentTarget) onClose();
   };
 
-  const total = produto.preco * quantidade;
+  const toggleExtra = (extra: Produto) => {
+    setSelectedExtras(current => {
+      const exists = current.find(e => e.id === extra.id);
+      if (exists) {
+        return current.filter(e => e.id !== extra.id);
+      }
+      return [...current, extra];
+    });
+  };
+
+  const extrasTotal = selectedExtras.reduce((acc, extra) => acc + extra.preco, 0);
+  const total = (produto.preco + extrasTotal) * quantidade;
+
+  // Format currency helper
+  const formatCurrency = (value: number) => 
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
   return (
     <div 
@@ -59,8 +76,44 @@ export function ProductModal({ produto, isOpen, onClose, onAddToCart }: ProductM
 
         {/* Conteúdo Scrollável */}
         <div className="p-6 overflow-y-auto flex-1">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{produto.nome}</h2>
+          <div className="flex justify-between items-start mb-2">
+            <h2 className="text-2xl font-bold text-gray-900">{produto.nome}</h2>
+            <span className="text-lg font-bold text-green-700">{formatCurrency(produto.preco)}</span>
+          </div>
           <p className="text-gray-600 mb-6 leading-relaxed">{produto.descricao}</p>
+
+          {/* Adicionais / Extras */}
+          {produto.adicionais && produto.adicionais.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-semibold text-gray-800 mb-3">Adicionais</h3>
+              <div className="space-y-2">
+                {produto.adicionais.map(extra => {
+                   const isSelected = selectedExtras.some(e => e.id === extra.id);
+                   return (
+                     <label 
+                        key={extra.id} 
+                        className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                          isSelected ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                     >
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleExtra(extra)}
+                            className="w-5 h-5 text-red-600 rounded border-gray-300 focus:ring-red-500"
+                          />
+                          <span className="text-gray-700 font-medium">{extra.nome}</span>
+                        </div>
+                        <span className="text-gray-600 font-medium">
+                          +{formatCurrency(extra.preco)}
+                        </span>
+                     </label>
+                   );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="mb-6">
             <label htmlFor="obs" className="block text-sm font-medium text-gray-700 mb-2">
@@ -98,11 +151,11 @@ export function ProductModal({ produto, isOpen, onClose, onAddToCart }: ProductM
             </div>
 
             <button 
-              onClick={() => onAddToCart(produto, quantidade, observacao)}
+              onClick={() => onAddToCart(produto, quantidade, observacao, selectedExtras)}
               className="flex-1 bg-red-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-700 transition-colors flex justify-between items-center shadow-md hover:shadow-lg transform active:scale-[0.98] duration-100"
             >
               <span>Adicionar</span>
-              <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}</span>
+              <span>{formatCurrency(total)}</span>
             </button>
           </div>
         </div>
