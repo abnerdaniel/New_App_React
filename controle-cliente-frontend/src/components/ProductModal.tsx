@@ -7,9 +7,10 @@ interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddToCart: (produto: Produto, quantidade: number, observacao: string, extras: Produto[]) => void;
+  isStoreClosed?: boolean;
 }
 
-export function ProductModal({ produto, isOpen, onClose, onAddToCart }: ProductModalProps) {
+export function ProductModal({ produto, isOpen, onClose, onAddToCart, isStoreClosed = false }: ProductModalProps) {
   const [quantidade, setQuantidade] = useState(1);
   const [observacao, setObservacao] = useState('');
   const [selectedExtras, setSelectedExtras] = useState<Produto[]>([]);
@@ -152,10 +153,15 @@ export function ProductModal({ produto, isOpen, onClose, onAddToCart }: ProductM
 
             <button 
               onClick={() => onAddToCart(produto, quantidade, observacao, selectedExtras)}
-              className="flex-1 bg-red-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-700 transition-colors flex justify-between items-center shadow-md hover:shadow-lg transform active:scale-[0.98] duration-100"
+              disabled={isStoreClosed}
+              className={`flex-1 font-semibold py-3 px-4 rounded-lg flex justify-between items-center shadow-md transition-all duration-200
+                ${isStoreClosed 
+                  ? 'bg-gray-400 cursor-not-allowed text-gray-100' 
+                  : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg transform active:scale-[0.98]'
+                }`}
             >
-              <span>Adicionar</span>
-              <span>{formatCurrency(total)}</span>
+              <span>{isStoreClosed ? 'Loja Fechada' : 'Adicionar'}</span>
+              {!isStoreClosed && <span>{formatCurrency(total)}</span>}
             </button>
           </div>
         </div>

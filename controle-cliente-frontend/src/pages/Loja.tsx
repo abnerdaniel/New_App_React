@@ -93,6 +93,9 @@ export function LojaPage() {
       setIsComboModalOpen(false);
   }
 
+  // Determine if store is closed
+  const isLojaFechada = loja ? !loja.aberto : false;
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
   }
@@ -108,13 +111,21 @@ export function LojaPage() {
         <img 
           src={loja.bannerUrl || loja.imagemUrl} 
           alt={loja.nome}
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover ${isLojaFechada ? 'grayscale' : ''}`}
         />
         <div className="absolute top-4 left-4">
           <Link to="/" className="bg-white/90 p-2 rounded-full shadow-lg hover:bg-white transition-colors flex items-center justify-center">
              <ArrowLeft className="w-6 h-6 text-gray-700" />
           </Link>
         </div>
+        
+        {isLojaFechada && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[2px]">
+            <div className="bg-red-600 text-white px-6 py-3 rounded-full font-bold shadow-xl transform -rotate-2 border-2 border-white/20">
+              LOJA FECHADA
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Info da Loja */}
@@ -132,6 +143,11 @@ export function LojaPage() {
                     <span>{loja.avaliacao}</span>
                     </div>
                 )}
+                 {isLojaFechada && (
+                   <span className="mt-2 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-100">
+                     Fechada no momento
+                   </span>
+                 )}
             </div>
           </div>
           
@@ -240,6 +256,7 @@ export function LojaPage() {
         onClose={() => setIsModalOpen(false)}
         produto={selectedProduct}
         onAddToCart={handleAddToCart}
+        isStoreClosed={isLojaFechada}
       />
 
       <ComboModal 
@@ -247,6 +264,7 @@ export function LojaPage() {
         onClose={() => setIsComboModalOpen(false)}
         combo={selectedCombo}
         onAddToCart={handleAddComboToCart}
+        isStoreClosed={isLojaFechada}
       />
 
         {count > 0 && (

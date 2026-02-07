@@ -7,9 +7,10 @@ interface ComboModalProps {
   onClose: () => void;
   combo: Combo | null;
   onAddToCart: (combo: Combo, quantity: number, extras: { [itemId: number]: Produto[] }, observacao: string) => void;
+  isStoreClosed?: boolean;
 }
 
-export function ComboModal({ isOpen, onClose, combo, onAddToCart }: ComboModalProps) {
+export function ComboModal({ isOpen, onClose, combo, onAddToCart, isStoreClosed = false }: ComboModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [observacao, setObservacao] = useState('');
   
@@ -177,12 +178,19 @@ export function ComboModal({ isOpen, onClose, combo, onAddToCart }: ComboModalPr
 
                 <button
                   onClick={handleConfirm}
-                  className="flex-1 bg-orange-600 text-white py-3 px-6 rounded-xl font-bold hover:bg-orange-700 shadow-lg shadow-orange-600/30 flex items-center justify-between transition-transform active:scale-95"
+                  disabled={isStoreClosed}
+                  className={`flex-1 py-3 px-6 rounded-xl font-bold flex items-center justify-between transition-transform 
+                    ${isStoreClosed 
+                      ? 'bg-gray-400 cursor-not-allowed text-gray-100 shadow-none' 
+                      : 'bg-orange-600 text-white hover:bg-orange-700 shadow-lg shadow-orange-600/30 active:scale-95'
+                    }`}
                 >
-                  <span>Adicionar Combo</span>
-                  <span>
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
-                  </span>
+                  <span>{isStoreClosed ? 'Loja Fechada' : 'Adicionar Combo'}</span>
+                  {!isStoreClosed && (
+                    <span>
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPrice)}
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
