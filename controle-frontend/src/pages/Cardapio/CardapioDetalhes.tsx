@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Trash2, Edit2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Edit2, ArrowLeft, MoreVertical, GripVertical } from 'lucide-react';
+import { ItemSelectorModal } from '../../components/ItemSelectorModal';
 
 // --- Interfaces ---
 interface Categoria {
@@ -12,50 +13,25 @@ interface Categoria {
     cardapioId: number;
 }
 
-interface ProdutoLoja {
-    id: number; // This is ProdutoLojaId
-    produtoId: number;
-    nome: string; 
-    preco: number;
-    categoriaId?: number | null; // Keep for legacy/compat
-    categoriaIds: number[]; // Main field for multi-category
-    imagemUrl?: string;
-    type: 'PRODUTO';
-    produtoLoja?: {
-        nome?: string;
-        descricao?: string;
-        produto?: { nome: string }
-    };
-    disponivel?: boolean;
-}
-
-interface Combo {
+interface ItemMenu {
     id: number;
     nome: string;
     preco: number;
-    categoriaId?: number | null; 
-    // Combos currently support single category in backend (CategoriaId), 
-    // but if we want consistency we might need to update Combos too using the same logic.
-    // For now, let's assume Combos are still single-category or handled via CategoriaId?
-    // Wait, the user asked for "Combos" too? 
-    // The previous prompt said: "ao gerenciar menus tem que aparecer os combos tambem... posso incluir e excluir os combos da mesma forma que produtos."
-    // Ideally Combos should also support multiple categories. 
-    // BUT I only updated ProdutoLoja schema. Combo schema still has single CategoriaId.
-    // I will stick to single category for Combos for now to avoid scope creep, or treat it as single.
-    categoriaIds?: number[]; 
-    imagemUrl?: string;
-    cardapioId: number;
-    type: 'COMBO';
-    itens: any[];
-    ativo?: boolean;
+    descricao?: string; // Add description for UI
+    imagemUrl?: string; // Add image for UI
+    type: 'PRODUTO' | 'COMBO';
+    categoriaIds?: number[]; // For Products
+    categoriaId?: number | null; // For Combos (Legacy/Current)
+    disponivel?: boolean; // For Products
+    ativo?: boolean; // For Combos
+    // Helper for easier access
+    original: any; 
 }
 
 interface Cardapio {
     id: number;
     nome: string;
 }
-
-type ItemMenu = ProdutoLoja | Combo;
 
 export function CardapioDetalhes() {
     const { id } = useParams();
@@ -64,12 +40,15 @@ export function CardapioDetalhes() {
 
     const [cardapio, setCardapio] = useState<Cardapio | null>(null);
     const [categorias, setCategorias] = useState<Categoria[]>([]);
-    
-    // Unified Items State
-    const [items, setItems] = useState<ItemMenu[]>([]);
+    const [allItems, setAllItems] = useState<ItemMenu[]>([]); // Setup for Modal
     const [loading, setLoading] = useState(true);
 
-    // State for creating/editing category
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalType, setModalType] = useState<'PRODUTO' | 'COMBO'>('PRODUTO');
+    const [targetCategoryId, setTargetCategoryId] = useState<number | null>(null);
+
+    // Category Form State
     const [showCatForm, setShowCatForm] = useState(false);
     const [editingCat, setEditingCat] = useState<Categoria | null>(null);
     const [catName, setCatName] = useState('');
@@ -84,54 +63,44 @@ export function CardapioDetalhes() {
     async function loadData() {
         setLoading(true);
         try {
-            // 1. Get Cardapio Info
-            const cardapioRes = await api.get(`/api/cardapios/${id}`);
-            setCardapio(cardapioRes.data);
+            const [cardapioRes, catRes, prodRes, comboRes] = await Promise.all([
+                api.get(`/api/cardapios/${id}`),
+                api.get(`/api/categorias/cardapio/${id}`),
+                activeLoja ? api.get(`/api/produto-loja/loja/${activeLoja.id}/estoque`) : Promise.resolve({ data: [] }),
+                activeLoja ? api.get(`/api/combos/loja/${activeLoja.id}`) : Promise.resolve({ data: [] })
+            ]);
 
-            // 2. Get Categories
-            const catRes = await api.get(`/api/categorias/cardapio/${id}`);
+            setCardapio(cardapioRes.data);
             setCategorias(catRes.data);
 
-                // 3. Get All Store Products (Inventory) & Combos
-            if(activeLoja) {
-                const [prodRes, comboRes] = await Promise.all([
-                    api.get(`/api/produto-loja/loja/${activeLoja.id}/estoque`),
-                    api.get(`/api/combos/loja/${activeLoja.id}`)
-                ]);
+            // Map all items for the selector
+            const products: ItemMenu[] = prodRes.data.map((p: any) => ({
+                id: p.produtoLojaId,
+                nome: p.nome,
+                preco: p.preco,
+                descricao: p.descricao || p.produto?.descricao,
+                imagemUrl: p.imagemUrl || p.produto?.imagemUrl, // Adjust based on actual DTO
+                type: 'PRODUTO',
+                categoriaIds: p.categoriaIds || (p.categoriaId ? [p.categoriaId] : []),
+                disponivel: p.disponivel,
+                original: p
+            }));
 
-                const mappedProds: ProdutoLoja[] = prodRes.data.map((p: any) => ({
-                    id: p.produtoLojaId,
-                    produtoId: p.produtoId,
-                    nome: p.nome,
-                    preco: p.preco,
-                    categoriaId: p.categoriaId,
-                    categoriaIds: p.categoriaIds || (p.categoriaId ? [p.categoriaId] : []),
-                    type: 'PRODUTO',
-                    produtoLoja: {
-                        nome: p.nome,
-                        descricao: p.descricao,
-                        produto: { nome: p.nome }
-                   },
-                    disponivel: p.disponivel
-                }));
+            const combos: ItemMenu[] = comboRes.data.map((c: any) => ({
+                id: c.id,
+                nome: c.nome,
+                preco: c.preco,
+                descricao: c.descricao,
+                imagemUrl: c.imagemUrl,
+                type: 'COMBO',
+                categoriaId: c.categoriaId,
+                categoriaIds: c.categoriaId ? [c.categoriaId] : [], // Normalize
+                ativo: c.ativo,
+                original: c
+            }));
 
-                // Fetch ALL store combos. Do NOT filter by cardapioId yet, as they might be unassigned.
-                const mappedCombos: Combo[] = comboRes.data
-                    .map((c: any) => ({
-                        id: c.id,
-                        nome: c.nome,
-                        preco: c.preco,
-                        categoriaId: c.categoriaId,
-                        categoriaIds: c.categoriaId ? [c.categoriaId] : [],
-                        imagemUrl: c.imagemUrl,
-                        cardapioId: 0, // Placeholder, derived from Category later if needed
-                        type: 'COMBO',
-                        itens: c.itens,
-                        ativo: c.ativo
-                    }));
-                
-                setItems([...mappedProds, ...mappedCombos]);
-            }
+            setAllItems([...products, ...combos]);
+
         } catch(err) {
             console.error(err);
             alert("Erro ao carregar dados.");
@@ -140,152 +109,81 @@ export function CardapioDetalhes() {
         }
     }
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Carregando detalhes...</div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-500">Carregando...</div>;
 
-    // Filter Logic for Right Column
-    const availableProducts = items.filter(i => i.type === 'PRODUTO');
-    const availableCombos = items.filter(i => i.type === 'COMBO');
+    // Actions
+    const openAddModal = (catId: number, type: 'PRODUTO' | 'COMBO') => {
+        setTargetCategoryId(catId);
+        setModalType(type);
+        setIsModalOpen(true);
+    };
 
-    return (
-        <div className="p-6 max-w-7xl mx-auto">
-             <div className="flex items-center gap-4 mb-6">
-                <button onClick={() => navigate('/cardapio')} className="p-2 hover:bg-gray-100 rounded-full"><ArrowLeft /></button>
-                <h1 className="text-2xl font-bold text-gray-800">
-                    Gerenciar Itens: <span className="text-brand-primary">{cardapio?.nome}</span>
-                </h1>
-            </div>
+    const handleAddItems = async (selectedIds: number[], type: 'PRODUTO' | 'COMBO') => {
+        if (!targetCategoryId) return;
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Categories */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold">Categorias</h2>
-                        <button 
-                            onClick={() => { setEditingCat(null); setCatName(''); setShowCatForm(true); }}
-                            className="flex items-center gap-2 text-sm bg-brand-primary text-white px-3 py-2 rounded hover:bg-brand-hover"
-                        >
-                            <Plus size={16} /> Nova Categoria
-                        </button>
-                    </div>
+        try {
+            // Process sequentially or parallel
+            const promises = selectedIds.map(async (itemId) => {
+                const item = allItems.find(i => i.id === itemId && i.type === type);
+                if (!item) return;
 
-                    {showCatForm && (
-                        <div className="bg-gray-50 p-4 rounded border mb-4 animate-in fade-in">
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nome da Categoria</label>
-                            <div className="flex gap-2">
-                                <input 
-                                    className="flex-1 border p-2 rounded" 
-                                    value={catName} 
-                                    onChange={e => setCatName(e.target.value)} 
-                                    placeholder="Ex: Bebidas, Lanches..." 
-                                    autoFocus
-                                />
-                                <button 
-                                    onClick={saveCategoria} 
-                                    className="bg-green-600 text-white px-4 rounded font-bold"
-                                >
-                                    Salvar
-                                </button>
-                                <button 
-                                    onClick={() => setShowCatForm(false)} 
-                                    className="border px-4 rounded hover:bg-gray-200"
-                                >
-                                    Cancelar
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                if (type === 'PRODUTO') {
+                    const currentIds = item.categoriaIds || [];
+                    if (!currentIds.includes(targetCategoryId)) {
+                        const newIds = [...currentIds, targetCategoryId];
+                        await api.put(`/api/produto-loja/${item.id}/categorias`, newIds);
+                    }
+                } else {
+                    // Update Combo Category (Move)
+                    await api.patch(`/api/combos/${item.id}/categoria`, { categoriaId: targetCategoryId });
+                }
+            });
 
-                    <div className="space-y-4">
-                        {categorias.map(cat => (
-                            <div key={cat.id} className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                                <div className="bg-gray-50 p-3 flex justify-between items-center border-b">
-                                    <h3 className="font-bold text-gray-700">{cat.nome}</h3>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => startEditCat(cat)} className="p-1 hover:text-blue-600"><Edit2 size={16}/></button>
-                                        <button onClick={() => deleteCat(cat.id)} className="p-1 hover:text-red-600"><Trash2 size={16}/></button>
-                                    </div>
-                                </div>
-                                <div className="p-3 bg-white min-h-[50px] space-y-2">
-                                    {items.filter(i => (i.type === 'PRODUTO' ? i.categoriaIds?.includes(cat.id) : i.categoriaId === cat.id)).map(item => (
-                                        <div key={`${item.type}-${item.id}`} className="flex justify-between items-center p-2 border rounded bg-gray-50 text-sm">
-                                            <div className="flex items-center gap-2">
-                                                {item.type === 'COMBO' ? <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-1 rounded">COMBO</span> : <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1 rounded">PRODUTO</span>}
-                                                <span>{item.nome || (item.type === 'COMBO' ? 'Combo sem nome' : 'Produto sem nome')} {item.type === 'COMBO' ? <span className="text-xs text-gray-400">({(item as Combo).itens?.length} itens)</span> : '' }</span>
-                                                {item.type === 'PRODUTO' && (item as ProdutoLoja).disponivel === false && (
-                                                    <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded font-bold">Indisponível</span>
-                                                )}
-                                            </div>
-                                            <button 
-                                                onClick={() => removeCategory(item, cat.id)}
-                                                className="text-red-500 hover:underline text-xs"
-                                                title="Remover item desta categoria"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                            
-                                            <button 
-                                                onClick={() => toggleDisponibilidade(item)}
-                                                className="ml-2 text-gray-500 hover:text-brand-primary"
-                                                title="Alternar visibilidade"
-                                            >
-                                                {item.type === 'PRODUTO' ? (
-                                                    (item as ProdutoLoja).disponivel !== false 
-                                                        ? <Eye size={16} className="text-green-600" /> 
-                                                        : <EyeOff size={16} className="text-gray-400" />
-                                                ) : (
-                                                    (item as Combo).ativo
-                                                        ? <Eye size={16} className="text-green-600" />
-                                                        : <EyeOff size={16} className="text-gray-400" />
-                                                )}
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {items.filter(i => (i.type === 'PRODUTO' ? i.categoriaIds?.includes(cat.id) : i.categoriaId === cat.id)).length === 0 && (
-                                        <p className="text-xs text-center text-gray-400 py-2">Sem itens nesta categoria.</p>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                         {categorias.length === 0 && !showCatForm && (
-                            <p className="text-gray-500 text-center py-8 border-2 border-dashed rounded">Nenhuma categoria criada.</p>
-                        )}
-                    </div>
-                </div>
+            await Promise.all(promises);
+            await loadData(); // Refresh to show changes
+        } catch (error) {
+            console.error("Erro ao adicionar itens", error);
+            alert("Erro ao adicionar alguns itens.");
+        }
+    };
 
-                {/* Right Column: All Items (Add to Category) */}
-                <div className="bg-white p-4 rounded-lg shadow h-fit border flex flex-col max-h-[85vh]">
-                    <h2 className="text-lg font-semibold mb-4 text-gray-700">Adicionar Itens</h2>
-                    
-                    <div className="flex-1 overflow-y-auto space-y-6">
-                        {/* Section: Combos */}
-                        <div>
-                            <h3 className="text-sm font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-purple-500"></span> Combos
-                            </h3>
-                            <div className="space-y-2">
-                                {availableCombos.length === 0 && <p className="text-xs text-gray-400 italic">Nenhum combo disponível.</p>}
-                                {availableCombos.map(item => renderItemRow(item))}
-                            </div>
-                        </div>
+    const removeItem = async (item: ItemMenu, catId: number) => {
+        if(!confirm("Remover este item da categoria?")) return;
+        try {
+            if (item.type === 'PRODUTO') {
+                const newIds = (item.categoriaIds || []).filter(id => id !== catId);
+                await api.put(`/api/produto-loja/${item.id}/categorias`, newIds);
+            } else {
+                await api.patch(`/api/combos/${item.id}/categoria`, { categoriaId: null });
+            }
+            loadData();
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao remover item");
+        }
+    };
 
-                        {/* Section: Products */}
-                        <div>
-                            <h3 className="text-sm font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Produtos Individuais
-                            </h3>
-                             <div className="space-y-2">
-                                {availableProducts.length === 0 && <p className="text-xs text-gray-400 italic">Nenhum produto disponível.</p>}
-                                {availableProducts.map(item => renderItemRow(item))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+    const toggleStatus = async (item: ItemMenu) => {
+        try {
+            if (item.type === 'PRODUTO') {
+                const newStatus = item.disponivel === false ? true : false;
+                // Optimistic Update locally? Or just wait loadData. 
+                // loadData is safer but slower. Let's do loadData for consistency with refactor.
+                await api.put(`/api/produto-loja/${item.id}`, { disponivel: newStatus });
+            } else {
+                const newStatus = !item.ativo;
+                await api.patch(`/api/combos/${item.id}/status`, { ativo: newStatus });
+            }
+            loadData(); 
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao alterar status");
+        }
+    };
 
-    async function saveCategoria() {
-        if(!catName.trim() || !id) return;
+    // Category Actions
+    const saveCategoria = async () => {
+        if(!catName.trim()) return;
         try {
             if(editingCat) {
                 await api.put(`/api/categorias/${editingCat.id}`, { nome: catName, ordemExibicao: editingCat.ordemExibicao });
@@ -300,202 +198,177 @@ export function CardapioDetalhes() {
             console.error(e);
             alert("Erro ao salvar categoria");
         }
-    }
+    };
 
-    function startEditCat(c: Categoria) {
-        setEditingCat(c);
-        setCatName(c.nome);
-        setShowCatForm(true);
-    }
-
-    async function deleteCat(catId: number) {
-        if(!confirm("Excluir categoria?")) return;
+    const deleteCat = async (id: number) => {
+        if(!confirm("Tem certeza? Isso pode remover a associação dos itens.")) return;
         try {
-            await api.delete(`/api/categorias/${catId}`);
+            await api.delete(`/api/categorias/${id}`);
             loadData();
         } catch(e) {
             console.error(e);
-            alert("Erro ao excluir");
+            alert("Erro ao excluir categoria");
         }
-    }
+    };
 
-    function renderItemRow(item: ItemMenu) {
-        return (
-            <div key={`${item.type}-${item.id}`} className="flex justify-between items-center p-2 border rounded hover:bg-gray-50 bg-white">
-                <div className="truncate flex-1">
-                    <div className="flex items-center gap-1 mb-1">
-                            {item.type === 'COMBO' ? <span className="bg-purple-100 text-purple-700 text-[9px] font-bold px-1 rounded">COMBO</span> : null}
-                            <p className="font-medium text-sm truncate" title={item.nome}>{item.nome}</p>
-                            {item.type === 'PRODUTO' && (item as ProdutoLoja).disponivel === false && (
-                                <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded font-bold ml-1">Indisponível</span>
-                            )}
+    return (
+        <div className="min-h-screen bg-gray-50 pb-20">
+            {/* Header */}
+            <div className="bg-white border-b sticky top-0 z-10">
+                <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => navigate('/cardapio')} className="p-2 hover:bg-gray-100 rounded-full text-gray-600">
+                            <ArrowLeft />
+                        </button>
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-800">{cardapio?.nome}</h1>
+                            <p className="text-xs text-gray-500">Gerenciamento de Cardápio</p>
+                        </div>
                     </div>
-                    <div className="flex gap-1 flex-wrap">
-                        {/* Logic for displaying badges differs slightly */}
-                        {item.type === 'PRODUTO' ? (
-                            item.categoriaIds && item.categoriaIds.length > 0 ? (
-                                    item.categoriaIds.map(cid => {
-                                        const cName = categorias.find(c => c.id === cid)?.nome;
-                                        if(!cName) return null;
-                                        return <span key={cid} className="text-[10px] bg-gray-200 px-1 rounded text-gray-600">{cName}</span>
-                                    })
-                            ) : <span className="text-[10px] text-gray-400 italic">Sem categoria</span>
-                        ) : (
-                            item.categoriaId ? (
-                                <span className="text-[10px] bg-gray-200 px-1 rounded text-gray-600">
-                                    {categorias.find(c => c.id === item.categoriaId)?.nome || '(Outro Menu)'}
-                                </span>
-                            ) : <span className="text-[10px] text-gray-400 italic">Sem categoria</span>
-                        )}
-                    </div>
-                    <p className="text-xs text-gray-500">{(item.preco/100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</p>
-                </div>
-                
-                {/* Dropdown to ADD to category */}
-                <div className="flex items-center gap-2 ml-2">
-                     {/* Toggle Disponibilidade (Produtos e Combos) */}
                     <button 
-                        onClick={(e) => { e.stopPropagation(); toggleDisponibilidade(item); }}
-                        className="p-1 rounded hover:bg-gray-100"
-                        title="Alternar Visibilidade no Cardápio"
+                        onClick={() => { setEditingCat(null); setCatName(''); setShowCatForm(true); }}
+                        className="bg-brand-primary text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-brand-hover flex items-center gap-2 transition-colors"
                     >
-                        {item.type === 'PRODUTO' ? (
-                            (item as ProdutoLoja).disponivel !== false 
-                                ? <Eye size={18} className="text-green-600" /> 
-                                : <EyeOff size={18} className="text-gray-400" />
-                        ) : (
-                            (item as Combo).ativo
-                                ? <Eye size={18} className="text-green-600" />
-                                : <EyeOff size={18} className="text-gray-400" />
-                        )}
+                        <Plus size={18} /> Nova Categoria
                     </button>
-
-                    <div className="relative group">
-                            <button className="p-1 text-gray-400 hover:text-brand-primary bg-gray-100 rounded"><Plus size={16} /></button>
-                            <select 
-                            className="absolute right-0 top-0 opacity-0 w-8 h-8 cursor-pointer"
-                            onChange={(e) => addCategory(item, Number(e.target.value))}
-                            value=""
-                            >
-                            <option value="" disabled>Adicionar a...</option>
-                            {/* Only show categories the item is NOT already in */}
-                            {categorias.filter(c => {
-                                if (item.type === 'PRODUTO') return !item.categoriaIds?.includes(c.id);
-                                return item.categoriaId !== c.id; // For Combo, hide current category
-                            }).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                            </select>
-                    </div>
                 </div>
             </div>
-        );
-    }
 
-    async function addCategory(item: ItemMenu, categoriaId: number) {
-        if(!categoriaId) return;
-        try {
-            if(item.type === 'PRODUTO') {
-                const currentIds = item.categoriaIds || [];
-                if(currentIds.includes(categoriaId)) return;
+            <div className="max-w-3xl mx-auto px-4 mt-8 space-y-6">
                 
-                const newIds = [...currentIds, categoriaId];
-                // Call the new Bulk/List Update Endpoint
-                await api.put(`/api/produto-loja/${item.id}/categorias`, newIds);
-            } else {
-                // Combos - still single category logic for now? 
-                // User requirement implies multi-category for combos too but schema limitations.
-                // If I assume I can only move compo...
-                // Actually, I should probably switch combo logic if user *really* needs multi-cat for combos.
-                // But for now, let's just 'move' the combo (replace category).
-                await api.patch(`/api/combos/${item.id}/categoria`, { categoriaId });
-            }
-            loadData();
-        } catch(e) {
-             console.error(e);
-            alert("Erro ao adicionar categoria");
-        }
-    }
+                {/* Category Form */}
+                {showCatForm && (
+                     <div className="bg-white p-6 rounded-xl shadow-lg border-2 border-brand-primary/20 animate-in fade-in slide-in-from-top-4">
+                        <h3 className="font-bold text-gray-800 mb-4">{editingCat ? 'Editar Categoria' : 'Nova Categoria'}</h3>
+                        <div className="flex gap-3">
+                            <input 
+                                className="flex-1 border-gray-300 border px-4 rounded-lg focus:ring-2 focus:ring-brand-primary outline-none" 
+                                value={catName} 
+                                onChange={e => setCatName(e.target.value)} 
+                                placeholder="Nome da Categoria (ex: Bebidas)" 
+                                autoFocus
+                            />
+                            <button onClick={saveCategoria} className="bg-green-600 text-white px-6 rounded-lg font-bold hover:bg-green-700">Salvar</button>
+                            <button onClick={() => setShowCatForm(false)} className="border px-4 rounded-lg hover:bg-gray-50 text-gray-600">Cancelar</button>
+                        </div>
+                    </div>
+                )}
 
-    async function removeCategory(item: ItemMenu, categoriaId: number) {
-        try {
-            if(item.type === 'PRODUTO') {
-                 const currentIds = item.categoriaIds || [];
-                 const newIds = currentIds.filter(id => id !== categoriaId);
-                 
-                 // Optimistic Update
-                 setItems(prev => prev.map(i => {
-                     if (i.type === 'PRODUTO' && i.id === item.id) {
-                         return { ...i, categoriaIds: newIds };
-                     }
-                     return i;
-                 }));
+                {/* Categories List */}
+                {categorias.length === 0 && !showCatForm && (
+                    <div className="text-center py-12 text-gray-400">
+                        <p>Nenhuma categoria encontrada.</p>
+                        <p className="text-sm">Clique em "Nova Categoria" para começar.</p>
+                    </div>
+                )}
 
-                 await api.put(`/api/produto-loja/${item.id}/categorias`, newIds);
-            } else {
-                // Combos - remove means set to null
-                if(item.categoriaId === categoriaId) {
-                     // Optimistic Update
-                     setItems(prev => prev.map(i => {
-                        if (i.type === 'COMBO' && i.id === item.id) {
-                            return { ...i, categoriaId: null };
-                        }
-                        return i;
-                    }));
-                     await api.patch(`/api/combos/${item.id}/categoria`, { categoriaId: null });
+                {categorias.map(cat => {
+                    // Filter items for this category
+                    const catItems = allItems.filter(i => 
+                        i.type === 'PRODUTO' 
+                            ? i.categoriaIds?.includes(cat.id) 
+                            : i.categoriaId === cat.id
+                    );
+
+                    return (
+                        <div key={cat.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            {/* Category Header */}
+                            <div className="bg-gray-50 border-b px-6 py-4 flex justify-between items-center group">
+                                <div className="flex items-center gap-3">
+                                    <GripVertical className="text-gray-300 w-5 h-5 cursor-move" />
+                                    <h2 className="font-bold text-lg text-gray-800">{cat.nome}</h2>
+                                    <span className="bg-gray-200 text-gray-600 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                        {catItems.length} itens
+                                    </span>
+                                </div>
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => { setEditingCat(cat); setCatName(cat.nome); setShowCatForm(true); }} className="p-2 hover:bg-white rounded-lg text-gray-500 hover:text-blue-600"><Edit2 size={16}/></button>
+                                    <button onClick={() => deleteCat(cat.id)} className="p-2 hover:bg-white rounded-lg text-gray-500 hover:text-red-600"><Trash2 size={16}/></button>
+                                </div>
+                            </div>
+
+                            {/* Items List */}
+                            <div className="divide-y divide-gray-100">
+                                {catItems.length === 0 && (
+                                    <div className="p-8 text-center text-gray-400 text-sm italic">
+                                        Categoria vazia. Adicione itens abaixo.
+                                    </div>
+                                )}
+                                {catItems.map(item => {
+                                    const isUnavailable = item.type === 'PRODUTO' ? item.disponivel === false : item.ativo === false;
+                                    return (
+                                        <div key={`${item.type}-${item.id}`} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
+                                            <div className="flex items-center gap-4 flex-1">
+                                                {/* Status Toggle (Switch Style) */}
+                                                <button 
+                                                    onClick={() => toggleStatus(item)}
+                                                    className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${!isUnavailable ? 'bg-green-500' : 'bg-gray-300'}`}
+                                                    title={isUnavailable ? "Indisponível (Clique para ativar)" : "Disponível (Clique para desativar)"}
+                                                >
+                                                    <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${!isUnavailable ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                                </button>
+
+                                                <div className="flex-1 opacity-100 transition-opacity" style={{opacity: isUnavailable ? 0.5 : 1}}>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium text-gray-800">{item.nome}</span>
+                                                        {item.type === 'COMBO' && <span className="text-[10px] bg-purple-100 text-purple-700 font-bold px-1.5 rounded">COMBO</span>}
+                                                    </div>
+                                                    <p className="text-sm text-gray-500">
+                                                        {(item.preco/100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <button 
+                                                onClick={() => removeItem(item, cat.id)}
+                                                className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Remover da categoria"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Add Item Actions */}
+                            <div className="bg-gray-50/50 p-3 border-t flex justify-center gap-3">
+                                <button 
+                                    onClick={() => openAddModal(cat.id, 'PRODUTO')}
+                                    className="px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                    <Plus size={14} className="text-brand-primary" /> Adicionar Produto
+                                </button>
+                                <button 
+                                    onClick={() => openAddModal(cat.id, 'COMBO')}
+                                    className="px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                    <Plus size={14} className="text-purple-600" /> Adicionar Combo
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Modal */}
+            <ItemSelectorModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleAddItems}
+                type={modalType}
+                availableItems={allItems.filter(i => i.type === modalType)}
+                currentCategoryItems={
+                    targetCategoryId 
+                        ? allItems
+                            .filter(i => i.type === 'PRODUTO' 
+                                ? i.categoriaIds?.includes(targetCategoryId) 
+                                : i.categoriaId === targetCategoryId
+                            )
+                            .map(i => i.id)
+                        : []
                 }
-            }
-            // loadData(); // No longer strictly needed if optimistic update works, but good for sync. 
-            // Better to debouce or just rely on optimistic for immediate UI feedback.
-            // Let's keep it but the UI should already be updated.
-            loadData();
-        } catch(e) {
-            console.error(e);
-            alert("Erro ao remover categoria");
-            loadData(); // Revert on error
-        }
-    }
-
-    async function toggleDisponibilidade(item: ItemMenu) {
-        if (item.type === 'PRODUTO') {
-            const produto = item as ProdutoLoja;
-            const novoStatus = produto.disponivel === false ? true : false; 
-
-            try {
-                setItems(prev => prev.map(i => {
-                    if(i.type === 'PRODUTO' && i.id === item.id) {
-                        return { ...i, disponivel: novoStatus };
-                    }
-                    return i;
-                }));
-
-                await api.put(`/api/produto-loja/${item.id}`, {
-                    disponivel: novoStatus
-                });
-            } catch(e) {
-                console.error(e);
-                alert("Erro ao alterar disponibilidade");
-                loadData();
-            }
-        } else {
-            // COMBO
-            const combo = item as Combo;
-            const novoStatus = !combo.ativo;
-
-            try {
-                setItems(prev => prev.map(i => {
-                    if (i.type === 'COMBO' && i.id === item.id) {
-                        return { ...i, ativo: novoStatus };
-                    }
-                    return i;
-                }));
-
-                await api.patch(`/api/combos/${item.id}/status`, {
-                    ativo: novoStatus
-                });
-            } catch(e) {
-                console.error(e);
-                alert("Erro ao alterar disponibilidade do combo");
-                loadData();
-            }
-        }
-    }
+            />
+        </div>
+    );
 }
