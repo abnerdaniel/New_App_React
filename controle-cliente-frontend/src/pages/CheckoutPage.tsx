@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClientAuth } from '../context/ClientAuthContext';
 import { useCart } from '../context/CartContext';
-import { ArrowLeft, MapPin, DollarSign } from 'lucide-react';
+import { ArrowLeft, MapPin, DollarSign, Store, Trash2, Edit2 } from 'lucide-react';
 import { api } from '../services/api';
+import type { Endereco, Loja } from '../types';
 
 export function CheckoutPage() {
   const { cliente } = useClientAuth();
@@ -14,16 +15,37 @@ export function CheckoutPage() {
   const [loading, setLoading] = useState(false);
 
   // Endereço
-  const [enderecos, setEnderecos] = useState<any[]>([]);
+  const [enderecos, setEnderecos] = useState<Endereco[]>([]);
   const [selectedEndereco, setSelectedEndereco] = useState<number | null>(null);
   const [novoEndereco, setNovoEndereco] = useState({
-    logradouro: '', numero: '', bairro: '', cidade: '', estado: '', cep: '', complemento: ''
+    apelido: '', destinatario: '', logradouro: '', numero: '', bairro: '', cidade: '', estado: '', cep: '', complemento: ''
   });
   const [showNovoEndereco, setShowNovoEndereco] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
+
+  // Tipo de Entrega
+  const [isRetirada, setIsRetirada] = useState(false);
+  const [lojaData, setLojaData] = useState<Loja | null>(null);
+
+  useEffect(() => {
+      const fetchLoja = async () => {
+          if (items.length > 0) {
+              try {
+                  const lojaId = items[0].produto.lojaId;
+                  const response = await api.get(`/loja/${lojaId}`);
+                  setLojaData(response.data);
+              } catch (error) {
+                  console.error("Erro ao buscar dados da loja", error);
+              }
+          }
+      };
+      fetchLoja();
+  }, [items]);
 
   // Pagamento
   const [metodoPagamento, setMetodoPagamento] = useState('pix');
   const [trocoPara, setTrocoPara] = useState('');
+  const [observacao, setObservacao] = useState('');
 
   useEffect(() => {
     if (cliente) {
@@ -32,12 +54,22 @@ export function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cliente]);
 
-  const loadEnderecos = async () => {
+  const loadEnderecos = async (selectNewest = false) => {
     try {
       const response = await api.get(`/clientes/${cliente?.id}/enderecos`);
       setEnderecos(response.data);
+      
       if (response.data.length > 0) {
-        setSelectedEndereco(response.data[0].id);
+        if (selectNewest) {
+          // Selecionar o endereço com maior ID (mais recente)
+          const newest = response.data.reduce((prev: Endereco, current: Endereco) => 
+            (prev.id > current.id) ? prev : current
+          );
+          setSelectedEndereco(newest.id);
+        } else if (!selectedEndereco) {
+          // Selecionar o primeiro se nenhum estiver selecionado
+          setSelectedEndereco(response.data[0].id);
+        }
       } else {
         setShowNovoEndereco(true);
       }
@@ -82,20 +114,56 @@ export function CheckoutPage() {
     e.preventDefault();
     try {
       setLoading(true);
-      await api.post(`/clientes/${cliente?.id}/enderecos`, novoEndereco);
-      await loadEnderecos();
+      if (editingAddressId) {
+          await api.put(`/clientes/${cliente?.id}/enderecos/${editingAddressId}`, {
+              ...novoEndereco,
+              id: editingAddressId
+          });
+      } else {
+          await api.post(`/clientes/${cliente?.id}/enderecos`, novoEndereco);
+      }
+      
+      await loadEnderecos(true); // Recarrega e seleciona o novo/editado
       setShowNovoEndereco(false);
-      setNovoEndereco({ logradouro: '', numero: '', bairro: '', cidade: '', estado: '', cep: '', complemento: '' });
-    } catch (error) {
+      setEditingAddressId(null);
+      setNovoEndereco({ apelido: '', destinatario: '', logradouro: '', numero: '', bairro: '', cidade: '', estado: '', cep: '', complemento: '' });
+    } catch {
       alert('Erro ao salvar endereço');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleEditAddress = (endereco: Endereco) => {
+      setNovoEndereco({
+          apelido: endereco.apelido || '',
+          destinatario: endereco.destinatario || '',
+          logradouro: endereco.logradouro || '',
+          numero: endereco.numero || '',
+          bairro: endereco.bairro || '',
+          cidade: endereco.cidade || '',
+          estado: endereco.estado || '',
+          cep: endereco.cep || '',
+          complemento: endereco.complemento || ''
+      });
+      setEditingAddressId(endereco.id);
+      setShowNovoEndereco(true);
+  };
+
+  const handleDeleteAddress = async (enderecoId: number) => {
+      if (!confirm("Tem certeza que deseja remover este endereço?")) return;
+      try {
+          await api.delete(`/clientes/${cliente?.id}/enderecos/${enderecoId}`);
+          loadEnderecos();
+      } catch (error) {
+          console.error(error);
+          alert("Erro ao remover endereço.");
+      }
+  };
+
   const handleFinalizarPedido = async () => {
-    if (!selectedEndereco) {
-        alert('Selecione um endereço de entrega.');
+    if (!isRetirada && !selectedEndereco) {
+        alert('Selecione um endereço de entrega ou escolha Retirada.');
         return;
     }
 
@@ -105,24 +173,22 @@ export function CheckoutPage() {
         const pedidoDto = {
             lojaId: items[0].produto.lojaId, // Assume todos da mesma loja
             clienteId: cliente?.id,
-            enderecoEntregaId: selectedEndereco,
+            enderecoEntregaId: isRetirada ? null : selectedEndereco,
+            isRetirada: isRetirada,
             itens: items.map(item => ({
                 idProduto: item.produto.id,
                 qtd: item.quantidade,
                 adicionaisIds: item.extras ? item.extras.map(e => parseInt(e.id)) : [] // Mapping extras IDs
             })),
-            // Obs: Backend atual não tem campo estruturado para pagamento no DTO de entrada principal, 
-            // talvez precise enviar como observação ou ajustar o backend.
-            // Vou assumir que o backend vai evoluir ou posso mandar em um campo extra se existir.
-            // Por enquanto, vou omitir detalhes de pagamento no envio se o DTO não suportar, 
-            // mas o ideal é o backend suportar.
+            metodoPagamento: metodoPagamento,
+            trocoPara: metodoPagamento === 'dinheiro' && trocoPara ? parseFloat(trocoPara.replace(',', '.')) : null,
+            observacao: observacao
         };
 
         const response = await api.post('/pedidos', pedidoDto);
         
-        alert(`Pedido realizado com sucesso! ID: ${response.data.id}`);
         clearCart();
-        navigate('/'); // Voltar para home ou histórico
+        navigate(`/pedido-sucesso/${response.data.id}`);
     } catch (error) {
         console.error(error);
         alert('Erro ao realizar pedido.');
@@ -146,36 +212,87 @@ export function CheckoutPage() {
         {/* Etapa 1: Endereço */}
         <div className="bg-white p-4 rounded-xl shadow-sm">
             <h2 className="font-bold flex items-center gap-2 mb-4">
-                <MapPin className="text-brand-primary" size={20} />
-                Endereço de Entrega
+                {isRetirada ? <Store className="text-green-600" size={20} /> : <MapPin className="text-green-600" size={20} />}
+                {isRetirada ? 'Retirada na Loja' : 'Endereço de Entrega'}
             </h2>
 
-            {!showNovoEndereco && enderecos.length > 0 ? (
+            {/* Toggle Tipo Entrega */}
+            <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+                <button 
+                    onClick={() => setIsRetirada(false)}
+                    className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${!isRetirada ? 'bg-white shadow-sm text-green-600' : 'text-gray-500'}`}
+                >
+                    Entrega
+                </button>
+                <button 
+                    onClick={() => setIsRetirada(true)}
+                    className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${isRetirada ? 'bg-white shadow-sm text-green-600' : 'text-gray-500'}`}
+                >
+                    Retirada
+                </button>
+            </div>
+
+            {isRetirada ? (
+                <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-sm text-center">
+                    <p className="font-bold">Retirar em:</p>
+                    {lojaData ? (
+                        <>
+                            <p>{lojaData.logradouro}, {lojaData.numero}</p>
+                            <p>{lojaData.bairro} - {lojaData.cidade}/{lojaData.estado}</p>
+                        </>
+                    ) : (
+                         <p>Carregando endereço da loja...</p>
+                    )}
+                </div>
+            ) : (
+                !showNovoEndereco && enderecos.length > 0 ? (
                 <div className="space-y-3">
                     {enderecos.map(end => (
                         <div 
                             key={end.id} 
                             onClick={() => setSelectedEndereco(end.id)}
                             className={`p-3 border rounded-lg cursor-pointer flex justify-between items-center ${
-                                selectedEndereco === end.id ? 'border-brand-primary bg-red-50' : 'border-gray-200'
+                                selectedEndereco === end.id ? 'border-green-600 bg-red-50' : 'border-gray-200'
                             }`}
                         >
                             <div>
+                                {end.apelido && <p className="font-bold text-sm text-green-600 mb-1">{end.apelido}</p>}
                                 <p className="font-medium text-sm">{end.logradouro}, {end.numero}</p>
                                 <p className="text-xs text-gray-500">{end.bairro} - {end.cidade}/{end.estado}</p>
+                                {end.destinatario && <p className="text-xs text-gray-400 mt-1">Receber: {end.destinatario}</p>}
                             </div>
-                            {selectedEndereco === end.id && <div className="w-4 h-4 bg-brand-primary rounded-full" />}
+                            <div className="flex gap-2">
+                                <button onClick={(e) => { e.stopPropagation(); handleEditAddress(end); }} className="p-1 hover:bg-gray-100 rounded text-blue-600">
+                                    <Edit2 size={16} />
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteAddress(end.id); }} className="p-1 hover:bg-gray-100 rounded text-red-600">
+                                    <Trash2 size={16} />
+                                </button>
+                                {selectedEndereco === end.id && <div className="w-4 h-4 bg-green-600 rounded-full shrink-0" />}
+                            </div>
                         </div>
                     ))}
                     <button 
-                        onClick={() => setShowNovoEndereco(true)}
-                        className="text-brand-primary text-sm font-medium mt-2 w-full text-center hover:underline"
+                        onClick={() => { setEditingAddressId(null); setShowNovoEndereco(true); setNovoEndereco({ apelido: '', destinatario: '', logradouro: '', numero: '', bairro: '', cidade: '', estado: '', cep: '', complemento: '' }); }}
+                        className="text-green-600 text-sm font-medium mt-2 w-full text-center hover:underline"
                     >
                         + Adicionar novo endereço
                     </button>
                 </div>
             ) : (
                 <form onSubmit={handleSalvarEndereco} className="space-y-3">
+                     <input 
+                       placeholder="Apelido (ex: Casa, Trabalho)" 
+                       className="w-full p-2 border rounded" 
+                       value={novoEndereco.apelido} 
+                       onChange={e => setNovoEndereco({...novoEndereco, apelido: e.target.value})}
+                     />
+                     <input 
+                       placeholder="Nome de quem vai receber" 
+                       className="w-full p-2 border rounded" 
+                       value={novoEndereco.destinatario} 
+                       onChange={e => setNovoEndereco({...novoEndereco, destinatario: e.target.value})}
+                     />
                      <input 
                        placeholder="CEP" 
                        className="w-full p-2 border rounded" 
@@ -195,18 +312,19 @@ export function CheckoutPage() {
                      </div>
                      <div className="flex gap-2 pt-2">
                         {enderecos.length > 0 && (
-                            <button type="button" onClick={() => setShowNovoEndereco(false)} className="px-4 py-2 text-gray-600">Cancelar</button>
+                            <button type="button" onClick={() => { setShowNovoEndereco(false); setEditingAddressId(null); }} className="px-4 py-2 text-gray-600">Cancelar</button>
                         )}
-                        <button type="submit" className="flex-1 bg-brand-primary text-white py-2 rounded-lg font-bold">Salvar Endereço</button>
+                        <button type="submit" className="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 shadow transition-all">Salvar e Usar Endereço</button>
                      </div>
                 </form>
+            )
             )}
         </div>
 
         {/* Etapa 2: Pagamento */}
         <div className="bg-white p-4 rounded-xl shadow-sm">
             <h2 className="font-bold flex items-center gap-2 mb-4">
-                <DollarSign className="text-brand-primary" size={20} />
+                <DollarSign className="text-green-600" size={20} />
                 Forma de Pagamento
             </h2>
             
@@ -219,7 +337,7 @@ export function CheckoutPage() {
                             value={metodo} 
                             checked={metodoPagamento === metodo}
                             onChange={(e) => setMetodoPagamento(e.target.value)}
-                            className="text-brand-primary focus:ring-brand-primary"
+                            className="text-green-600 focus:ring-green-600"
                         />
                         <span className="capitalize">{metodo.replace('_', ' ')}</span>
                     </label>
@@ -238,6 +356,19 @@ export function CheckoutPage() {
                     />
                 </div>
             )}
+
+            <div className="mt-4 border-t pt-4">
+               <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                 Observação 
+                 <span className="text-xs text-gray-400 font-normal">(Opcional)</span>
+               </label>
+               <textarea
+                 className="w-full p-2 border rounded mt-1 text-sm h-20 resize-none"
+                 placeholder="Ex: Tocar campainha, retirar cebola, etc."
+                 value={observacao}
+                 onChange={(e) => setObservacao(e.target.value)}
+               />
+            </div>
         </div>
 
         {/* Resumo */}
@@ -248,11 +379,11 @@ export function CheckoutPage() {
             </div>
              <div className="flex justify-between text-gray-600">
                 <span>Taxa de Entrega</span>
-                <span>R$ 5,00</span>
+                <span>{isRetirada ? 'Grátis' : 'R$ 5,00'}</span>
             </div>
             <div className="flex justify-between font-bold text-lg pt-2 border-t">
                 <span>Total</span>
-                <span>R$ {(total + 5).toFixed(2)}</span>
+                <span>R$ {(total + (isRetirada ? 0 : 5)).toFixed(2)}</span>
             </div>
         </div>
 

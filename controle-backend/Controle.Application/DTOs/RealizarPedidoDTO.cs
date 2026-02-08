@@ -6,7 +6,11 @@ namespace Controle.Application.DTOs
     {
         public Guid LojaId { get; set; }
         public int ClienteId { get; set; }
-        public int EnderecoEntregaId { get; set; }
+        public int? EnderecoEntregaId { get; set; }
+        public bool IsRetirada { get; set; } = false;
+        public string MetodoPagamento { get; set; } = string.Empty;
+        public decimal? TrocoPara { get; set; }
+        public string? Observacao { get; set; }
         public List<ItemPedidoDTO> Itens { get; set; } = new();
     }
 

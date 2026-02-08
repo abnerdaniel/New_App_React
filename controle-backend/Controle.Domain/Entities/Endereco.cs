@@ -17,4 +17,6 @@ public class Endereco
     public string? Complemento { get; set; } = string.Empty;//Complemento
     public string? Numero { get; set; } = string.Empty;//Numero
     public string? Referencia { get; set; } = string.Empty;//Referencia
+    public string? Destinatario { get; set; } = string.Empty;//Quem ira receber
+    public string? Apelido { get; set; } = string.Empty; // Ex: Casa, Trabalho
 }

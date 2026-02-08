@@ -4,6 +4,7 @@ import { LojaPage } from './pages/Loja';
 import { CartPage } from './pages/Carrinho';
 import { Identificacao } from './pages/Identificacao';
 import { CheckoutPage } from './pages/CheckoutPage';
+import { PedidoSucesso } from './pages/PedidoSucesso';
 
 import { CartProvider } from './context/CartContext';
 import { ClientAuthProvider } from './context/ClientAuthContext';
@@ -19,6 +20,7 @@ function App() {
             <Route path="/carrinho" element={<CartPage />} />
             <Route path="/identificacao" element={<Identificacao />} />
             <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/pedido-sucesso/:id" element={<PedidoSucesso />} />
           </Routes>
         </BrowserRouter>
       </CartProvider>

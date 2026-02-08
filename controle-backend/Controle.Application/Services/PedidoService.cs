@@ -26,18 +26,42 @@ namespace Controle.Application.Services
 
             try
             {
+                // Validar Loja
+                var loja = await _context.Lojas.FindAsync(pedidoDto.LojaId);
+                if (loja == null) throw new DomainException("Loja não encontrada.");
+                if (!loja.Ativo) throw new DomainException("A loja está inativa no momento.");
+                
+                // Validação simplificada de "Aberta" (Falso se AbertaManualmente for false)
+                // Futuro: Verificar horários se AbertaManualmente for null
+                if (loja.AbertaManualmente == false)
+                {
+                     throw new DomainException("A loja está fechada no momento.");
+                }
+
+                // Validação de Endereço para Entrega
+                if (!pedidoDto.IsRetirada && !pedidoDto.EnderecoEntregaId.HasValue)
+                {
+                    throw new DomainException("Endereço de entrega é obrigatório para entregas.");
+                }
+
                 var pedido = new Pedido
                 {
                     LojaId = pedidoDto.LojaId,
                     ClienteId = pedidoDto.ClienteId,
-                    EnderecoDeEntregaId = pedidoDto.EnderecoEntregaId,
+                    EnderecoDeEntregaId = pedidoDto.IsRetirada ? null : pedidoDto.EnderecoEntregaId,
                     DataVenda = DateTime.Now,
-                    Status = "Pendente",
+                    Status = "Aguardando Aceitação", // Novo Status Inicial
                     Sacola = new List<PedidoItem>(),
-                    Descricao = "Pedido via App" // Default description or from DTO if available (DTO has Observacao in some versions, checking DTO structure in memory... RealizarPedidoDTO has Observacao? Let's check Step 23 view. It had Observacao commented out or removed in Step 38 update? Step 38 removed Observacao from RealizarPedidoDTO. So I'll use a default.)
+                    Descricao = pedidoDto.IsRetirada ? "Retirada em Loja" : "Pedido via App",
+                    MetodoPagamento = pedidoDto.MetodoPagamento,
+                    TrocoPara = pedidoDto.TrocoPara,
+                    Observacao = pedidoDto.Observacao,
+                    IsRetirada = pedidoDto.IsRetirada
                 };
 
-                decimal valorTotal = 0;
+                // Taxa de entrega da loja ou padrão 5.00 (Se retirada = 0)
+                decimal taxaEntrega = pedidoDto.IsRetirada ? 0 : (loja.TaxaEntregaFixa ?? 5.00m);
+                decimal valorTotal = taxaEntrega;
                 int quantidadeTotal = 0;
 
                 foreach (var itemDto in pedidoDto.Itens)

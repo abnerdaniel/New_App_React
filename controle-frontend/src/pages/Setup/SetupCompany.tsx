@@ -37,8 +37,9 @@ export function SetupCompany() {
 
   useEffect(() => {
     const fetchLojaDetails = async () => {
-      if (user && user.lojas && user.lojas.length > 0) {
-        const lojaId = user.lojas[0].id;
+      const lojaId = location.state?.lojaId || (user && user.lojas && user.lojas.length > 0 ? user.lojas[0].id : null);
+      
+      if (lojaId) {
         try {
           // Fetch full details
           const response = await api.get(`/api/loja/${lojaId}`);
@@ -49,7 +50,7 @@ export function SetupCompany() {
             nome: lojaDetalhada.nome || "",
             cpfCnpj: lojaDetalhada.cpfCnpj || "",
             telefone: lojaDetalhada.telefone || "",
-            email: lojaDetalhada.email || user.email || "",
+            email: lojaDetalhada.email || user?.email || "",
             instagram: lojaDetalhada.instagram || "",
             facebook: lojaDetalhada.facebook || "",
             twitter: lojaDetalhada.twitter || "",
@@ -126,7 +127,9 @@ export function SetupCompany() {
       
       if (hasStore) {
         // Modo Edição (PUT)
-        const lojaId = user.lojas![0].id;
+        // Modo Edição (PUT)
+        // Prioriza o ID do state, senão pega o primeiro do usuário (fallback)
+        const lojaId = location.state?.lojaId || user.lojas![0].id;
         await api.put(`/api/loja/${lojaId}`, {
           ...formData,
           ativo: true

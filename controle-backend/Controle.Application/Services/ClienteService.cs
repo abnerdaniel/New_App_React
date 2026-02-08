@@ -54,11 +54,47 @@ namespace Controle.Application.Services
                 Complemento = enderecoDto.Complemento,
                 Numero = enderecoDto.Numero,
                 Referencia = enderecoDto.Referencia,
+                Destinatario = enderecoDto.Destinatario,
+                Apelido = enderecoDto.Apelido,
                 LojaId = Guid.Empty // Endereço de cliente pode não estar vinculado a uma loja específica inicialmente
             };
 
             await _enderecoRepository.AddAsync(endereco);
 
+            return Result.Ok();
+        }
+
+        public async Task<Result> AtualizarEnderecoAsync(int clienteId, EnderecoDTO enderecoDto)
+        {
+            var endereco = await _enderecoRepository.GetByIdAsync(enderecoDto.Id);
+            if (endereco == null) return Result.Fail("Endereço não encontrado.");
+            
+            if (endereco.ClienteId != clienteId) return Result.Fail("Endereço não pertence ao cliente.");
+
+            // Atualiza campos
+            endereco.Logradouro = enderecoDto.Logradouro;
+            endereco.Bairro = enderecoDto.Bairro;
+            endereco.Cidade = enderecoDto.Cidade;
+            endereco.Estado = enderecoDto.Estado;
+            endereco.CEP = enderecoDto.CEP;
+            endereco.Complemento = enderecoDto.Complemento;
+            endereco.Numero = enderecoDto.Numero;
+            endereco.Referencia = enderecoDto.Referencia;
+            endereco.Destinatario = enderecoDto.Destinatario;
+            endereco.Apelido = enderecoDto.Apelido;
+
+            await _enderecoRepository.UpdateAsync(endereco);
+            return Result.Ok();
+        }
+
+        public async Task<Result> RemoverEnderecoAsync(int clienteId, int enderecoId)
+        {
+            var endereco = await _enderecoRepository.GetByIdAsync(enderecoId);
+            if (endereco == null) return Result.Fail("Endereço não encontrado.");
+
+            if (endereco.ClienteId != clienteId) return Result.Fail("Endereço não pertence ao cliente.");
+
+            await _enderecoRepository.DeleteAsync(endereco.Id);
             return Result.Ok();
         }
 
@@ -77,7 +113,9 @@ namespace Controle.Application.Services
                 CEP = e.CEP ?? string.Empty,
                 Complemento = e.Complemento ?? string.Empty,
                 Numero = e.Numero ?? string.Empty,
-                Referencia = e.Referencia ?? string.Empty
+                Referencia = e.Referencia ?? string.Empty,
+                Destinatario = e.Destinatario ?? string.Empty,
+                Apelido = e.Apelido ?? string.Empty
             });
         }
 

@@ -21,5 +21,9 @@ public class Pedido
     public string? Status { get; set; } // Status do Pedido
     public int Quantidade { get; set; } // Quantidade do Pedido
     public List<PedidoItem> Sacola { get; set; } = new List<PedidoItem>(); // itens do Pedido
+    public string? MetodoPagamento { get; set; } = string.Empty;
+    public decimal? TrocoPara { get; set; } // Valor para troco (se dinheiro)
+    public string? Observacao { get; set; } = string.Empty;
+    public bool IsRetirada { get; set; } // Retirada em loja
 }
    

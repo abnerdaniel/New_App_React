@@ -10,6 +10,14 @@ export interface Loja {
   taxaEntrega: number;
   categoria: string;
   aberto: boolean;
+  // Endereço
+  logradouro?: string;
+  numero?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
+  complemento?: string;
 }
 
 export interface Produto {
@@ -50,4 +58,20 @@ export interface Categoria {
   nome: string;
   produtos: Produto[];
   combos: Combo[];
+}
+
+export interface Endereco {
+  id: number;
+  clienteId?: number;
+  lojaId?: string;
+  logradouro: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+  complemento?: string;
+  numero: string;
+  referencia?: string;
+  destinatario?: string;
+  apelido?: string;
 }

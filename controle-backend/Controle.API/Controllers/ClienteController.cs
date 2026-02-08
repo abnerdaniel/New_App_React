@@ -145,6 +145,39 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Atualiza um endereço existente.
+        /// </summary>
+        [HttpPut("{clienteId}/enderecos/{enderecoId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> AtualizarEndereco(int clienteId, int enderecoId, [FromBody] EnderecoDTO enderecoDto)
+        {
+            if (enderecoId != enderecoDto.Id && enderecoDto.Id != 0) return BadRequest("ID do endereço inconsistente.");
+            
+            enderecoDto.Id = enderecoId; // Garante ID correto
+            var result = await _clienteService.AtualizarEnderecoAsync(clienteId, enderecoDto);
+
+            if (!result.Success) return BadRequest(new { message = result.Error });
+
+            return Ok(new { message = "Endereço atualizado com sucesso." });
+        }
+
+        /// <summary>
+        /// Remove um endereço.
+        /// </summary>
+        [HttpDelete("{clienteId}/enderecos/{enderecoId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> RemoverEndereco(int clienteId, int enderecoId)
+        {
+            var result = await _clienteService.RemoverEnderecoAsync(clienteId, enderecoId);
+
+            if (!result.Success) return BadRequest(new { message = result.Error });
+
+            return Ok(new { message = "Endereço removido com sucesso." });
+        }
+
+        /// <summary>
         /// Obtém o histórico de pedidos de um cliente.
         /// </summary>
         /// <param name="clienteId">ID do cliente.</param>
