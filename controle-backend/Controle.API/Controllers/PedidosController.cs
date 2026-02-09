@@ -53,6 +53,18 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Obtém o histórico de pedidos de um cliente.
+        /// </summary>
+        [HttpGet("cliente/{clienteId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetPedidosByClienteId(int clienteId)
+        {
+            var pedidos = await _pedidoService.GetPedidosByClienteIdAsync(clienteId);
+            return Ok(pedidos);
+        }
+
+        /// <summary>
         /// Lista os pedidos na fila da loja (Pendentes/Em Preparo).
         /// </summary>
 

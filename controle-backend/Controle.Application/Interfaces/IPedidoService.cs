@@ -10,6 +10,7 @@ namespace Controle.Application.Interfaces
         Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(Guid lojaId);
         Task<Pedido> AtualizarStatusPedidoAsync(int pedidoId, string novoStatus);
         Task<Pedido?> GetPedidoByIdAsync(int id);
+        Task<IEnumerable<Pedido>> GetPedidosByClienteIdAsync(int clienteId);
         Task<Pedido> CancelarPedidoLojistaAsync(int pedidoId, string motivo);
     }
 }

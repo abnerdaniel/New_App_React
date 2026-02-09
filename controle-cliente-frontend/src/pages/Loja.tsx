@@ -12,6 +12,8 @@ import type { Produto } from '../types';
 
 import { ComboModal } from '../components/ComboModal';
 
+import { PedidosAtivosWidget } from '../components/PedidosAtivosWidget'; // New
+
 import { ProductImage } from '../components/ProductImage';
 
 export function LojaPage() {
@@ -136,10 +138,10 @@ export function LojaPage() {
                 </Link> 
             ) : (
                 <div className="flex items-center gap-2">
-                     <div className="bg-white/90 p-2 px-3 rounded-full shadow-lg flex items-center gap-2 text-gray-800 font-medium text-sm">
-                        <User className="w-5 h-5 text-brand-primary" />
+                     <Link to="/meus-pedidos" className="bg-white/90 p-2 px-3 rounded-full shadow-lg flex items-center gap-2 text-gray-800 font-medium text-sm hover:bg-gray-50 transition-colors">
+                        <User className="w-5 h-5 text-red-600" />
                         <span>Olá, {cliente?.nome.split(' ')[0]}</span>
-                    </div>
+                    </Link>
                      <button 
                         onClick={logout}
                         className="bg-white/90 p-2 rounded-full shadow-lg hover:bg-red-50 hover:text-red-600 transition-colors"
@@ -311,6 +313,7 @@ export function LojaPage() {
                 </div>
             </div>
         )}
+        <PedidosAtivosWidget />
     </div>
   );
 }

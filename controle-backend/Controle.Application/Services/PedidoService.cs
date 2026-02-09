@@ -276,6 +276,17 @@ namespace Controle.Application.Services
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
+        public async Task<IEnumerable<Pedido>> GetPedidosByClienteIdAsync(int clienteId)
+        {
+            return await _context.Pedidos
+                .Where(p => p.ClienteId == clienteId)
+                .Include(p => p.Loja)
+                .Include(p => p.Sacola)
+                .OrderByDescending(p => p.DataVenda)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(Guid lojaId)
         {
             return await _context.Pedidos
