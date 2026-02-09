@@ -49,7 +49,7 @@ namespace Controle.Application.Services
                     LojaId = pedidoDto.LojaId,
                     ClienteId = pedidoDto.ClienteId,
                     EnderecoDeEntregaId = pedidoDto.IsRetirada ? null : pedidoDto.EnderecoEntregaId,
-                    DataVenda = DateTime.Now,
+                    DataVenda = DateTime.UtcNow,
                     Status = "Aguardando Aceitação", // Novo Status Inicial
                     Sacola = new List<PedidoItem>(),
                     Descricao = pedidoDto.IsRetirada ? "Retirada em Loja" : "Pedido via App",
@@ -71,7 +71,8 @@ namespace Controle.Application.Services
                         // LÓGICA DE COMBO
                         var combo = await _context.Combos
                             .Include(c => c.Itens)
-                            .ThenInclude(ci => ci.ProdutoLoja)
+                                .ThenInclude(ci => ci.ProdutoLoja)
+                                    .ThenInclude(pl => pl.Produto)
                             .FirstOrDefaultAsync(c => c.Id == itemDto.IdCombo.Value);
 
                         if (combo == null) throw new DomainException($"Combo com ID {itemDto.IdCombo} não encontrado.");
@@ -80,10 +81,45 @@ namespace Controle.Application.Services
                         // Validar Estoque de CADA item do combo
                         foreach (var comboItem in combo.Itens)
                         {
-                           if (comboItem.ProdutoLoja.QuantidadeEstoque < (comboItem.Quantidade * itemDto.Qtd))
+                           // REFATORAÇÃO: Busca Dinâmica de Estoque (Smart Lookup)
+                           // Em vez de confiar cegamente no comboItem.ProdutoLoja (que pode ser antigo/sem estoque),
+                           // buscamos o ProdutoLoja ATUAL para este ProdutoGlobal nesta Loja.
+                           
+                           var globalProductId = comboItem.ProdutoLoja?.ProdutoId 
+                                                 ?? (await _context.ProdutosLojas.AsNoTracking()
+                                                    .Where(pl => pl.Id == comboItem.ProdutoLojaId)
+                                                    .Select(pl => pl.ProdutoId)
+                                                    .FirstOrDefaultAsync());
+
+                           if (globalProductId == 0)
                            {
-                               throw new DomainException($"Estoque insuficiente para o produto {comboItem.ProdutoLoja.Descricao} (no combo {combo.Nome}).");
+                                throw new DomainException($"Inconsistência no Combo: Item {comboItem.Id} não possui vínculo válido com produto.");
                            }
+
+                           // Busca o ProdutoLoja "valendo" (com estoque preferencialmente)
+                           var produtoLojaAtivo = await _context.ProdutosLojas
+                                .Include(pl => pl.Produto)
+                                .Where(pl => pl.LojaId == pedidoDto.LojaId && pl.ProdutoId == globalProductId)
+                                .OrderByDescending(pl => pl.Estoque ?? 0) // REFATORADO: Usa 'Estoque' (nullable)
+                                .FirstOrDefaultAsync();
+
+                           if (produtoLojaAtivo == null)
+                           {
+                               throw new DomainException($"Produto do combo não está disponível nesta loja no momento.");
+                           }
+
+                           var required = (comboItem.Quantidade * itemDto.Qtd);
+                           var currentStock = produtoLojaAtivo.Estoque ?? 0; // Verifica campo real
+
+                           if (currentStock < required)
+                           {
+                               var nomeProduto = produtoLojaAtivo.Produto?.Nome ?? produtoLojaAtivo.Descricao;
+                               throw new DomainException($"Estoque insuficiente para o produto {nomeProduto} (no combo {combo.Nome}). Estoque Atual: {currentStock}, Requerido: {required}");
+                           }
+
+                           // Atualiza o objeto para o loop de baixa de estoque posterior usar o CERTO
+                           comboItem.ProdutoLoja = produtoLojaAtivo;
+                           comboItem.ProdutoLojaId = produtoLojaAtivo.Id;
                         }
 
                         // Criar PedidoItem para o Combo
@@ -101,41 +137,50 @@ namespace Controle.Application.Services
                         // Baixar Estoque
                         foreach (var comboItem in combo.Itens)
                         {
-                            comboItem.ProdutoLoja.QuantidadeEstoque -= (comboItem.Quantidade * itemDto.Qtd);
-                            comboItem.ProdutoLoja.Vendas += (comboItem.Quantidade * itemDto.Qtd);
+                            if (comboItem.ProdutoLoja != null)
+                            {
+                                var current = comboItem.ProdutoLoja.Estoque ?? 0;
+                                comboItem.ProdutoLoja.Estoque = current - (comboItem.Quantidade * itemDto.Qtd);
+                                
+                                comboItem.ProdutoLoja.Vendas += (comboItem.Quantidade * itemDto.Qtd);
+                                _context.ProdutosLojas.Update(comboItem.ProdutoLoja); // Garante update no item certo
+                            }
                         }
                     }
                     else if (itemDto.IdProduto.HasValue)
                     {
-                        // LÓGICA DE PRODUTO INDIVIDUAL (Antigo)
+                        // LÓGICA DE PRODUTO INDIVIDUAL
+                        // Também aplicamos o Smart Lookup aqui para prevenir erros de "ID antigo" no Frontend
+                        
+                        // 1. Descobrir qual é o Produto Global desse ID enviado
+                        var originalProdutoLoja = await _context.ProdutosLojas.AsNoTracking()
+                            .FirstOrDefaultAsync(p => p.Id == itemDto.IdProduto.Value);
+                        
+                        if (originalProdutoLoja == null)
+                             throw new DomainException($"Produto com ID {itemDto.IdProduto} não encontrado.");
+
+                        // 2. Buscar a MELHOR versão desse produto na loja (com estoque)
                         var produtoLoja = await _context.ProdutosLojas
                             .Include(p => p.Categoria)
-                            .ThenInclude(c => c!.Cardapio)
-                            .FirstOrDefaultAsync(p => p.Id == itemDto.IdProduto.Value);
+                                .ThenInclude(c => c!.Cardapio)
+                            .Include(p => p.Produto)
+                            .Where(pl => pl.LojaId == pedidoDto.LojaId && pl.ProdutoId == originalProdutoLoja.ProdutoId)
+                            .OrderByDescending(pl => pl.Estoque ?? 0) // Usa Estoque
+                            .FirstOrDefaultAsync();
 
                         if (produtoLoja == null)
-                        {
-                            throw new DomainException($"Produto com ID {itemDto.IdProduto} não encontrado.");
-                        }
+                             throw new DomainException($"Produto indisponível na loja.");
 
-                        // Validação de Segurança: Produto pertence à loja do pedido?
-                        if (produtoLoja.LojaId != pedidoDto.LojaId)
-                        {
-                             throw new DomainException($"Produto {produtoLoja.Descricao} não pertence à loja informada.");
-                        }
+                        // Validações...
+                        var cardapio = produtoLoja.Categoria?.Cardapio;
+                        if (cardapio != null && !cardapio.Ativo) 
+                             throw new DomainException($"Cardápio inativo.");
 
-                        // ... Validations (Temporal, Cardapio) ...
-                        // Simplified Temporal Check for brevity/maintenance
-                         var cardapio = produtoLoja.Categoria?.Cardapio;
-                         if (cardapio != null)
-                         {
-                            if (!cardapio.Ativo) throw new DomainException($"Cardápio inativo.");
-                            // TODO: Re-integrate full temporal logic or extract to method helper
-                         }
-
-                        if (produtoLoja.QuantidadeEstoque < itemDto.Qtd)
+                        var currentStock = produtoLoja.Estoque ?? 0;
+                        if (currentStock < itemDto.Qtd)
                         {
-                            throw new DomainException($"Estoque insuficiente para o produto {produtoLoja.Descricao}.");
+                            var nomeProd = produtoLoja.Produto?.Nome ?? produtoLoja.Descricao;
+                            throw new DomainException($"Estoque insuficiente para o produto {nomeProd}. Estoque Atual: {currentStock}, Requerido: {itemDto.Qtd}");
                         }
 
                         var pedidoItem = new PedidoItem
@@ -162,13 +207,15 @@ namespace Controle.Application.Services
 
                                 // Validar Estoque do Adicional (Considerando que cada unidade do item principal leva 1 do adicional)
                                 int qtdAdicionalNecessaria = itemDto.Qtd; 
-                                if (adicionalLoja.QuantidadeEstoque < qtdAdicionalNecessaria)
+                                var stockAdicional = adicionalLoja.Estoque ?? 0; // Usa Estoque
+
+                                if (stockAdicional < qtdAdicionalNecessaria)
                                 {
                                      throw new DomainException($"Estoque insuficiente para o adicional {adicionalLoja.Descricao}.");
                                 }
 
                                 // Baixar Estoque do Adicional
-                                adicionalLoja.QuantidadeEstoque -= qtdAdicionalNecessaria;
+                                adicionalLoja.Estoque = stockAdicional - qtdAdicionalNecessaria;
                                 adicionalLoja.Vendas += qtdAdicionalNecessaria;
 
                                 // Adicionar ao PedidoItem
@@ -191,7 +238,9 @@ namespace Controle.Application.Services
                         valorTotal += (decimal)pedidoItem.PrecoVenda * pedidoItem.Quantidade;
                         quantidadeTotal += itemDto.Qtd;
 
-                        produtoLoja.QuantidadeEstoque -= itemDto.Qtd;
+                        // Baixa no Item Principal
+                        var currentPStock = produtoLoja.Estoque ?? 0;
+                        produtoLoja.Estoque = currentPStock - itemDto.Qtd;
                         produtoLoja.Vendas += itemDto.Qtd;
                     }
                 }
@@ -206,9 +255,11 @@ namespace Controle.Application.Services
 
                 return pedido;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                Console.WriteLine($"[ERRO REALIZAR PEDIDO]: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
                 throw;
             }
         }
@@ -241,6 +292,7 @@ namespace Controle.Application.Services
             {
                 var pedido = await _context.Pedidos
                     .Include(p => p.Sacola)
+                        .ThenInclude(s => s.Adicionais)
                     .FirstOrDefaultAsync(p => p.Id == pedidoId);
 
                 if (pedido == null) throw new DomainException("Pedido não encontrado.");
@@ -251,7 +303,6 @@ namespace Controle.Application.Services
                 pedido.Descricao += $" (Cancelado: {motivo})"; // Append reason to description or handle as needed
 
                 // Estorno de Estoque
-                // Estorno de Estoque
                 foreach (var item in pedido.Sacola)
                 {
                     if (item.ProdutoLojaId.HasValue)
@@ -259,7 +310,7 @@ namespace Controle.Application.Services
                         var produtoLoja = await _context.ProdutosLojas.FindAsync(item.ProdutoLojaId.Value);
                         if (produtoLoja != null)
                         {
-                            produtoLoja.QuantidadeEstoque += item.Quantidade;
+                            produtoLoja.Estoque = (produtoLoja.Estoque ?? 0) + item.Quantidade; // Sync Estorno
                             produtoLoja.Vendas -= item.Quantidade; 
                             _context.ProdutosLojas.Update(produtoLoja);
                         }
@@ -275,10 +326,26 @@ namespace Controle.Application.Services
                          {
                              foreach(var ci in combo.Itens)
                              {
-                                 ci.ProdutoLoja.QuantidadeEstoque += (ci.Quantidade * item.Quantidade);
+                                 ci.ProdutoLoja.Estoque = (ci.ProdutoLoja.Estoque ?? 0) + (ci.Quantidade * item.Quantidade); // Sync Estorno
                                  ci.ProdutoLoja.Vendas -= (ci.Quantidade * item.Quantidade);
                              }
                          }
+                    }
+
+                    // Estornar ADICIONAIS
+                    if (item.Adicionais != null && item.Adicionais.Any())
+                    {
+                        foreach (var adicional in item.Adicionais)
+                        {
+                            var adicionalLoja = await _context.ProdutosLojas.FindAsync(adicional.ProdutoLojaId);
+                            if (adicionalLoja != null)
+                            {
+                                // Cada unidade do item principal consome 1 unidade do adicional
+                                adicionalLoja.Estoque = (adicionalLoja.Estoque ?? 0) + item.Quantidade; // Sync Estorno
+                                adicionalLoja.Vendas -= item.Quantidade;
+                                _context.ProdutosLojas.Update(adicionalLoja);
+                            }
+                        }
                     }
                 }
 

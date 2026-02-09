@@ -120,7 +120,10 @@ namespace Controle.Application.Services
             if (produtoLoja == null) throw new DomainException("Produto da loja não encontrado.");
 
             if (dto.Preco.HasValue) produtoLoja.Preco = (int)dto.Preco.Value;
-            if (dto.Estoque.HasValue) produtoLoja.Estoque = dto.Estoque.Value;
+            if (dto.Estoque.HasValue) 
+            {
+                produtoLoja.Estoque = dto.Estoque.Value;
+            }
             if (dto.Desconto.HasValue) produtoLoja.Desconto = dto.Desconto.Value;
             if (!string.IsNullOrEmpty(dto.Descricao)) produtoLoja.Descricao = dto.Descricao;
             if (dto.Desconto.HasValue) produtoLoja.Desconto = dto.Desconto.Value;

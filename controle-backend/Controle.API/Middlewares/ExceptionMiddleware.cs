@@ -1,0 +1,57 @@
+using System.Net;
+using System.Text.Json;
+using Controle.Domain.Exceptions;
+
+namespace Controle.API.Middlewares
+{
+    public class ExceptionMiddleware
+    {
+        private readonly RequestDelegate _next;
+        private readonly ILogger<ExceptionMiddleware> _logger;
+        private readonly IHostEnvironment _env;
+
+        public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger, IHostEnvironment env)
+        {
+            _next = next;
+            _logger = logger;
+            _env = env;
+        }
+
+        public async Task InvokeAsync(HttpContext context)
+        {
+            try
+            {
+                await _next(context);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                context.Response.ContentType = "application/json";
+                
+                var response = new ErrorResponse();
+
+                switch (ex)
+                {
+                    case DomainException domainEx:
+                        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                        response.Message = domainEx.Message;
+                        break;
+                    default:
+                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        response.Message = "Ocorreu um erro interno no servidor.";
+                        response.Detail = _env.IsDevelopment() ? ex.StackTrace?.ToString() : null;
+                        break;
+                }
+
+                var json = JsonSerializer.Serialize(response, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                await context.Response.WriteAsync(json);
+            }
+        }
+    }
+
+    public class ErrorResponse
+    {
+        public string Message { get; set; } = string.Empty;
+        public string? Detail { get; set; }
+    }
+}

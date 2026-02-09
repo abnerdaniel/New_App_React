@@ -39,11 +39,7 @@ namespace Controle.Application.Services
                 ProdutoId = produtoGlobalId,
                 CategoriaId = categoriaId,
                 Preco = (int)preco, // Assumindo que int armazena o preço (possivelmente em centavos ou unidade bruta), casting conforme definição da entidade.
-                Estoque = estoque,
-                QuantidadeEstoque = estoque // Mapeando 'Estoque' para 'QuantidadeEstoque' também se necessário, ou apenas um.
-                                            // A entidade possui ambos 'Estoque' e 'QuantidadeEstoque'.
-                                            // Vou definir ambos por segurança ou apenas 'Estoque' se for o principal.
-                                            // Olhando ProdutoLoja.cs no Passo 17, tem ambos. Vou definir ambos.
+                Estoque = estoque
             };
 
             _context.ProdutosLojas.Add(produtoLoja);

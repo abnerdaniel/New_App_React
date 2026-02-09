@@ -170,28 +170,60 @@ export function CheckoutPage() {
     try {
         setLoading(true);
         // Montar DTO de pedido (backend precisa de ajuste para aceitar detalhes de pagamento ou salvar como obs)
+        // Montar DTO de pedido
+        const itensPedido = items
+            .filter(item => item.quantidade > 0) // Garante que não envia itens zerados
+            .map(item => {
+            const isCombo = item.produto.id.toString().startsWith('combo-');
+            let idProduto: number | null = null;
+            let idCombo: number | null = null;
+
+            if (isCombo) {
+                // Formato: combo-{id}-{timestamp}
+                const parts = item.produto.id.toString().split('-');
+                if (parts.length >= 2) {
+                    idCombo = parseInt(parts[1]);
+                }
+            } else {
+                idProduto = parseInt(item.produto.id);
+            }
+
+            return {
+                idProduto: idProduto,
+                idCombo: idCombo,
+                qtd: item.quantidade,
+                adicionaisIds: item.extras ? item.extras.map(e => parseInt(e.id)) : []
+            };
+        });
+
+        if (itensPedido.length === 0) {
+            alert("O carrinho está vazio ou contém itens inválidos.");
+            setLoading(false);
+            return;
+        }
+
         const pedidoDto = {
             lojaId: items[0].produto.lojaId, // Assume todos da mesma loja
             clienteId: cliente?.id,
             enderecoEntregaId: isRetirada ? null : selectedEndereco,
             isRetirada: isRetirada,
-            itens: items.map(item => ({
-                idProduto: item.produto.id,
-                qtd: item.quantidade,
-                adicionaisIds: item.extras ? item.extras.map(e => parseInt(e.id)) : [] // Mapping extras IDs
-            })),
+            itens: itensPedido,
             metodoPagamento: metodoPagamento,
             trocoPara: metodoPagamento === 'dinheiro' && trocoPara ? parseFloat(trocoPara.replace(',', '.')) : null,
             observacao: observacao
         };
 
+        console.log("Enviando Pedido:", JSON.stringify(pedidoDto, null, 2)); // Debug log
+
         const response = await api.post('/pedidos', pedidoDto);
         
         clearCart();
         navigate(`/pedido-sucesso/${response.data.id}`);
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        alert('Erro ao realizar pedido.');
+        // Tenta extrair mensagem de erro do backend (ex: DomainException tratada)
+        const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.response?.data || "Erro ao realizar pedido.";
+        alert(`Não foi possível completar o pedido:\n${errorMessage}`);
     } finally {
         setLoading(false);
     }
@@ -350,10 +382,20 @@ export function CheckoutPage() {
                     <input 
                         type="text" 
                         placeholder="Ex: 50,00" 
-                        className="w-full p-2 border rounded mt-1"
+                        className={`w-full p-2 border rounded mt-1 ${
+                            metodoPagamento === 'dinheiro' && trocoPara && 
+                            parseFloat(trocoPara.replace(',', '.')) < (total + (isRetirada ? 0 : 5)) 
+                            ? 'border-yellow-500 bg-yellow-50' 
+                            : ''
+                        }`}
                         value={trocoPara}
                         onChange={(e) => setTrocoPara(e.target.value)}
                     />
+                    {metodoPagamento === 'dinheiro' && trocoPara && parseFloat(trocoPara.replace(',', '.')) < (total + (isRetirada ? 0 : 5)) && (
+                        <p className="text-xs text-yellow-600 mt-1 font-medium">
+                            ⚠️ O valor para troco parece menor que o total do pedido (R$ {(total + (isRetirada ? 0 : 5)).toFixed(2)}).
+                        </p>
+                    )}
                 </div>
             )}
 
