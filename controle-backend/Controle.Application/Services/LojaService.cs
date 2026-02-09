@@ -158,6 +158,28 @@ namespace Controle.Application.Services
             return await _context.Lojas.FindAsync(lojaId);
         }
 
+        public async Task<Loja?> GetLojaByIdentifierAsync(string identifier)
+        {
+            if (Guid.TryParse(identifier, out var lojaId))
+            {
+                return await _context.Lojas.FindAsync(lojaId);
+            }
+
+            // Busca por Slug ou Nome (insensível a maiúsculas)
+            var loja = await _context.Lojas
+                .FirstOrDefaultAsync(l => l.Slug.ToLower() == identifier.ToLower() || l.Nome.ToLower() == identifier.Replace("-", " ").ToLower());
+
+            // Se achou pelo nome mas sem slug, vamos gerar o slug para o futuro (Auto-Fix)
+            if (loja != null && string.IsNullOrEmpty(loja.Slug))
+            {
+               loja.Slug = identifier.ToLower().Replace(" ", "-");
+               _context.Lojas.Update(loja);
+               await _context.SaveChangesAsync();
+            }
+
+            return loja;
+        }
+
         public async Task<IEnumerable<Loja>> GetLojasByUsuarioIdAsync(Guid usuarioId)
         {
             return await _context.Lojas

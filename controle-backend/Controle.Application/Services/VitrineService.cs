@@ -175,7 +175,7 @@ namespace Controle.Application.Services
                                         .Where(ex => !ex.Esgotado) 
                                         .ToList() ?? new List<ProdutoLojaDTO>()
                                 };
-                                Console.WriteLine($"[DEBUG VITRINE] Produto: {prodDto.Nome}, ID: {prodDto.Id}, Disponivel (DB): {p.Disponivel}, Disponivel (DTO): {prodDto.Disponivel}");
+                                //Console.WriteLine($"[DEBUG VITRINE] Produto: {prodDto.Nome}, ID: {prodDto.Id}, Disponivel (DB): {p.Disponivel}, Disponivel (DTO): {prodDto.Disponivel}");
                                 return prodDto;
                             }).ToList(),
                         Combos = c.Combos

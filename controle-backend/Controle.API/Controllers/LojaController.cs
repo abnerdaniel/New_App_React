@@ -26,9 +26,9 @@ namespace Controle.API.Controllers
         [HttpGet("{lojaId}")]
         [ProducesResponseType(typeof(Loja), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetLojaById(Guid lojaId)
+        public async Task<IActionResult> GetLojaById(string lojaId)
         {
-            var loja = await _lojaService.GetLojaByIdAsync(lojaId);
+            var loja = await _lojaService.GetLojaByIdentifierAsync(lojaId);
             if (loja == null) return NotFound();
             return Ok(loja);
         }

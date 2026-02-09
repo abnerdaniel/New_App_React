@@ -35,7 +35,21 @@ namespace Controle.API.Controllers
             var pedido = await _pedidoService.RealizarPedidoAsync(dto);
             // Retorna 201 Created. O header Location aponta para a fila de pedidos da loja por enquanto, 
             // já que não temos um endpoint GetPedidoById específico exposto ainda (embora pudesse ser criado).
-            return CreatedAtAction(nameof(ListarPedidosFila), new { lojaId = pedido.LojaId }, pedido);
+            return CreatedAtAction(nameof(GetPedidoById), new { id = pedido.Id }, pedido);
+        }
+
+        /// <summary>
+        /// Obtém os detalhes de um pedido pelo ID.
+        /// </summary>
+        [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetPedidoById(int id)
+        {
+            var pedido = await _pedidoService.GetPedidoByIdAsync(id);
+            if (pedido == null) return NotFound();
+            return Ok(pedido);
         }
 
         /// <summary>

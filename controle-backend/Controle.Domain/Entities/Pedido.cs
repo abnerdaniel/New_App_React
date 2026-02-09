@@ -8,6 +8,7 @@ public class Pedido
 {
     public int Id { get; set; }
     public Guid LojaId { get; set; } // Loja que vendeu
+    public Loja? Loja { get; set; } // Navigation Property
     public int? NumeroFila { get; set; } // Numero da Fila
     public int? NumeroMesa { get; set; } // Numero do Mesa
     public int? GarcomId { get; set; } // Garcom que atendeu

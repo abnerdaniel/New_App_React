@@ -4,7 +4,7 @@ namespace Controle.Application.DTOs
 {
     public class RealizarPedidoDTO
     {
-        public Guid LojaId { get; set; }
+        public string LojaId { get; set; } = string.Empty;
         public int ClienteId { get; set; }
         public int? EnderecoEntregaId { get; set; }
         public bool IsRetirada { get; set; } = false;

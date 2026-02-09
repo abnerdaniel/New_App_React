@@ -22,14 +22,14 @@ export function PedidoSucesso() {
         <div className="space-y-3">
           <button 
             onClick={() => navigate('/')}
-            className="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
           >
             <Home size={20} />
             Voltar para o Início
           </button>
           
           <button 
-            onClick={() => navigate('/perfil')} // Futuro: Página de pedidos
+            onClick={() => navigate(`/pedido/${id}`)}
             className="w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors"
           >
             Acompanhar Pedido

@@ -14,10 +14,12 @@ namespace Controle.Application.Services
     public class PedidoService : IPedidoService
     {
         private readonly AppDbContext _context;
+        private readonly ILojaService _lojaService;
 
-        public PedidoService(AppDbContext context)
+        public PedidoService(AppDbContext context, ILojaService lojaService)
         {
             _context = context;
+            _lojaService = lojaService;
         }
 
         public async Task<Pedido> RealizarPedidoAsync(RealizarPedidoDTO pedidoDto)
@@ -26,8 +28,8 @@ namespace Controle.Application.Services
 
             try
             {
-                // Validar Loja
-                var loja = await _context.Lojas.FindAsync(pedidoDto.LojaId);
+                // Validar Loja (Supports Guid or Slug)
+                var loja = await _lojaService.GetLojaByIdentifierAsync(pedidoDto.LojaId);
                 if (loja == null) throw new DomainException("Loja não encontrada.");
                 if (!loja.Ativo) throw new DomainException("A loja está inativa no momento.");
                 
@@ -46,7 +48,7 @@ namespace Controle.Application.Services
 
                 var pedido = new Pedido
                 {
-                    LojaId = pedidoDto.LojaId,
+                    LojaId = loja.Id, // Resolve to the real Guid from the entity
                     ClienteId = pedidoDto.ClienteId,
                     EnderecoDeEntregaId = pedidoDto.IsRetirada ? null : pedidoDto.EnderecoEntregaId,
                     DataVenda = DateTime.UtcNow,
@@ -99,7 +101,7 @@ namespace Controle.Application.Services
                            // Busca o ProdutoLoja "valendo" (com estoque preferencialmente)
                            var produtoLojaAtivo = await _context.ProdutosLojas
                                 .Include(pl => pl.Produto)
-                                .Where(pl => pl.LojaId == pedidoDto.LojaId && pl.ProdutoId == globalProductId)
+                                .Where(pl => pl.LojaId == loja.Id && pl.ProdutoId == globalProductId)
                                 .OrderByDescending(pl => pl.Estoque ?? 0) // REFATORADO: Usa 'Estoque' (nullable)
                                 .FirstOrDefaultAsync();
 
@@ -164,7 +166,7 @@ namespace Controle.Application.Services
                             .Include(p => p.Categoria)
                                 .ThenInclude(c => c!.Cardapio)
                             .Include(p => p.Produto)
-                            .Where(pl => pl.LojaId == pedidoDto.LojaId && pl.ProdutoId == originalProdutoLoja.ProdutoId)
+                            .Where(pl => pl.LojaId == loja.Id && pl.ProdutoId == originalProdutoLoja.ProdutoId)
                             .OrderByDescending(pl => pl.Estoque ?? 0) // Usa Estoque
                             .FirstOrDefaultAsync();
 
@@ -262,6 +264,16 @@ namespace Controle.Application.Services
                 Console.WriteLine(ex.StackTrace);
                 throw;
             }
+        }
+
+        public async Task<Pedido?> GetPedidoByIdAsync(int id)
+        {
+            return await _context.Pedidos
+                .Include(p => p.Loja)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.Adicionais)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(Guid lojaId)
