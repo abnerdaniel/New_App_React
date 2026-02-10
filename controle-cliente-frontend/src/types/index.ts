@@ -18,6 +18,7 @@ export interface Loja {
   estado?: string;
   cep?: string;
   complemento?: string;
+  slug?: string;
 }
 
 export interface Produto {

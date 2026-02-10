@@ -57,9 +57,9 @@ export function MeusPedidos() {
     <div className="min-h-screen bg-gray-50 pb-20">
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full">
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full">
             <ArrowLeft size={24} />
-          </Link>
+          </button>
           <h1 className="font-bold text-lg text-gray-800">Meus Pedidos</h1>
           <div className="w-10" />
         </div>

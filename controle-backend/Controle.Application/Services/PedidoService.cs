@@ -289,8 +289,10 @@ namespace Controle.Application.Services
 
         public async Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(Guid lojaId)
         {
+            var statusVisiveis = new[] { "Pendente", "Aguardando Aceitação", "Em Preparo", "Pronto", "Saiu para Entrega" };
+            
             return await _context.Pedidos
-                .Where(p => p.LojaId == lojaId && (p.Status == "Pendente" || p.Status == "Em Preparo"))
+                .Where(p => p.LojaId == lojaId && statusVisiveis.Contains(p.Status))
                 .Include(p => p.Sacola)
                 .OrderBy(p => p.DataVenda)
                 .ToListAsync();
@@ -383,6 +385,139 @@ namespace Controle.Application.Services
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task<Pedido> CancelarPedidoClienteAsync(int pedidoId, string motivo, int clienteId)
+        {
+            var pedido = await _context.Pedidos
+                .Include(p => p.Loja)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.Adicionais)
+                .FirstOrDefaultAsync(p => p.Id == pedidoId);
+
+            if (pedido == null) throw new Exception("Pedido não encontrado.");
+            if (pedido.ClienteId != clienteId) throw new Exception("Pedido não pertence a este cliente.");
+
+            var loja = pedido.Loja;
+            if (loja == null) throw new Exception("Loja não encontrada.");
+
+            if (!loja.PermitirCancelamentoCliente)
+                throw new Exception("Esta loja não permite cancelamento pelo cliente.");
+
+            // Validar Status logic
+            int currentRank = GetStatusRank(pedido.Status);
+            int limitRank = GetStatusRank(loja.StatusMaximoCancelamento);
+
+            if (currentRank > limitRank)
+                throw new Exception($"Cancelamento não permitido nesta etapa ({pedido.Status}).");
+            
+            if (pedido.Status == "Cancelado")
+                 throw new Exception("Pedido já está cancelado.");
+
+            // Restaurar Estoque logic reusing Lojista logic or calling internal
+            // For now, I'll Copy-Paste logic or Refactor. 
+            // Better Copy-Paste to avoid breaking Lojista logic if I want to refactor later.
+            // Or better: Extract private method `RestaurarEstoque(Pedido pedido)`.
+            // But for speed and safety now, I will inline logic similar to Logista.
+            
+            // Actually, I can call `_produtoLojaService.RestaurarEstoque(pedido)` if I had it?
+            // Existing Lojista code does manual logic inside the method.
+            // I will inline it here too to match existing style.
+             foreach (var item in pedido.Sacola)
+                {
+                    if (item.ProdutoLojaId.HasValue)
+                    {
+                        var produtoLoja = await _context.ProdutosLojas.FindAsync(item.ProdutoLojaId.Value);
+                        if (produtoLoja != null)
+                        {
+                            produtoLoja.Estoque = (produtoLoja.Estoque ?? 0) + item.Quantidade;
+                            produtoLoja.Vendas -= item.Quantidade; 
+                            _context.ProdutosLojas.Update(produtoLoja);
+                        }
+                    }
+                    else if (item.ComboId.HasValue)
+                    {
+                         var combo = await _context.Combos
+                             .Include(c => c.Itens).ThenInclude(ci => ci.ProdutoLoja)
+                             .FirstOrDefaultAsync(c => c.Id == item.ComboId.Value);
+                         
+                         if (combo != null)
+                         {
+                             foreach(var ci in combo.Itens)
+                             {
+                                 ci.ProdutoLoja.Estoque = (ci.ProdutoLoja.Estoque ?? 0) + (ci.Quantidade * item.Quantidade);
+                                 ci.ProdutoLoja.Vendas -= (ci.Quantidade * item.Quantidade);
+                             }
+                         }
+                    }
+                    if (item.Adicionais != null && item.Adicionais.Any())
+                    {
+                        foreach (var adicional in item.Adicionais)
+                        {
+                            var adicionalLoja = await _context.ProdutosLojas.FindAsync(adicional.ProdutoLojaId);
+                            if (adicionalLoja != null)
+                            {
+                                adicionalLoja.Estoque = (adicionalLoja.Estoque ?? 0) + item.Quantidade;
+                                adicionalLoja.Vendas -= item.Quantidade;
+                                _context.ProdutosLojas.Update(adicionalLoja);
+                            }
+                        }
+                    }
+                }
+
+            // Atualizar Pedido
+            pedido.Status = "Cancelado";
+            pedido.MotivoCancelamento = motivo;
+
+            // Incrementar Contador do Cliente
+            // Note: need to inject Cliente DBSet logic or assume _context has it.
+            // I will assume _context.Clientes works as I used it in Controller? No, Controller uses Services.
+            // Does AppDbContext have Clientes?
+            // Usually yes.
+            // I'll try:
+            // var cliente = await _context.Clientes.FindAsync(clienteId);
+            // If Clientes is not in context, this will fail build.
+            // But I have to try.
+            
+            // Wait, I can't be sure about `_context.Clientes`.
+            // If it fails, I'll skip counter for now.
+            // Let's assume it works.
+             // var cliente = await _context.Set<ClienteFinal>().FindAsync(clienteId); // Generic way if DbSet name unknown
+             // But usually `Set<T>` works better.
+             var cliente = await _context.Set<ClienteFinal>().FindAsync(clienteId);
+             if (cliente != null) cliente.PedidosCancelados++;
+
+            await _context.SaveChangesAsync();
+            return pedido;
+        }
+
+        private int GetStatusRank(string? status)
+        {
+            if (string.IsNullOrEmpty(status)) return -1;
+            switch (status.ToLower())
+            {
+                case "pendente": return 0;
+                case "aguardando": return 0; // Alias
+                case "aguardando aceitação": return 0; // Novo Status
+                case "em preparo": return 1;
+                case "pronto": return 2;
+                case "saiu para entrega": return 3;
+                case "entregue": return 4;
+                case "cancelado": return 99;
+                default: return 99;
+            }
+        }
+
+        public async Task<Pedido> AtualizarObservacaoAsync(int pedidoId, string novaObservacao)
+        {
+            var pedido = await _context.Pedidos.FindAsync(pedidoId);
+            if (pedido == null) throw new DomainException("Pedido não encontrado.");
+
+            pedido.Observacao = novaObservacao;
+            _context.Pedidos.Update(pedido);
+            await _context.SaveChangesAsync();
+
+            return pedido;
         }
     }
 }

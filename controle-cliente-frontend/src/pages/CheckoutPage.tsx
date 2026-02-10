@@ -217,6 +217,17 @@ export function CheckoutPage() {
 
         const response = await api.post('/pedidos', pedidoDto);
         
+        // Ensure store ID is saved for "Back to Menu" button
+        if (pedidoDto.lojaId) {
+            localStorage.setItem('lojaId', pedidoDto.lojaId);
+            
+            // Try to set slug if possible
+            if (lojaData) {
+                 const slug = lojaData.slug || lojaData.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+                 localStorage.setItem('lojaSlug', slug);
+            }
+        }
+
         clearCart();
         navigate(`/pedido-sucesso/${response.data.id}`);
     } catch (error: any) {

@@ -26,5 +26,6 @@ public class Pedido
     public decimal? TrocoPara { get; set; } // Valor para troco (se dinheiro)
     public string? Observacao { get; set; } = string.Empty;
     public bool IsRetirada { get; set; } // Retirada em loja
+    public string? MotivoCancelamento { get; set; }
 }
    

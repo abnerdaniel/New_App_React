@@ -46,6 +46,11 @@ export function LojaPage() {
         setCardapio(cardapioData);
         if (lojaData) {
             document.title = lojaData.nome;
+            localStorage.setItem('lojaId', lojaData.id); // Persist store ID
+            
+            // Persist store Slug
+            const slug = lojaData.slug || lojaData.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+            localStorage.setItem('lojaSlug', slug);
         }
         setLoading(false);
       });

@@ -112,5 +112,34 @@ namespace Controle.API.Controllers
             var pedido = await _pedidoService.CancelarPedidoLojistaAsync(pedidoId, motivo);
             return Ok(pedido);
         }
+
+        /// <summary>
+        /// Cancela um pedido pelo cliente.
+        /// </summary>
+        [HttpPatch("{pedidoId}/cancelar-cliente")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CancelarPedidoCliente(int pedidoId, [FromQuery] int clienteId, [FromBody] string motivo)
+        {
+            try 
+            {
+                var pedido = await _pedidoService.CancelarPedidoClienteAsync(pedidoId, motivo, clienteId);
+                return Ok(pedido);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+        [HttpPatch("{pedidoId}/observacao")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AtualizarObservacao(int pedidoId, [FromBody] string novaObservacao)
+        {
+            var pedido = await _pedidoService.AtualizarObservacaoAsync(pedidoId, novaObservacao);
+            return Ok(pedido);
+        }
     }
 }

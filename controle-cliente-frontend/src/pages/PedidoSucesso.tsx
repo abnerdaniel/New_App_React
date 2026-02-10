@@ -21,7 +21,15 @@ export function PedidoSucesso() {
 
         <div className="space-y-3">
           <button 
-            onClick={() => navigate('/')}
+            onClick={() => {
+                const lojaId = localStorage.getItem('lojaId'); 
+                const lojaSlug = localStorage.getItem('lojaSlug');
+
+                // Fallback priorities: Slug > ID > Home
+                if (lojaSlug) navigate(`/loja/${lojaSlug}`);
+                else if (lojaId) navigate(`/loja/${lojaId}`);
+                else navigate('/');
+            }}
             className="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
           >
             <Home size={20} />

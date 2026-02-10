@@ -45,4 +45,8 @@ public class Loja
     public bool? AbertaManualmente { get; set; } // Null = Segue horário, True = Forçar Aberta, False = Forçar Fechada
     public string? Categoria { get; set; } // Ex: Lanches, Japonesa
     public double? Avaliacao { get; set; } // Ex: 4.8
+    
+    // Configuração de Cancelamento
+    public bool PermitirCancelamentoCliente { get; set; } = true;
+    public string StatusMaximoCancelamento { get; set; } = "Saiu para Entrega"; // "Pendente", "Em Preparo", "Saiu para Entrega"
 }

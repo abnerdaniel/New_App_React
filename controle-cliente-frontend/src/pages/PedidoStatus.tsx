@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { useClientAuth } from '../context/ClientAuthContext';
 import { ArrowLeft, Clock, ShoppingBag, Truck, CheckCircle, Package } from 'lucide-react';
 
 interface PedidoItem {
@@ -16,7 +17,11 @@ interface Pedido {
   status: string;
   valorTotal: number;
   dataVenda: string;
-  loja?: { nome: string };
+  loja?: { 
+      nome: string;
+      permitirCancelamentoCliente?: boolean;
+      statusMaximoCancelamento?: string;
+  };
   sacola: PedidoItem[];
 }
 
@@ -32,8 +37,14 @@ const statusSteps = [
 export function PedidoStatus() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { cliente } = useClientAuth(); // Get auth context
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Cancel Modal State
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [motivoCancelamento, setMotivoCancelamento] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   useEffect(() => {
     loadPedido();
@@ -51,6 +62,27 @@ export function PedidoStatus() {
       setLoading(false);
     }
   }
+
+  const handleCancelOrder = async () => {
+      if (!motivoCancelamento.trim()) return alert("Informe o motivo.");
+      if (!cliente) return;
+      
+      try {
+          setCancelLoading(true);
+          // Backend expects [FromBody] string, so we send a JSON string
+          await api.patch(`/pedidos/${id}/cancelar-cliente?clienteId=${cliente.id}`, JSON.stringify(motivoCancelamento), {
+              headers: { 'Content-Type': 'application/json' }
+          });
+          alert("Pedido cancelado com sucesso.");
+          setIsCancelModalOpen(false);
+          loadPedido();
+      } catch (error: any) {
+          console.error(error);
+          alert(error.response?.data?.message || "Erro ao cancelar.");
+      } finally {
+          setCancelLoading(false);
+      }
+  };
 
   if (loading) {
     return (
@@ -87,6 +119,21 @@ export function PedidoStatus() {
   
   const currentStep = getStepIndex(pedido.status);
   const isCancelado = pedido.status === 'Cancelado';
+  
+  // Logic verify cancellation
+  const canCancel = !isCancelado && pedido.loja?.permitirCancelamentoCliente && (
+      currentStep <= getStepIndex(pedido.loja?.statusMaximoCancelamento || 'Pendente')
+  );
+
+  console.log("Pedido Debug:", {
+      status: pedido.status,
+      loja: pedido.loja,
+      permitir: pedido.loja?.permitirCancelamentoCliente,
+      maxStatus: pedido.loja?.statusMaximoCancelamento,
+      currentStep,
+      maxStep: getStepIndex(pedido.loja?.statusMaximoCancelamento || 'Pendente'),
+      canCancel
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -94,7 +141,7 @@ export function PedidoStatus() {
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button 
-            onClick={() => navigate('/')}
+            onClick={() => navigate(-1)}
             className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full"
           >
             <ArrowLeft size={24} />
@@ -148,7 +195,51 @@ export function PedidoStatus() {
                     <p>Este pedido foi cancelado.</p>
                 </div>
             )}
+            
+            {/* Cancel Button */}
+             {canCancel && (
+                <button 
+                    onClick={() => setIsCancelModalOpen(true)}
+                    className="w-full mt-6 border-2 border-red-100 text-red-600 font-bold py-3 rounded-xl hover:bg-red-50 transition-colors"
+                >
+                    Cancelar Pedido
+                </button>
+            )}
         </div>
+        
+        {/* Cancel Modal */}
+        {isCancelModalOpen && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-6 w-full max-w-sm animate-in zoom-in-95">
+                    <h3 className="text-xl font-bold mb-4">Cancelar Pedido?</h3>
+                    <p className="text-gray-600 mb-4 text-sm">
+                        Conte-nos o motivo do cancelamento. Isso ajuda a loja a melhorar.
+                    </p>
+                    <textarea 
+                        value={motivoCancelamento}
+                        onChange={(e) => setMotivoCancelamento(e.target.value)}
+                        placeholder="Ex: Demorou muito, pedi errado..."
+                        className="w-full border border-gray-300 rounded-lg p-3 h-24 mb-4 focus:ring-2 focus:ring-red-600 focus:outline-none resize-none"
+                    />
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => setIsCancelModalOpen(false)}
+                            className="flex-1 py-3 text-gray-600 font-bold hover:bg-gray-100 rounded-xl"
+                            disabled={cancelLoading}
+                        >
+                            Voltar
+                        </button>
+                        <button 
+                            onClick={handleCancelOrder}
+                            disabled={cancelLoading}
+                            className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 disabled:opacity-50"
+                        >
+                            {cancelLoading ? 'Cancelando...' : 'Confirmar'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
 
         {/* Details Card */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">
