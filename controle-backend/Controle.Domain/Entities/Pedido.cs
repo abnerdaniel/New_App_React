@@ -14,8 +14,10 @@ public class Pedido
     public int? GarcomId { get; set; } // Garcom que atendeu
     public int? AtendenteId { get; set; } // Atendente que atendeu
     public int ClienteId { get; set; } // Cliente Final
+    public virtual ClienteFinal? Cliente { get; set; } // Navigation Property
     public string? Descricao { get; set; } // Descricao do Pedido
     public int? EnderecoDeEntregaId { get; set; } // Endereco do Cliente Final
+    public virtual Endereco? EnderecoDeEntrega { get; set; } // Navigation Property
     public DateTime DataVenda { get; set; } // Data do Pedido
     public int? ValorTotal { get; set; } // Valor Total do Pedido
     public int? Desconto { get; set; } // Desconto do Pedido

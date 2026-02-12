@@ -131,16 +131,22 @@ export function DeliveryPage() {
               {/* Cliente */}
               <div className="border-b pb-2 border-black/10">
                 <p className="font-semibold text-sm truncate" title={`Cliente ID: ${pedido.clienteId}`}>
-                    Cliente {pedido.clienteId}
+                    {pedido.cliente?.nome ? `${pedido.cliente.nome} (#${pedido.clienteId})` : `Cliente #${pedido.clienteId}`}
                 </p>
-                <p className="text-xs opacity-80 truncate">{pedido.isRetirada ? 'Retirada na Loja' : 'Entrega'}</p>
+                <p className="text-xs opacity-80 truncate">
+                    {pedido.isRetirada 
+                        ? 'Retirada na Loja' 
+                        : pedido.enderecoDeEntrega 
+                            ? `${pedido.enderecoDeEntrega.bairro}, ${pedido.enderecoDeEntrega.logradouro}, ${pedido.enderecoDeEntrega.numero}`
+                            : 'Entrega (Endereço não disponível)'}
+                </p>
               </div>
 
               {/* Itens */}
               <div className="flex-1 overflow-y-auto max-h-40 bg-white/50 p-2 rounded text-sm space-y-1">
                  {pedido.sacola.map((item, idx) => (
                      <div key={idx} className="flex justify-between border-b border-dashed border-gray-300 last:border-0 pb-1 last:pb-0">
-                         <span>{item.quantidade}x {item.nomeProduto}</span>
+                         <span>{item.quantidade}x {item.produtoLoja?.produto?.nome || item.nomeProduto}</span>
                      </div>
                  ))}
                  {pedido.observacao && (

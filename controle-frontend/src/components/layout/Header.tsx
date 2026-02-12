@@ -65,9 +65,9 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
 
          {/* Logo placeholder - text based for now */}
          <div className="bg-white text-brand-primary font-black text-xl w-10 h-10 flex items-center justify-center rounded-lg shadow-sm">
-            L
+            OF
          </div>
-         <h1 className="text-xl font-bold tracking-tight">App New Control</h1>
+         <h1 className="text-xl font-bold tracking-tight">OpenFood</h1>
       </div>
       {user && (
       <div className="flex items-center gap-4">

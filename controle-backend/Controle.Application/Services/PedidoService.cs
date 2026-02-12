@@ -293,7 +293,11 @@ namespace Controle.Application.Services
             
             return await _context.Pedidos
                 .Where(p => p.LojaId == lojaId && statusVisiveis.Contains(p.Status))
+                .Include(p => p.Cliente)
+                .Include(p => p.EnderecoDeEntrega)
                 .Include(p => p.Sacola)
+                    .ThenInclude(s => s.ProdutoLoja)
+                        .ThenInclude(pl => pl.Produto)
                 .OrderBy(p => p.DataVenda)
                 .ToListAsync();
         }

@@ -8,10 +8,15 @@ export interface PedidoItem {
   pedidoId: number;
   produtoLojaId?: number;
   comboId?: number;
-  nomeProduto: string;
+  nomeProduto: string; // Nome salvo no momento da venda (backup)
   quantidade: number;
   precoVenda: number;
   adicionais?: PedidoItemAdicional[];
+  produtoLoja?: {
+    produto?: {
+      nome: string;
+    }
+  }
 }
 
 export interface Pedido {
@@ -20,8 +25,19 @@ export interface Pedido {
   numeroFila?: number;
   numeroMesa?: number;
   clienteId: number;
+  cliente?: {
+    id: number;
+    nome: string;
+  };
   descricao?: string;
   enderecoDeEntregaId?: number;
+  enderecoDeEntrega?: {
+    logradouro: string;
+    bairro: string;
+    numero: string;
+    complemento?: string;
+    cidade: string;
+  };
   dataVenda: string;
   valorTotal?: number;
   desconto?: number;
