@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useClientAuth } from '../context/ClientAuthContext';
-import { ArrowLeft, Clock, ShoppingBag, Truck, CheckCircle, Package } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Truck, CheckCircle, Package } from 'lucide-react';
+import { AxiosError } from 'axios';
 
 interface PedidoItem {
   id: number;
@@ -46,13 +47,7 @@ export function PedidoStatus() {
   const [motivoCancelamento, setMotivoCancelamento] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
 
-  useEffect(() => {
-    loadPedido();
-    const interval = setInterval(loadPedido, 15000); // 15s polling
-    return () => clearInterval(interval);
-  }, [id]);
-
-  async function loadPedido() {
+  const loadPedido = useCallback(async () => {
     try {
       const response = await api.get(`/pedidos/${id}`);
       setPedido(response.data);
@@ -61,7 +56,13 @@ export function PedidoStatus() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
+
+  useEffect(() => {
+    loadPedido();
+    const interval = setInterval(loadPedido, 15000); // 15s polling
+    return () => clearInterval(interval);
+  }, [loadPedido]);
 
   const handleCancelOrder = async () => {
       if (!motivoCancelamento.trim()) return alert("Informe o motivo.");
@@ -76,9 +77,10 @@ export function PedidoStatus() {
           alert("Pedido cancelado com sucesso.");
           setIsCancelModalOpen(false);
           loadPedido();
-      } catch (error: any) {
+      } catch (error) {
           console.error(error);
-          alert(error.response?.data?.message || "Erro ao cancelar.");
+          const err = error as AxiosError<{ message: string }>;
+          alert(err.response?.data?.message || "Erro ao cancelar.");
       } finally {
           setCancelLoading(false);
       }
