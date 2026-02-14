@@ -44,6 +44,7 @@ namespace Controle.API.Extensions
             services.AddScoped<IProdutoRepository, ProdutoRepository>();
             services.AddScoped<IProdutoLojaRepository, ProdutoLojaRepository>();
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            services.AddScoped<IMesaService, MesaService>();
 
             return services;
         }

@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { CategoriasPage } from '../pages/Categorias/CategoriasPage'
 import { LoginPage } from '../pages/Auth/LoginPage'
+
 import { SetupCompany } from '../pages/Setup/SetupCompany'
 import { SetupEmployee } from '../pages/Setup/SetupEmployee'
 import { StoreList } from '../pages/Setup/StoreList'
@@ -37,6 +38,7 @@ export function AppRoutes() {
       <Route path="/cardapio" element={<PrivateRoute><CardapioPage /></PrivateRoute>} />
       <Route path="/cardapio/:id/detalhes" element={<PrivateRoute><CardapioDetalhes /></PrivateRoute>} />
       <Route path="/estoque" element={<PrivateRoute><EstoquePage /></PrivateRoute>} />
+      <Route path="/financeiro" element={<PrivateRoute><FinanceiroPage /></PrivateRoute>} />
       <Route path="/financeiro" element={<PrivateRoute><FinanceiroPage /></PrivateRoute>} />
       
       {/* Legacy/Specific */}

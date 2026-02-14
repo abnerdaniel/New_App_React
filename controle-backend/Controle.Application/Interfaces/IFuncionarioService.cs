@@ -11,5 +11,8 @@ namespace Controle.Application.Interfaces
         Task<IEnumerable<FuncionarioDTO>> ListarEquipeAsync(Guid lojaId);
         Task<Result> BloquearAcessoAsync(int funcionarioId);
         Task<Result> DesbloquearAcessoAsync(int funcionarioId);
+        Task<Result> AtualizarFuncionarioAsync(int id, string nome, string email, string login, string cargoNome);
+        Task<Result> ExcluirFuncionarioAsync(int id);
+        Task<Result> AlterarSenhaAsync(int id, string novaSenha);
     }
 }

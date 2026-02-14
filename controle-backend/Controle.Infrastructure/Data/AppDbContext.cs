@@ -25,6 +25,7 @@ public class AppDbContext : DbContext
     public DbSet<ProdutoCategoria> ProdutoCategorias { get; set; }
     public DbSet<ProdutoAdicional> ProdutoAdicionais { get; set; }
     public DbSet<PedidoItemAdicional> PedidoItemAdicionais { get; set; }
+    public DbSet<Mesa> Mesas { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

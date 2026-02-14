@@ -15,6 +15,7 @@ import { ComboModal } from '../components/ComboModal';
 import { PedidosAtivosWidget } from '../components/PedidosAtivosWidget'; // New
 
 import { ProductImage } from '../components/ProductImage';
+import { useWaiter } from '../context/WaiterContext';
 
 export function LojaPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +36,7 @@ export function LojaPage() {
   // Cart Context
   const { addItem, total, count } = useCart();
   const { isAuthenticated, cliente, logout } = useClientAuth();
+  const { isWaiterMode, mesaSelecionada, sairModoGarcom } = useWaiter();
 
   useEffect(() => {
     if (id) {
@@ -129,8 +131,34 @@ export function LojaPage() {
           alt={loja.nome}
           className={`w-full h-full object-cover ${isLojaFechada ? 'grayscale' : ''}`}
         />
-        <div className="absolute top-4 left-4">
-          <Link to="/" className="bg-white/90 p-2 rounded-full shadow-lg hover:bg-white transition-colors flex items-center justify-center">
+        
+        {/* Waiter Mode Header Overlay */}
+        {isWaiterMode && mesaSelecionada && (
+            <div className="absolute top-0 left-0 right-0 bg-blue-600 text-white p-3 z-30 shadow-md flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-lg">Mesa {mesaSelecionada.numero}</span>
+                    <span className="text-sm opacity-90 border-l border-blue-400 pl-2 ml-2">
+                        {mesaSelecionada.clienteNome || mesaSelecionada.nome || 'Cliente'}
+                    </span>
+                </div>
+                <button 
+                    onClick={() => {
+                        if(confirm('Sair da mesa? O carrinho será limpo.')) {
+                            // Limpar carrinho? Talvez.
+                            // clearCart(); 
+                            sairModoGarcom();
+                            navigate('/garcom');
+                        }
+                    }}
+                    className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm font-medium transition-colors"
+                >
+                    Sair
+                </button>
+            </div>
+        )}
+
+        <div className="absolute top-20 left-4"> { /* Adjusted top position if Waiter Mode */ }
+          <Link to={isWaiterMode ? '/garcom' : '/'} className="bg-white/90 p-2 rounded-full shadow-lg hover:bg-white transition-colors flex items-center justify-center">
              <ArrowLeft className="w-6 h-6 text-gray-700" />
           </Link>
         </div>

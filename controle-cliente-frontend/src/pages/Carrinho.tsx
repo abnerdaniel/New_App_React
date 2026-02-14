@@ -2,10 +2,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Minus, Plus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useClientAuth } from '../context/ClientAuthContext';
+import { useWaiter } from '../context/WaiterContext';
 
 export function CartPage() {
-  const { items, removeItem, updateQuantity, total, count } = useCart();
+  const { items, removeItem, updateQuantity, total, count, clearCart } = useCart();
   const { isAuthenticated } = useClientAuth();
+  const { isWaiterMode, mesaSelecionada } = useWaiter();
   const navigate = useNavigate();
 
   const handleFinalizar = () => {
@@ -14,6 +16,13 @@ export function CartPage() {
     } else {
       navigate('/identificacao', { state: { from: { pathname: '/checkout' } } });
     }
+  };
+
+  const handleLancarMesa = async () => {
+      if (!isWaiterMode || !mesaSelecionada) return;
+      alert(`Itens lançados na Mesa ${mesaSelecionada.numero} com sucesso! (Simulação)`);
+      clearCart();
+      navigate(`/loja/${localStorage.getItem('lojaId')}`);
   };
 
   if (items.length === 0) {
@@ -122,12 +131,21 @@ export function CartPage() {
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="max-w-2xl mx-auto">
-            <button 
-                onClick={handleFinalizar}
-                className="w-full bg-red-600 text-white font-bold py-3.5 rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-100 active:scale-[0.99] duration-100"
-            >
-                Finalizar Pedido
-            </button>
+            {isWaiterMode ? (
+                <button 
+                    onClick={handleLancarMesa}
+                    className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100 active:scale-[0.99] duration-100 flex items-center justify-center gap-2"
+                >
+                    <span>Lançar na Mesa {mesaSelecionada?.numero}</span>
+                </button>
+            ) : (
+                <button 
+                    onClick={handleFinalizar}
+                    className="w-full bg-red-600 text-white font-bold py-3.5 rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-100 active:scale-[0.99] duration-100"
+                >
+                    Finalizar Pedido
+                </button>
+            )}
         </div>
       </div>
     </div>

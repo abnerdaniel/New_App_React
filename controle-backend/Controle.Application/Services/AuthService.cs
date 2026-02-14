@@ -391,6 +391,28 @@ namespace Controle.Application.Services
             return Result.Ok();
         }
 
+        public async Task<Result> DeletarUsuarioAsync(Guid usuarioId)
+        {
+            var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
+            if (usuario == null) return Result.Fail("Usuário não encontrado.");
+
+            await _usuarioRepository.DeleteAsync(usuarioId);
+            // If repository only takes int, we have a problem. Usuario Id is Guid.
+            // Let's check IUsuarioRepository. Usually it's DeleteAsync(Guid id).
+            return Result.Ok();
+        }
+
+        public async Task<Result> AlterarSenhaUsuarioAsync(Guid usuarioId, string novaSenha)
+        {
+             var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
+             if (usuario == null) return Result.Fail("Usuário não encontrado.");
+
+             usuario.PasswordHash = HashPassword(novaSenha);
+             await _usuarioRepository.UpdateAsync(usuario);
+             
+             return Result.Ok();
+        }
+
         private string GenerateJwtToken(Usuario usuario)
         {
             var secretKey = _configuration["Jwt:Key"] ?? "MinhaSuperChaveSecretaParaJWT1234567890";

@@ -11,22 +11,28 @@ import { MeusPedidos } from './pages/MeusPedidos';
 import { CartProvider } from './context/CartContext';
 import { ClientAuthProvider } from './context/ClientAuthContext';
 
+import { WaiterProvider } from './context/WaiterContext';
+import { GarcomPage } from './pages/Garcom/GarcomPage';
+
 function App() {
   return (
     <ClientAuthProvider>
       <CartProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/loja/:id" element={<LojaPage />} />
-            <Route path="/carrinho" element={<CartPage />} />
-            <Route path="/identificacao" element={<Identificacao />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/pedido-sucesso/:id" element={<PedidoSucesso />} />
-            <Route path="/pedido/:id" element={<PedidoStatus />} />
-            <Route path="/meus-pedidos" element={<MeusPedidos />} />
-          </Routes>
-        </BrowserRouter>
+        <WaiterProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/garcom" element={<GarcomPage />} />
+              <Route path="/loja/:id" element={<LojaPage />} />
+              <Route path="/carrinho" element={<CartPage />} />
+              <Route path="/identificacao" element={<Identificacao />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/pedido-sucesso/:id" element={<PedidoSucesso />} />
+              <Route path="/pedido/:id" element={<PedidoStatus />} />
+              <Route path="/meus-pedidos" element={<MeusPedidos />} />
+            </Routes>
+          </BrowserRouter>
+        </WaiterProvider>
       </CartProvider>
     </ClientAuthProvider>
   );

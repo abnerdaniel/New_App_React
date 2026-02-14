@@ -17,7 +17,10 @@ builder.Services.AddSwaggerDocumentation();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
-        policy => policy.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173") .AllowAnyMethod().AllowAnyHeader());
+        policy => policy.SetIsOriginAllowed(origin => true) // Permite qualquer origem em desenvolvimento
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials()); // Importante para cookies/auth se necessário, mas requer SetIsOriginAllowed ou origens específicas
 });
 
 var app = builder.Build();
@@ -27,5 +30,28 @@ app.UseSwaggerDocumentation();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseApplicationMiddleware();
+
+// Seeding de Cargos
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try 
+    {
+        var cargoRepository = services.GetRequiredService<Controle.Domain.Interfaces.ICargoRepository>();
+        var cargos = await cargoRepository.GetAllAsync();
+        if (!cargos.Any())
+        {
+            await cargoRepository.AddAsync(new Controle.Domain.Entities.Cargo { Nome = "Administrador" });
+            await cargoRepository.AddAsync(new Controle.Domain.Entities.Cargo { Nome = "Gerente" });
+            await cargoRepository.AddAsync(new Controle.Domain.Entities.Cargo { Nome = "Garçom" });
+            await cargoRepository.AddAsync(new Controle.Domain.Entities.Cargo { Nome = "Cozinha" });
+            await cargoRepository.AddAsync(new Controle.Domain.Entities.Cargo { Nome = "Entregador" });
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erro ao semear cargos: {ex.Message}");
+    }
+}
 
 app.Run();
