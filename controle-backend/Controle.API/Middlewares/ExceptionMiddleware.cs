@@ -26,6 +26,8 @@ namespace Controle.API.Middlewares
             catch (Exception ex)
             {
                 _logger.LogError(ex, ex.Message);
+                Console.WriteLine($"\n\n[CRITICAL ERROR]: {ex.Message}");
+                Console.WriteLine($"[STACK TRACE]: {ex.StackTrace}\n\n");
                 context.Response.ContentType = "application/json";
                 
                 var response = new ErrorResponse();

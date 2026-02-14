@@ -197,6 +197,12 @@ export function LojaPage() {
 
       {/* Info da Loja */}
       <div className="max-w-4xl mx-auto px-4 -mt-10 relative z-10">
+        {loja.aceitandoPedidos === false && (
+            <div className="bg-red-600 text-white p-4 rounded-xl shadow-lg mb-4 flex items-center justify-center gap-2 font-bold text-center border-2 border-white/20">
+                <LogOut size={24} />
+                <span>DESCULPE, NÃO ESTAMOS ACEITANDO PEDIDOS DELIVERY NO MOMENTO.</span>
+            </div>
+        )}
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex justify-between items-start">
             <div>

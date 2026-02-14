@@ -1,9 +1,12 @@
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Controle.Application.Interfaces;
+using Controle.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Controle.API.Controllers
 {
@@ -13,10 +16,12 @@ namespace Controle.API.Controllers
     public class MesasController : ControllerBase
     {
         private readonly IMesaService _mesaService;
+        private readonly AppDbContext _context;
 
-        public MesasController(IMesaService mesaService)
+        public MesasController(IMesaService mesaService, AppDbContext context)
         {
             _mesaService = mesaService;
+            _context = context;
         }
 
         [HttpGet("{lojaId}")]
@@ -43,7 +48,17 @@ namespace Controle.API.Controllers
         [HttpPost("{id}/abrir")]
         public async Task<IActionResult> AbrirMesa(int id, [FromBody] AbrirMesaRequest request)
         {
-            var mesa = await _mesaService.AbrirMesaAsync(id, request.NomeCliente);
+            // Extract UsuarioId from JWT and look up Funcionario
+            int? funcionarioId = null;
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                var funcionario = await _context.Funcionarios
+                    .FirstOrDefaultAsync(f => f.UsuarioId == usuarioId);
+                funcionarioId = funcionario?.Id;
+            }
+
+            var mesa = await _mesaService.AbrirMesaAsync(id, request.NomeCliente, funcionarioId);
             return Ok(mesa);
         }
 
@@ -60,6 +75,34 @@ namespace Controle.API.Controllers
             var mesa = await _mesaService.AtualizarStatusAsync(id, status);
             return Ok(mesa);
         }
+
+        [HttpDelete("pedido-item/{itemId}")]
+        public async Task<IActionResult> RemoverItemPedido(int itemId)
+        {
+            await _mesaService.RemoverItemPedidoAsync(itemId);
+            return Ok();
+        }
+
+        [HttpPatch("pedido/{pedidoId}/desconto")]
+        public async Task<IActionResult> AplicarDesconto(int pedidoId, [FromBody] DescontoRequest request)
+        {
+            await _mesaService.AplicarDescontoAsync(pedidoId, request.Desconto);
+            return Ok();
+        }
+
+        [HttpGet("produtos/{lojaId}")]
+        public async Task<IActionResult> ListarProdutosLoja(Guid lojaId)
+        {
+            var produtos = await _mesaService.ListarProdutosLojaAsync(lojaId);
+            return Ok(produtos);
+        }
+
+        [HttpPost("pedido/{pedidoId}/item")]
+        public async Task<IActionResult> AdicionarItem(int pedidoId, [FromBody] AdicionarItemRequest request)
+        {
+            await _mesaService.AdicionarItemPedidoAsync(pedidoId, request.ProdutoLojaId, request.Quantidade);
+            return Ok();
+        }
     }
 
     public class ConfigurarMesasRequest
@@ -71,5 +114,16 @@ namespace Controle.API.Controllers
     public class AbrirMesaRequest
     {
         public string? NomeCliente { get; set; }
+    }
+
+    public class DescontoRequest
+    {
+        public int Desconto { get; set; }
+    }
+
+    public class AdicionarItemRequest
+    {
+        public int ProdutoLojaId { get; set; }
+        public int Quantidade { get; set; } = 1;
     }
 }

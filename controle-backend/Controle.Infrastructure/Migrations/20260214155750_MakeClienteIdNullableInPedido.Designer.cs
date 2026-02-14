@@ -3,6 +3,7 @@ using System;
 using Controle.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Controle.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260214155750_MakeClienteIdNullableInPedido")]
+    partial class MakeClienteIdNullableInPedido
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -381,9 +384,6 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<bool?>("AbertaManualmente")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("AceitandoPedidos")
-                        .HasColumnType("boolean");
-
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean");
 
@@ -546,6 +546,9 @@ namespace Controle.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AtendenteId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("ClienteId")
                         .HasColumnType("integer");
 
@@ -561,7 +564,7 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<int?>("EnderecoDeEntregaId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("FuncionarioId")
+                    b.Property<int?>("GarcomId")
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsRetirada")
@@ -602,8 +605,6 @@ namespace Controle.Infrastructure.Migrations
                     b.HasIndex("ClienteId");
 
                     b.HasIndex("EnderecoDeEntregaId");
-
-                    b.HasIndex("FuncionarioId");
 
                     b.HasIndex("LojaId");
 
@@ -915,10 +916,6 @@ namespace Controle.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("EnderecoDeEntregaId");
 
-                    b.HasOne("Controle.Domain.Entities.Funcionario", "Funcionario")
-                        .WithMany()
-                        .HasForeignKey("FuncionarioId");
-
                     b.HasOne("Controle.Domain.Entities.Loja", "Loja")
                         .WithMany()
                         .HasForeignKey("LojaId")
@@ -928,8 +925,6 @@ namespace Controle.Infrastructure.Migrations
                     b.Navigation("Cliente");
 
                     b.Navigation("EnderecoDeEntrega");
-
-                    b.Navigation("Funcionario");
 
                     b.Navigation("Loja");
                 });

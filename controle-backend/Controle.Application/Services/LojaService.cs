@@ -186,5 +186,11 @@ namespace Controle.Application.Services
                 .Where(l => l.UsuarioId == usuarioId)
                 .ToListAsync();
         }
+
+        public async Task AtualizarLojaDirectAsync(Loja loja)
+        {
+            _context.Lojas.Update(loja);
+            await _context.SaveChangesAsync();
+        }
     }
 }

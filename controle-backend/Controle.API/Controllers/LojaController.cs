@@ -130,5 +130,21 @@ namespace Controle.API.Controllers
             var loja = await _lojaService.AbrirFecharLojaAsync(lojaId, aberta);
             return Ok(loja);
         }
+
+        /// <summary>
+        /// Ativa ou desativa o recebimento de pedidos delivery.
+        /// </summary>
+        [HttpPatch("{lojaId}/delivery")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ToggleDelivery(Guid lojaId, [FromBody] bool aceitando)
+        {
+            var loja = await _lojaService.GetLojaByIdAsync(lojaId);
+            if (loja == null) return NotFound();
+
+            loja.AceitandoPedidos = aceitando;
+            await _lojaService.AtualizarLojaDirectAsync(loja);
+            return Ok(loja);
+        }
     }
 }

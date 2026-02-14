@@ -10,10 +10,13 @@ const API_URL = 'http://localhost:5024';
 
 export function GarcomPage() {
   const navigate = useNavigate();
-  const { entrarModoGarcom, selecionarMesa } = useWaiter();
+  /* Refactored Login to use Context */
+  const { selecionarMesa, login: loginContext } = useWaiter(); // loginContext alias
   
   // Standalone Auth for Waiter
-  const [waiterUser, setWaiterUser] = useState<{nome: string} | null>(null);
+  // const [waiterUser, setWaiterUser] = useState<{nome: string} | null>(null); // Removed local state
+  const { waiterUser, waiterLojaId } = useWaiter(); // Get from context
+
   const [mesas, setMesas] = useState<Mesa[]>([]);
   
   // Login State
@@ -26,53 +29,33 @@ export function GarcomPage() {
   const [mesaParaAbrir, setMesaParaAbrir] = useState<Mesa | null>(null);
   const [nomeCliente, setNomeCliente] = useState('');
 
-  // Get LojaId from user context or fetch it
-  // Assuming the user logged in is a Funcionario, they have a LojaId.
-  // We need to extract it from the token or user object.
-  // For now, let's assume the AuthResponse puts it in local storage or user object.
-  // If not, we might need to fetch it.
-  // Let's assume user object has it or we use a hardcoded one if user is Admin testing.
-  // Actually, AuthResponse has `Funcionarios` list.
-  // We need to pick the loja.
-  
-  const [lojaId, setLojaId] = useState<string | null>(localStorage.getItem('waiterLojaId'));
+  // Local state for LojaId is now redundant if we use context, but we might need it for fetchMesas dependency
+  // const [lojaId, setLojaId] = useState<string | null>(localStorage.getItem('waiterLojaId')); 
+  // Let's use waiterLojaId from context
 
-  // Restore user session if exists
-  useEffect(() => {
-      const storedUser = localStorage.getItem('waiterUser');
-      if (storedUser) {
-          try {
-              setWaiterUser(JSON.parse(storedUser));
-          } catch {
-              localStorage.removeItem('waiterUser');
-          }
-      }
-  }, []);
+  // Restore user session is now handled by Context
 
   const fetchMesas = useCallback(async () => {
-      if (!lojaId) return;
+      if (!waiterLojaId) return;
       try {
-          // Add bearer token if needed. For now assume public or handle auth in axios config if we were using a centralized api instance.
-          // Since we use direct axios here, we might need headers.
-          // However, MesasController requires Authorize.
           const token = localStorage.getItem('waiterToken');
-          const response = await axios.get<Mesa[]>(`${API_URL}/api/mesas/${lojaId}`, {
+          const response = await axios.get<Mesa[]>(`${API_URL}/api/mesas/${waiterLojaId}`, {
              headers: { Authorization: `Bearer ${token}` }
           });
           setMesas(response.data);
-      } catch (err: unknown) {
+      } catch (err: any) {
           console.error(err);
       }
-  }, [lojaId]);
+  }, [waiterLojaId]);
 
   useEffect(() => {
-    if (waiterUser && lojaId) {
-        entrarModoGarcom();
+    if (waiterUser && waiterLojaId) {
+        // entrarModoGarcom(); // Handled by context now inside UseEffect
         fetchMesas();
         const interval = setInterval(fetchMesas, 5000);
         return () => clearInterval(interval);
     }
-  }, [waiterUser, lojaId, entrarModoGarcom, fetchMesas]);
+  }, [waiterUser, waiterLojaId, fetchMesas]);
 
   const handleLogin = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -80,36 +63,9 @@ export function GarcomPage() {
       setLoadingLogin(true);
       
       try {
-          const response = await axios.post(`${API_URL}/api/auth/login`, { login: email, password });
-          const data = response.data;
-          
-          if (data.token) {
-              const token = data.token;
-              localStorage.setItem('waiterToken', token);
-              
-              // Determine Loja
-              let selectedLojaId = '';
-              if (data.funcionarios && data.funcionarios.length > 0) {
-                  // Prioritize Employee Role
-                  const func = data.funcionarios[0];
-                  if (func.lojaId) selectedLojaId = func.lojaId;
-              } else if (data.lojas && data.lojas.length > 0) {
-                   // Owner Role
-                   selectedLojaId = data.lojas[0].id;
-              }
-              
-              if (selectedLojaId) {
-                  localStorage.setItem('waiterLojaId', selectedLojaId);
-                  setLojaId(selectedLojaId);
-                  
-                  const userObj = { nome: data.nome };
-                  localStorage.setItem('waiterUser', JSON.stringify(userObj));
-                  setWaiterUser(userObj);
-              } else {
-                  setError('Usuário não vinculado a nenhuma loja/equipe.');
-              }
-          }
-      } catch (err: unknown) { // Typed as unknown
+          await loginContext(email, password);
+          // Context updates state, effect above will trigger fetchMesas
+      } catch (err: any) {
           console.error(err);
           setError('Login falhou. Verifique suas credenciais.');
       } finally {
@@ -127,8 +83,8 @@ export function GarcomPage() {
           });
           // Navigate to Loja URL with store ID
           // Must ensure this route exists in Client App
-          if (lojaId) {
-              navigate(`/loja/${lojaId}`);
+          if (waiterLojaId) {
+              navigate(`/loja/${waiterLojaId}`);
           }
       }
   };
@@ -146,15 +102,15 @@ export function GarcomPage() {
       }
   };
 
+  /*
   const handleLogout = () => {
-      localStorage.removeItem('waiterToken');
-      localStorage.removeItem('waiterLojaId');
-      localStorage.removeItem('waiterUser');
-      setWaiterUser(null);
-      setLojaId(null);
+      // Use Context
   };
+  */
+  // We use the context logout in the onClick directly or verify where it's called
+  const { logout } = useWaiter();
 
-  if (!waiterUser || !lojaId) {
+  if (!waiterUser || !waiterLojaId) {
       return (
           <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
               <form onSubmit={handleLogin} className="bg-white p-8 rounded-lg w-full max-w-sm shadow-2xl">
@@ -211,7 +167,7 @@ export function GarcomPage() {
                   <h1 className="font-bold text-lg text-gray-800">Mapa de Mesas</h1>
                   <p className="text-xs text-gray-500">Logado como {waiterUser.nome}</p>
               </div>
-              <button onClick={handleLogout} className="text-red-500 p-2 hover:bg-red-50 rounded">
+              <button onClick={logout} className="text-red-500 p-2 hover:bg-red-50 rounded">
                   <LogOut size={20}/>
               </button>
           </header>

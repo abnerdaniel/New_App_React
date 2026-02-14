@@ -141,5 +141,14 @@ namespace Controle.API.Controllers
             var pedido = await _pedidoService.AtualizarObservacaoAsync(pedidoId, novaObservacao);
             return Ok(pedido);
         }
+        [HttpPost("{id}/adicionar-itens")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AdicionarItens(int id, [FromBody] List<ItemPedidoDTO> itens)
+        {
+            var pedido = await _pedidoService.AdicionarItensAsync(id, itens);
+            return Ok(pedido);
+        }
     }
 }

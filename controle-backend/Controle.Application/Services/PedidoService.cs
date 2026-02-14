@@ -289,10 +289,11 @@ namespace Controle.Application.Services
 
         public async Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(Guid lojaId)
         {
-            var statusVisiveis = new[] { "Pendente", "Aguardando Aceitação", "Em Preparo", "Pronto", "Saiu para Entrega" };
+            var statusVisiveis = new[] { "Aberto", "Pendente", "Aguardando Aceitação", "Em Preparo", "Pronto", "Saiu para Entrega" };
             
             return await _context.Pedidos
                 .Where(p => p.LojaId == lojaId && statusVisiveis.Contains(p.Status))
+                .Where(p => p.Status != "Aberto" || p.Sacola.Any()) // Só mostrar 'Aberto' se tiver itens
                 .Include(p => p.Cliente)
                 .Include(p => p.EnderecoDeEntrega)
                 .Include(p => p.Sacola)
@@ -522,6 +523,141 @@ namespace Controle.Application.Services
             await _context.SaveChangesAsync();
 
             return pedido;
+        }
+        public async Task<Pedido> AdicionarItensAsync(int pedidoId, List<ItemPedidoDTO> itens)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var pedido = await _context.Pedidos
+                    .Include(p => p.Loja)
+                    .Include(p => p.Sacola)
+                    .FirstOrDefaultAsync(p => p.Id == pedidoId);
+
+                if (pedido == null) throw new DomainException("Pedido não encontrado.");
+                if (pedido.Status != "Aberto" && pedido.Status != "Pendente" && pedido.Status != "Em Preparo") 
+                    throw new DomainException($"Não é possível adicionar itens a um pedido com status {pedido.Status}.");
+
+                var loja = pedido.Loja;
+                if (loja == null) throw new DomainException("Loja não encontrada.");
+
+                decimal valorAdicional = 0;
+                int quantidadeAdicional = 0;
+
+                foreach (var itemDto in itens)
+                {
+                    if (itemDto.IdCombo.HasValue)
+                    {
+                         // LÓGICA DE COMBO (Reutilizada simplificada)
+                        var combo = await _context.Combos
+                            .Include(c => c.Itens).ThenInclude(ci => ci.ProdutoLoja)
+                            .FirstOrDefaultAsync(c => c.Id == itemDto.IdCombo.Value);
+
+                        if (combo == null || !combo.Ativo) throw new DomainException($"Combo indisponível.");
+
+                        foreach (var comboItem in combo.Itens)
+                        {
+                           var produtoLojaAtivo = await _context.ProdutosLojas
+                                .Where(pl => pl.LojaId == loja.Id && pl.ProdutoId == (comboItem.ProdutoLoja.ProdutoId))
+                                .OrderByDescending(pl => pl.Estoque ?? 0)
+                                .FirstOrDefaultAsync();
+
+                           if (produtoLojaAtivo == null) throw new DomainException("Produto do combo indisponível.");
+                           
+                           var required = (comboItem.Quantidade * itemDto.Qtd);
+                           if ((produtoLojaAtivo.Estoque ?? 0) < required)
+                               throw new DomainException($"Estoque insuficiente para combo.");
+
+                           // Atualiza estoque
+                           produtoLojaAtivo.Estoque = (produtoLojaAtivo.Estoque ?? 0) - required;
+                           produtoLojaAtivo.Vendas += required;
+                           _context.ProdutosLojas.Update(produtoLojaAtivo);
+                        }
+
+                        var pedidoItem = new PedidoItem
+                        {
+                            ComboId = combo.Id,
+                            NomeProduto = combo.Nome,
+                            PrecoVenda = combo.Preco,
+                            Quantidade = itemDto.Qtd
+                        };
+                        pedido.Sacola.Add(pedidoItem);
+                        valorAdicional += (decimal)pedidoItem.PrecoVenda * pedidoItem.Quantidade;
+                    }
+                    else if (itemDto.IdProduto.HasValue)
+                    {
+                        var produtoLoja = await _context.ProdutosLojas
+                            .Include(pl => pl.Produto)
+                            .FirstOrDefaultAsync(p => p.Id == itemDto.IdProduto.Value);
+
+                        if (produtoLoja == null) throw new DomainException($"Produto não encontrado.");
+                        
+                        var required = itemDto.Qtd;
+                        if ((produtoLoja.Estoque ?? 0) < required)
+                             throw new DomainException($"Estoque insuficiente para {produtoLoja.Descricao}.");
+
+                        var pedidoItem = new PedidoItem
+                        {
+                            ProdutoLojaId = produtoLoja.Id,
+                            NomeProduto = produtoLoja.Descricao,
+                            PrecoVenda = produtoLoja.Preco,
+                            Quantidade = itemDto.Qtd,
+                            Adicionais = new List<PedidoItemAdicional>()
+                        };
+
+                        // Adicionais
+                        if (itemDto.AdicionaisIds != null && itemDto.AdicionaisIds.Any())
+                        {
+                             var adicionaisLojas = await _context.ProdutosLojas
+                                .Where(pl => itemDto.AdicionaisIds.Contains(pl.Id))
+                                .ToListAsync();
+
+                             foreach (var idAdicional in itemDto.AdicionaisIds)
+                             {
+                                 var adicionalLoja = adicionaisLojas.FirstOrDefault(pl => pl.Id == idAdicional);
+                                 if (adicionalLoja == null) continue;
+
+                                 if ((adicionalLoja.Estoque ?? 0) < itemDto.Qtd)
+                                     throw new DomainException($"Estoque insuficiente para adicional.");
+
+                                 adicionalLoja.Estoque = (adicionalLoja.Estoque ?? 0) - itemDto.Qtd;
+                                 adicionalLoja.Vendas += itemDto.Qtd;
+                                 _context.ProdutosLojas.Update(adicionalLoja);
+
+                                 pedidoItem.Adicionais.Add(new PedidoItemAdicional
+                                 {
+                                     ProdutoLojaId = adicionalLoja.Id,
+                                     PrecoVenda = adicionalLoja.Preco
+                                 });
+                                 valorAdicional += (decimal)adicionalLoja.Preco * itemDto.Qtd;
+                             }
+                        }
+
+                        pedido.Sacola.Add(pedidoItem);
+                        valorAdicional += (decimal)pedidoItem.PrecoVenda * pedidoItem.Quantidade;
+                        quantidadeAdicional += itemDto.Qtd;
+
+                        produtoLoja.Estoque = (produtoLoja.Estoque ?? 0) - required;
+                        produtoLoja.Vendas += required;
+                        _context.ProdutosLojas.Update(produtoLoja);
+                    }
+                }
+
+                // Atualizar totais do pedido
+                pedido.ValorTotal = (pedido.ValorTotal ?? 0) + (int)valorAdicional;
+                pedido.Quantidade += quantidadeAdicional;
+
+                _context.Pedidos.Update(pedido);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return pedido;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 }

@@ -11,8 +11,7 @@ public class ComboItem
     public Combo? Combo { get; set; }
 
     public int ProdutoLojaId { get; set; }
-    [JsonIgnore]
-    public ProdutoLoja? ProdutoLoja { get; set; }
+    public ProdutoLoja? ProdutoLoja { get; set; } // Serialized for frontend display
 
     public int Quantidade { get; set; } // Quantidade deste produto no combo
 }

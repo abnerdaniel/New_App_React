@@ -25,6 +25,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// 4. Exception Handling
+app.UseMiddleware<Controle.API.Middlewares.ExceptionMiddleware>(); // Capture exceptions globally
+
 app.UseCors("AllowReactApp");
 app.UseSwaggerDocumentation();
 app.UseAuthentication();

@@ -14,5 +14,6 @@ namespace Controle.Application.Interfaces
         Task<Loja?> GetLojaByIdAsync(Guid lojaId);
         Task<Loja?> GetLojaByIdentifierAsync(string identifier);
         Task<IEnumerable<Loja>> GetLojasByUsuarioIdAsync(Guid usuarioId);
+        Task AtualizarLojaDirectAsync(Loja loja);
     }
 }

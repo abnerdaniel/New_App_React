@@ -19,6 +19,7 @@ export interface Loja {
   cep?: string;
   complemento?: string;
   slug?: string;
+  aceitandoPedidos?: boolean;
 }
 
 export interface Produto {

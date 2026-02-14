@@ -10,9 +10,34 @@ export interface Mesa {
   pedidoAtualId?: number;
   pedidoAtual?: {
       id: number;
+      status?: string;
+      dataVenda?: string;
+      desconto?: number;
+      funcionarioId?: number;
+      funcionario?: {
+          id: number;
+          nome: string;
+      };
       sacola: Array<{
+          id: number;
           quantidade: number;
           precoUnitario: number;
+          nomeProduto?: string;
+          precoVenda: number;
+          comboId?: number;
+          combo?: {
+              nome: string;
+              itens: Array<{
+                  id: number;
+                  quantidade: number;
+                  produtoLojaId: number;
+                  produtoLoja?: {
+                      produto?: {
+                          nome: string;
+                      };
+                  };
+              }>;
+          };
           produtoLoja?: {
               produto?: {
                   nome: string;
@@ -20,9 +45,9 @@ export interface Mesa {
               }
           }
       }>;
-      total?: number; // Se o backend calcular
-  }; // Tipar melhor se precisar (Pedido)
-  dataAbertura?: string; // DateTime ISO
+      total?: number;
+  };
+  dataAbertura?: string;
 }
 
 export const listarMesas = async (lojaId: string): Promise<Mesa[]> => {
@@ -47,4 +72,28 @@ export const abrirMesa = async (id: number, nomeCliente?: string): Promise<Mesa>
 
 export const liberarMesa = async (id: number): Promise<void> => {
   await api.post(`/api/mesas/${id}/liberar`);
+};
+
+export const removerItemPedido = async (itemId: number): Promise<void> => {
+  await api.delete(`/api/mesas/pedido-item/${itemId}`);
+};
+
+export const aplicarDesconto = async (pedidoId: number, desconto: number): Promise<void> => {
+  await api.patch(`/api/mesas/pedido/${pedidoId}/desconto`, { desconto });
+};
+
+export interface ProdutoLojaItem {
+  id: number;
+  nome: string;
+  preco: number;
+  descricao: string;
+}
+
+export const listarProdutosLoja = async (lojaId: string): Promise<ProdutoLojaItem[]> => {
+  const response = await api.get<ProdutoLojaItem[]>(`/api/mesas/produtos/${lojaId}`);
+  return response.data;
+};
+
+export const adicionarItemPedido = async (pedidoId: number, produtoLojaId: number, quantidade: number = 1): Promise<void> => {
+  await api.post(`/api/mesas/pedido/${pedidoId}/item`, { produtoLojaId, quantidade });
 };

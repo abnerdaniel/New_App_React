@@ -202,6 +202,15 @@ export function CheckoutPage() {
             return;
         }
 
+        // VERIFICAÇÃO DE SEGURANÇA: Checar se a loja ainda está aceitando pedidos
+        const lojaId = items[0].produto.lojaId;
+        const lojaCheck = await api.get(`/loja/${lojaId}`);
+        if (lojaCheck.data.aceitandoPedidos === false) {
+            alert('🚫 DESCULPE: Esta loja não está aceitando pedidos delivery no momento.\n\nPor favor, tente novamente mais tarde.');
+            setLoading(false);
+            return;
+        }
+
         const pedidoDto = {
             lojaId: items[0].produto.lojaId, // Assume todos da mesma loja
             clienteId: cliente?.id,

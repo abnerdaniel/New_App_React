@@ -49,4 +49,7 @@ public class Loja
     // Configuração de Cancelamento
     public bool PermitirCancelamentoCliente { get; set; } = true;
     public string StatusMaximoCancelamento { get; set; } = "Saiu para Entrega"; // "Pendente", "Em Preparo", "Saiu para Entrega"
+    
+    // Configuração de Delivery
+    public bool AceitandoPedidos { get; set; } = true; // Se false, não aceita novos pedidos delivery
 }
