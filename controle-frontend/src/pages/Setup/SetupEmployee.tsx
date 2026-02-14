@@ -24,6 +24,15 @@ interface FuncionarioDTO {
   dataCriacao: string;
 }
 
+interface ApiError {
+    response?: {
+        data?: {
+            message?: string;
+            errors?: Record<string, string[]>;
+        };
+    };
+}
+
 export function SetupEmployee() {
   const { user } = useAuth();
   // const navigate = useNavigate();
@@ -58,29 +67,30 @@ export function SetupEmployee() {
 
     const loadInitialData = async () => {
       setLoading(true);
-      console.log('Fetching initial data...');
+      // console.log('Fetching initial data...');
       try {
         const [cargosRes, lojasRes] = await Promise.all([
           api.get('/api/cargos'),
-          api.get(`/api/loja/usuario/${user.id}`)
+          api.get(`/api/loja/usuario/${user?.id}`)
         ]);
 
-        console.log('Cargos loaded:', cargosRes.data);
-        console.log('Lojas loaded:', lojasRes.data);
+        // console.log('Cargos loaded:', cargosRes.data);
+        // console.log('Lojas loaded:', lojasRes.data);
 
         setCargos(cargosRes.data);
         setLojas(lojasRes.data);
 
         if (lojasRes.data.length > 0) {
           const firstLojaId = lojasRes.data[0].id;
-          console.log('Selected Loja ID:', firstLojaId);
+          // console.log('Selected Loja ID:', firstLojaId);
           setSelectedLojaId(firstLojaId);
           await loadEmployees(firstLojaId);
         } else {
-            console.warn('Nenhuma loja encontrada para o usuário.');
+            // console.warn('Nenhuma loja encontrada para o usuário.');
         }
-      } catch (error) {
-        console.error('Erro ao carregar dados iniciais', error);
+      } catch (error: unknown) {
+        const err = error as ApiError;
+        console.error("Erro detalhado:", err.response?.data);
         // toast.error('Erro ao carregar dados. Verifique a conexão.'); // Assuming toast is available
       } finally {
         setLoading(false);
@@ -104,9 +114,9 @@ export function SetupEmployee() {
   const loadEmployees = async (lojaId: string) => {
     setLoading(true);
     try {
-      console.log(`Loading employees for loja: ${lojaId}`);
+      // console.log(`Loading employees for loja: ${lojaId}`);
       const response = await api.get(`/api/funcionarios/loja/${lojaId}`);
-      console.log('Employees loaded:', response.data);
+      // console.log('Employees loaded:', response.data);
       setEmployees(response.data);
     } catch (error) {
       console.error('Erro ao carregar equipe', error);
@@ -270,7 +280,8 @@ export function SetupEmployee() {
           if (selectedLojaId) loadEmployees(selectedLojaId);
       }, 1500);
 
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as ApiError;
       console.error("Erro detalhado:", err.response?.data);
       let msg = "Erro ao salvar funcionário.";
       if (err.response?.data?.message) msg = err.response.data.message;
