@@ -22,6 +22,7 @@ namespace Controle.Application.DTOs
         public int Id { get; set; }
         public string Nome { get; set; } = string.Empty;
         public List<ProdutoLojaDTO> Produtos { get; set; } = new();
+        public List<ComboDTO> Combos { get; set; } = new();
     }
 
     public class ProdutoLojaDTO
@@ -30,7 +31,12 @@ namespace Controle.Application.DTOs
         public string Nome { get; set; } = string.Empty;
         public string Descricao { get; set; } = string.Empty;
         public decimal Preco { get; set; }
+        public string Tipo { get; set; } = string.Empty;
         public string UrlImagem { get; set; } = string.Empty;
         public bool Esgotado { get; set; }
+        public Guid LojaId { get; set; }
+        public bool IsAdicional { get; set; }
+        public bool Disponivel { get; set; }
+        public List<ProdutoLojaDTO> Adicionais { get; set; } = new(); // Lista de produtos extras disponíveis
     }
 }

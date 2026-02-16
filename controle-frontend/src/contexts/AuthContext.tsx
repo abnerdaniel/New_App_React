@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { Usuario, AuthResponse, LojaResumo, FuncionarioResumo } from '../types/Usuario';
 
 interface AuthContextData {
@@ -10,6 +10,7 @@ interface AuthContextData {
   login: (authData: AuthResponse) => void;
   logout: () => void;
   selectLoja: (lojaId: string) => void;
+  updateActiveLoja: (dados: Partial<LojaResumo>) => void;
   isAuthenticated: boolean;
 }
 
@@ -20,28 +21,26 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<Usuario | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [activeLoja, setActiveLoja] = useState<LojaResumo | null>(null);
-  const [activeFuncionario, setActiveFuncionario] = useState<FuncionarioResumo | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('@App:token'));
+  
+  const [user, setUser] = useState<Usuario | null>(() => {
+      const storedUser = localStorage.getItem('@App:user');
+      return storedUser ? JSON.parse(storedUser) : null;
+  });
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('@App:token');
-    const storedUser = localStorage.getItem('@App:user');
-    const storedLoja = localStorage.getItem('@App:activeLoja');
-    const storedFuncionario = localStorage.getItem('@App:activeFuncionario');
+  const [activeLoja, setActiveLoja] = useState<LojaResumo | null>(() => {
+      const storedLoja = localStorage.getItem('@App:activeLoja');
+      return storedLoja ? JSON.parse(storedLoja) : null;
+  });
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      
-      if (storedLoja) setActiveLoja(JSON.parse(storedLoja));
-      if (storedFuncionario) setActiveFuncionario(JSON.parse(storedFuncionario));
-    }
+  const [activeFuncionario, setActiveFuncionario] = useState<FuncionarioResumo | null>(() => {
+      const storedFuncionario = localStorage.getItem('@App:activeFuncionario');
+      return storedFuncionario ? JSON.parse(storedFuncionario) : null;
+  });
 
-    setLoading(false);
-  }, []);
+  // Loading is no longer needed for init, but keeping it false to match interface if needed.
+  // Actually, if we init synchronously, no loading needed.
+  const [loading] = useState(false);
 
   const login = (authData: AuthResponse) => {
     const userData: Usuario = {
@@ -105,6 +104,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.removeItem('@App:activeFuncionario');
   };
 
+  const updateActiveLoja = (dados: Partial<LojaResumo>) => {
+      if (!activeLoja) return;
+  
+      const novaLoja = { ...activeLoja, ...dados };
+      setActiveLoja(novaLoja);
+      localStorage.setItem('@App:activeLoja', JSON.stringify(novaLoja));
+      
+      if (user && user.lojas) {
+          const lojasAtualizadas = user.lojas.map(l => l.id === novaLoja.id ? novaLoja : l);
+          const novoUser = { ...user, lojas: lojasAtualizadas };
+          setUser(novoUser);
+          localStorage.setItem('@App:user', JSON.stringify(novoUser));
+      }
+  };
+
   const isAuthenticated = !!token && !!user;
 
   return (
@@ -118,6 +132,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         login,
         logout,
         selectLoja,
+        updateActiveLoja,
         isAuthenticated,
       }}
     >

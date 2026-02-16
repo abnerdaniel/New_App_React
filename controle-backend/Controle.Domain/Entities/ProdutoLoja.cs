@@ -13,8 +13,12 @@ public class ProdutoLoja
     public int? Desconto { get; set; }
     public int? Estoque { get; set; }
     public int? Vendas { get; set; }
+    public bool Disponivel { get; set; } = true;
     public int ProdutoId { get; set; }
-    public int QuantidadeEstoque { get; set; }
+    // [Obsolete] QuantidadeEstoque removido.
     public int? CategoriaId { get; set; }
     public Categoria? Categoria { get; set; }
+    public Produto? Produto { get; set; }
+    
+    public ICollection<ProdutoCategoria> ProdutoCategorias { get; set; } = new List<ProdutoCategoria>();
 }

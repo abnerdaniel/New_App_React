@@ -13,7 +13,7 @@ namespace Controle.Infrastructure.Configurations
         public void Configure(EntityTypeBuilder<ProdutoLoja> builder)
         {
             builder.HasKey(pl => pl.Id);
-            builder.Property(pl => pl.QuantidadeEstoque).IsRequired();
+
             builder.Property(pl => pl.CategoriaId).IsRequired(false);
         }
     }

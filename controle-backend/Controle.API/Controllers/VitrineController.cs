@@ -20,14 +20,25 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Lista todas as lojas ativas para a home page do cliente.
+        /// </summary>
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> ListarLojas()
+        {
+            var lojas = await _vitrineService.ListarLojasAtivasAsync();
+            return Ok(lojas);
+        }
+
+        /// <summary>
         /// Obtém a vitrine da loja para o cliente (cardápio ativo).
         /// </summary>
-        [HttpGet("{lojaId}")]
+        [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ObterVitrine(Guid lojaId)
+        public async Task<IActionResult> ObterVitrine(string id)
         {
-            var vitrine = await _vitrineService.ObterLojaParaClienteAsync(lojaId);
+            var vitrine = await _vitrineService.ObterLojaParaClienteAsync(id);
             if (vitrine == null) return NotFound();
             return Ok(vitrine);
         }

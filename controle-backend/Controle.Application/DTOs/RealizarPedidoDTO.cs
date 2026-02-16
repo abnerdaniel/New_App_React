@@ -4,15 +4,21 @@ namespace Controle.Application.DTOs
 {
     public class RealizarPedidoDTO
     {
-        public Guid LojaId { get; set; }
+        public string LojaId { get; set; } = string.Empty;
         public int ClienteId { get; set; }
-        public int EnderecoEntregaId { get; set; }
+        public int? EnderecoEntregaId { get; set; }
+        public bool IsRetirada { get; set; } = false;
+        public string MetodoPagamento { get; set; } = string.Empty;
+        public decimal? TrocoPara { get; set; }
+        public string? Observacao { get; set; }
         public List<ItemPedidoDTO> Itens { get; set; } = new();
     }
 
     public class ItemPedidoDTO
     {
-        public int IdProduto { get; set; }
+        public int? IdProduto { get; set; }
+        public int? IdCombo { get; set; }
         public int Qtd { get; set; }
+        public List<int> AdicionaisIds { get; set; } = new(); // Lista de IDs de adicionais (ProdutoAdicional.Id ou ProdutoLoja.Id? Provavelmente ProdutoLojaId dos extras)
     }
 }

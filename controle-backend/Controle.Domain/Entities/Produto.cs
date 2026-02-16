@@ -21,4 +21,7 @@ public class Produto
     public string? URL_Audio { get; set; }
     public string? URL_Documento { get; set; }
     public Guid? LojaId { get; set; }
+    
+    public bool IsAdicional { get; set; }
+    public ICollection<ProdutoAdicional> Adicionais { get; set; } = new List<ProdutoAdicional>();
 }

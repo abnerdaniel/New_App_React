@@ -42,6 +42,8 @@ namespace Controle.API.Controllers
                 HorarioInicio = dto.HorarioInicio,
                 HorarioFim = dto.HorarioFim,
                 DiasSemana = dto.DiasSemana,
+                DataInicio = dto.DataInicio,
+                DataFim = dto.DataFim,
                 Ativo = dto.Ativo
             };
 
@@ -64,6 +66,41 @@ namespace Controle.API.Controllers
             var cardapio = await _cardapioService.ObterCardapioCompletoAsync(id);
             if (cardapio == null) return NotFound();
             return Ok(cardapio);
+        }
+
+        [HttpGet("loja/{lojaId}")]
+        public async Task<IActionResult> ListarPorLoja(Guid lojaId)
+        {
+            var cardapios = await _cardapioService.ListarPorLojaAsync(lojaId);
+            return Ok(cardapios);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> AtualizarCardapio(int id, [FromBody] CreateCardapioDTO dto)
+        {
+            try
+            {
+                var cardapio = await _cardapioService.AtualizarCardapioAsync(id, dto);
+                return Ok(cardapio);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> ExcluirCardapio(int id)
+        {
+             try
+            {
+                await _cardapioService.ExcluirCardapioAsync(id);
+                return NoContent();
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

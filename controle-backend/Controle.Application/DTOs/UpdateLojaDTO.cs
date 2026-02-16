@@ -26,5 +26,12 @@ namespace Controle.Application.DTOs
         public string? Estado { get; set; }
 
         public bool? Ativo { get; set; }
+        
+        // Configurações
+        public string? Categoria { get; set; }
+        public double? Avaliacao { get; set; }
+        public int? TempoMinimoEntrega { get; set; }
+        public int? TempoMaximoEntrega { get; set; }
+        public decimal? TaxaEntregaFixa { get; set; }
     }
 }

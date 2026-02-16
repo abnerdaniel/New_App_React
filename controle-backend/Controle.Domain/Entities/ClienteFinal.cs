@@ -24,4 +24,5 @@ public class ClienteFinal
     public string? YouTube { get; set; } = string.Empty;
     public string? Twitch { get; set; } = string.Empty;
     public string? TikTok { get; set; } = string.Empty;
+    public int PedidosCancelados { get; set; } = 0;
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../../api/axios";
 import { useAuth } from "../../contexts/AuthContext";
-import { Plus, Search, Edit2, Trash2, X, AlertCircle } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X } from "lucide-react";
 
 interface ProdutoEstoqueDTO {
   produtoId: number;
@@ -11,6 +11,22 @@ interface ProdutoEstoqueDTO {
   preco: number;
   estoque: number;
   imagemUrl?: string;
+  isAdicional?: boolean;
+  adicionaisIds?: number[];
+  categoriaId?: number;
+  disponivel?: boolean;
+}
+
+
+interface CardapioDTO {
+    id: number;
+    nome: string;
+    ativo: boolean;
+}
+
+interface CategoriaDTO {
+    id: number;
+    nome: string;
 }
 
 interface ProdutoCatalogoDTO {
@@ -19,28 +35,89 @@ interface ProdutoCatalogoDTO {
     tipo: string;
     imagemUrl?: string;
     lojaId?: string;
+    isAdicional?: boolean;
 }
 
-interface Loja {
-  id: string;
-  nome: string;
-}
+
 
 const PRODUTO_TIPOS = [
   "Pratos", "Lanches", "Porções/Petiscos", "Bebidas", "Sobremesas", 
   "Adicionais", "Combos", "Infantil", "Especiais"
 ];
 
+// Componente auxiliar para busca de adicionais
+function AdicionaisSearch({ catalogo, currentIds, onAdd, onCreateNew }: {
+    catalogo: ProdutoCatalogoDTO[],
+    currentIds: number[],
+    onAdd: (id: number) => void,
+    onCreateNew: (nome: string) => void
+}) {
+    const [term, setTerm] = useState("");
+    const [showDropdown, setShowDropdown] = useState(false);
+
+    // Filtra produtos que SÃO adicionais e ainda NÃO estão vinculados
+    // Verifica isAdicional (novo campo) OU se o tipo é "Adicionais" (legado)
+    const suggestions = catalogo.filter(c => 
+        (c.isAdicional || c.tipo === "Adicionais") && 
+        !currentIds.includes(c.id) && 
+        c.nome.toLowerCase().includes(term.toLowerCase())
+    );
+
+    return (
+        <div className="relative">
+            <div className="relative">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                <input 
+                    placeholder="Buscar ou criar adicional..." 
+                    className="w-full h-9 pl-9 pr-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                    value={term}
+                    onChange={e => { setTerm(e.target.value); setShowDropdown(true); }}
+                    onFocus={() => setShowDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowDropdown(false), 200)} // Delay para clique funcionar
+                />
+            </div>
+            
+            {showDropdown && term && (
+                <div className="absolute top-10 left-0 w-full bg-white border border-gray-200 rounded-lg shadow-xl z-20 max-h-48 overflow-y-auto">
+                    {suggestions.map(s => (
+                        <button
+                            key={s.id}
+                            type="button"
+                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex justify-between group"
+                            onClick={() => { onAdd(s.id); setTerm(""); }}
+                        >
+                            <span>{s.nome}</span>
+                            <span className="text-xs text-gray-400 group-hover:text-brand-primary">Adicionar</span>
+                        </button>
+                    ))}
+                    
+                    {suggestions.length === 0 && (
+                        <button
+                            type="button"
+                            className="w-full text-left px-4 py-2 hover:bg-brand-primary/5 text-sm text-brand-primary font-bold"
+                            onClick={() => { onCreateNew(term); setTerm(""); }}
+                        >
+                            + Criar novo: "{term}"
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export function EstoquePage() {
-  const { user } = useAuth();
+  const { activeLoja } = useAuth();
   
   // Data State
-  const [lojas, setLojas] = useState<Loja[]>([]);
-  const [selectedLojaId, setSelectedLojaId] = useState<string>("");
   const [produtos, setProdutos] = useState<ProdutoEstoqueDTO[]>([]);
   const [catalogo, setCatalogo] = useState<ProdutoCatalogoDTO[]>([]); // Produtos disponíveis para cadastro
   const [loading, setLoading] = useState(false);
   const [filterTerm, setFilterTerm] = useState("");
+
+  // Cardapio & Categoria State
+  const [cardapios, setCardapios] = useState<CardapioDTO[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaDTO[]>([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,31 +135,41 @@ export function EstoquePage() {
     tipo: PRODUTO_TIPOS[0],
     preco: "",
     estoque: "",
-    imagemUrl: ""
+    imagemUrl: "",
+    isAdicional: false,
+    adicionaisIds: [] as number[],
+    cardapioId: "",
+    categoriaId: "",
+    disponivel: true
   });
 
+  // Load data when activeLoja changes
   useEffect(() => {
-    if (user) {
-      api.get(`/api/loja/usuario/${user.id}`)
-        .then(res => {
-          setLojas(res.data);
-          if (res.data.length > 0) setSelectedLojaId(res.data[0].id);
-        })
-        .catch(console.error);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (selectedLojaId) {
+    if (activeLoja?.id) {
       loadEstoque();
       loadCatalogo();
+      loadCardapios();
+    } else {
+        setProdutos([]);
+        setCatalogo([]);
+        setCardapios([]);
     }
-  }, [selectedLojaId]);
+  }, [activeLoja]);
+
+  // Load Categories when Cardapio changes
+  useEffect(() => {
+    if (formData.cardapioId) {
+        loadCategorias(Number(formData.cardapioId));
+    } else {
+        setCategorias([]);
+    }
+  }, [formData.cardapioId]);
 
   const loadEstoque = async () => {
+    if (!activeLoja?.id) return;
     setLoading(true);
     try {
-      const res = await api.get(`/api/produto-loja/loja/${selectedLojaId}/estoque`);
+      const res = await api.get(`/api/produto-loja/loja/${activeLoja.id}/estoque`);
       setProdutos(res.data);
     } catch (error) {
       console.error("Erro ao carregar estoque", error);
@@ -92,13 +179,31 @@ export function EstoquePage() {
   };
 
   const loadCatalogo = async () => {
+      if (!activeLoja?.id) return;
       try {
-          // Busca produtos globais ou da loja (LojaId=null OR LojaId=Current)
-          // O backend já filtra por LojaId se passado.
-          const res = await api.get(`/api/produtos?lojaId=${selectedLojaId}`);
+          const res = await api.get(`/api/produtos?lojaId=${activeLoja.id}`);
           setCatalogo(res.data);
       } catch (error) {
           console.error("Erro ao carregar catálogo", error);
+      }
+  }
+
+  const loadCardapios = async () => {
+      if (!activeLoja?.id) return;
+      try {
+          const res = await api.get(`/api/cardapios/loja/${activeLoja.id}`);
+          setCardapios(res.data);
+      } catch (error) {
+          console.error("Erro ao carregar cardápios", error);
+      }
+  }
+
+  const loadCategorias = async (cardapioId: number) => {
+      try {
+          const res = await api.get(`/api/categorias/cardapio/${cardapioId}`);
+          setCategorias(res.data);
+      } catch (error) {
+          console.error("Erro ao carregar categorias", error);
       }
   }
 
@@ -114,7 +219,7 @@ export function EstoquePage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedLojaId) return;
+    if (!activeLoja?.id) return;
 
     // Extrair centavos diretamente dos dígitos (Ex: "10,00" -> "1000" -> 1000)
     // Se o campo estiver vazio ou "0,00", será 0
@@ -126,15 +231,21 @@ export function EstoquePage() {
         await api.put(`/api/produto-loja/${editingProduto.produtoLojaId}`, {
           preco: precoCentavos,
           estoque: Number(formData.estoque),
+          isAdicional: formData.isAdicional,
+          adicionaisIds: formData.adicionaisIds,
+          categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
+          disponivel: formData.disponivel
           // descricao: formData.descricao 
         });
         alert("Produto atualizado!");
       } else {
         // Create Logic
         const payload: any = {
-          lojaId: selectedLojaId,
+          lojaId: activeLoja.id,
           preco: precoCentavos,
-          estoque: Number(formData.estoque)
+          estoque: Number(formData.estoque),
+          categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
+          disponivel: formData.disponivel
         };
 
         if (selectedCatalogoItem && !isCreatingNew) {
@@ -146,7 +257,9 @@ export function EstoquePage() {
                 nome: formData.nome,
                 descricao: formData.descricao,
                 tipo: formData.tipo,
-                imagemUrl: formData.imagemUrl
+                imagemUrl: formData.imagemUrl,
+                isAdicional: formData.isAdicional,
+                adicionaisIds: formData.adicionaisIds
             };
         }
 
@@ -171,7 +284,12 @@ export function EstoquePage() {
       tipo: prod.tipo,
       preco: (prod.preco / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 }), // Formata para 0,00
       estoque: prod.estoque.toString(),
-      imagemUrl: prod.imagemUrl || ""
+      imagemUrl: prod.imagemUrl || "",
+      isAdicional: prod.isAdicional || false,
+      adicionaisIds: prod.adicionaisIds || [],
+      cardapioId: "", // Reset menu selection on edit
+      categoriaId: prod.categoriaId ? prod.categoriaId.toString() : "",
+      disponivel: prod.disponivel !== false // Default true if undefined
     });
     setIsModalOpen(true);
   };
@@ -187,13 +305,29 @@ export function EstoquePage() {
       }
   }
 
+  const handleToggleDisponibilidade = async (prod: ProdutoEstoqueDTO) => {
+      try {
+          const novoStatus = !prod.disponivel;
+          // Optimistic update
+          setProdutos(prev => prev.map(p => p.produtoLojaId === prod.produtoLojaId ? { ...p, disponivel: novoStatus } : p));
+          
+          await api.put(`/api/produto-loja/${prod.produtoLojaId}`, {
+              disponivel: novoStatus
+          });
+      } catch (error) {
+          console.error(error);
+          alert("Erro ao alterar disponibilidade.");
+          loadEstoque(); // Revert on error
+      }
+  }
+
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduto(null);
     setSelectedCatalogoItem(null);
     setIsCreatingNew(false);
     setSearchCatalogo("");
-    setFormData({ nome: "", descricao: "", tipo: PRODUTO_TIPOS[0], preco: "", estoque: "", imagemUrl: "" });
+    setFormData({ nome: "", descricao: "", tipo: PRODUTO_TIPOS[0], preco: "", estoque: "", imagemUrl: "", isAdicional: false, adicionaisIds: [], cardapioId: "", categoriaId: "", disponivel: true });
   };
 
   const handleSelectCatalogo = (item: ProdutoCatalogoDTO) => {
@@ -202,10 +336,12 @@ export function EstoquePage() {
       setSearchCatalogo(item.nome);
       // Pre-fill form (visual feedback)
       setFormData(prev => ({ 
-          ...prev, 
+           ...prev, 
           nome: item.nome, 
           tipo: item.tipo || PRODUTO_TIPOS[0],
-          imagemUrl: item.imagemUrl || ""
+          imagemUrl: item.imagemUrl || "",
+          isAdicional: item.isAdicional || false,
+          adicionaisIds: [] // Reset extras when selecting from catalog
       }));
   }
 
@@ -225,26 +361,21 @@ export function EstoquePage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Controle de Estoque</h1>
-          <p className="text-gray-500 mt-1">Gerencie produtos, preços e disponibilidade.</p>
+          <p className="text-gray-500 mt-1">
+             {activeLoja ? `Gerenciando: ${activeLoja.nome}` : 'Selecione uma loja no topo para gerenciar.'}
+          </p>
         </div>
         
         <div className="flex gap-4 w-full md:w-auto">
-             <div className="flex-1 md:w-64">
-                <select 
-                    value={selectedLojaId}
-                    onChange={(e) => setSelectedLojaId(e.target.value)}
-                    className="w-full h-11 px-4 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none shadow-sm"
+            {activeLoja && (
+                <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="h-11 px-6 bg-brand-primary text-white rounded-lg font-bold hover:bg-brand-hover shadow-md flex items-center gap-2 transition-all active:scale-95"
                 >
-                    {lojas.map(l => <option key={l.id} value={l.id}>{l.nome}</option>)}
-                </select>
-            </div>
-            <button 
-                onClick={() => setIsModalOpen(true)}
-                className="h-11 px-6 bg-brand-primary text-white rounded-lg font-bold hover:bg-brand-hover shadow-md flex items-center gap-2 transition-all active:scale-95"
-            >
-                <Plus size={20} />
-                Novo Produto
-            </button>
+                    <Plus size={20} />
+                    Novo Produto
+                </button>
+            )}
         </div>
       </div>
 
@@ -273,6 +404,7 @@ export function EstoquePage() {
                     <th className="p-4 text-xs font-bold text-gray-500 uppercase">Tipo</th>
                     <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">Preço</th>
                     <th className="p-4 text-xs font-bold text-gray-500 uppercase text-center">Estoque</th>
+                    <th className="p-4 text-xs font-bold text-gray-500 uppercase text-center">Disponível</th>
                     <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">Ações</th>
                 </tr>
             </thead>
@@ -299,6 +431,14 @@ export function EstoquePage() {
                                 <span className={`font-bold ${prod.estoque < 5 ? 'text-red-500' : 'text-green-600'}`}>
                                     {prod.estoque}
                                 </span>
+                            </td>
+                            <td className="p-4 text-center">
+                                <button 
+                                    onClick={() => handleToggleDisponibilidade(prod)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-primary/50 ${prod.disponivel !== false ? 'bg-green-500' : 'bg-gray-300'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${prod.disponivel !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
                             </td>
                             <td className="p-4 text-right">
                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -433,17 +573,127 @@ export function EstoquePage() {
                                         placeholder="Descreva o produto..."
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">URL da Imagem</label>
-                                    <input 
-                                        className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                                        value={formData.imagemUrl}
-                                        onChange={e => setFormData({...formData, imagemUrl: e.target.value})}
-                                        placeholder="https://..."
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-gray-500 uppercase">URL da Imagem</label>
+                                        <input 
+                                            className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                                            value={formData.imagemUrl}
+                                            onChange={e => setFormData({...formData, imagemUrl: e.target.value})}
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <input 
+                                            type="checkbox"
+                                            id="disponivel"
+                                            className="w-4 h-4 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+                                            checked={formData.disponivel}
+                                            onChange={e => setFormData({...formData, disponivel: e.target.checked})}
+                                        />
+                                        <label htmlFor="disponivel" className="text-sm font-medium text-gray-700 select-none">
+                                            Produto Disponível para venda?
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <input 
+                                            type="checkbox"
+                                            id="isAdicional"
+                                            className="w-4 h-4 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+                                            checked={formData.isAdicional}
+                                            onChange={e => setFormData({...formData, isAdicional: e.target.checked})}
+                                        />
+                                        <label htmlFor="isAdicional" className="text-sm font-medium text-gray-700 select-none">
+                                            Este produto é um Adicional/Extra?
+                                        </label>
+                                    </div>
+
+                                    {/* CARDÁPIO E CATEGORIA */}
+                                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-dashed border-gray-200 mt-2">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-gray-500 uppercase">Cardápio (Opcional)</label>
+                                            <select 
+                                                className="w-full text-sm h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none bg-white"
+                                                value={formData.cardapioId}
+                                                onChange={e => setFormData({...formData, cardapioId: e.target.value, categoriaId: ""})}
+                                            >
+                                                <option value="">Selecione...</option>
+                                                {cardapios.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-gray-500 uppercase">Categoria</label>
+                                            <select 
+                                                className="w-full text-sm h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none bg-white"
+                                                value={formData.categoriaId}
+                                                onChange={e => setFormData({...formData, categoriaId: e.target.value})}
+                                                disabled={!formData.cardapioId}
+                                            >
+                                                <option value="">Selecione...</option>
+                                                {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            
+                            {/* SEÇÃO DE ADICIONAIS (Somente se NÃO for um adicional) */}
+                            {!formData.isAdicional && (editingProduto || isCreatingNew) && (
+                                <div className="space-y-3 pt-2 border-t border-dashed border-gray-200">
+                                    <h4 className="text-sm font-bold text-gray-700">Adicionais permitidos</h4>
+                                    <p className="text-xs text-gray-500">Selecione quais extras o cliente pode adicionar a este produto.</p>
+                                    
+                                    {/* Lista de selecionados */}
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {formData.adicionaisIds.map(id => {
+                                            const prod = catalogo.find(p => p.id === id); // Tenta achar no catalogo
+                                            const nome = prod ? prod.nome : `Adicional #${id}`;
+                                            return (
+                                                <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-50 text-yellow-700 text-xs rounded-full border border-yellow-200">
+                                                    {nome}
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setFormData(prev => ({ ...prev, adicionaisIds: prev.adicionaisIds.filter(x => x !== id) }))}
+                                                        className="hover:text-red-500"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            );
+                                        })}
+                                        {formData.adicionaisIds.length === 0 && (
+                                            <span className="text-xs text-gray-400 italic">Nenhum adicional vinculado.</span>
+                                        )}
+                                    </div>
+
+                                    {/* Busca para adicionar novo */}
+                                    <AdicionaisSearch 
+                                        catalogo={catalogo} 
+                                        currentIds={formData.adicionaisIds}
+                                        onAdd={(id) => setFormData(prev => ({ ...prev, adicionaisIds: [...prev.adicionaisIds, id] }))}
+                                        onCreateNew={async (nome) => {
+                                            if(!window.confirm(`Deseja criar um novo adicional "${nome}"?`)) return;
+                                            try {
+                                                // Cria produto base tipo Adicional
+                                                const res = await api.post("/api/produtos", {
+                                                    nome,
+                                                    tipo: "Adicionais",
+                                                    isAdicional: true,
+                                                    preco: 0,
+                                                    lojaId: activeLoja?.id
+                                                });
+                                                const novoId = res.data.id;
+                                                await loadCatalogo(); // Recarrega para ter os dados
+                                                setFormData(prev => ({ ...prev, adicionaisIds: [...prev.adicionaisIds, novoId] }));
+                                            } catch (err) {
+                                                console.error(err);
+                                                alert("Erro ao criar adicional rápido.");
+                                            }
+                                        }}
                                     />
                                 </div>
-                            </>
-                        )}
+                            )}
                         
                         {/* Se vinculando existente, mostra resumo */}
                         {selectedCatalogoItem && !isCreatingNew && !editingProduto && (

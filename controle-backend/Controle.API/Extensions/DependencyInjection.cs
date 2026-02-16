@@ -29,6 +29,7 @@ namespace Controle.API.Extensions
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IProdutoService, ProdutoService>();
             services.AddScoped<IProdutoLojaService, ProdutoLojaService>();
+            services.AddScoped<ICategoriaService, CategoriaService>();
 
             // Repositories
             // Repositories
@@ -43,6 +44,7 @@ namespace Controle.API.Extensions
             services.AddScoped<IProdutoRepository, ProdutoRepository>();
             services.AddScoped<IProdutoLojaRepository, ProdutoLojaRepository>();
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            services.AddScoped<IMesaService, MesaService>();
 
             return services;
         }

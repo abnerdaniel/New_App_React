@@ -116,5 +116,12 @@ namespace Controle.API.Controllers
             var estoque = await _produtoLojaService.ObterEstoquePorLojaAsync(lojaId);
             return Ok(estoque);
         }
+
+        [HttpPut("{id}/categorias")]
+        public async Task<IActionResult> AtualizarCategorias(int id, [FromBody] List<int> categoriaIds)
+        {
+            await _produtoLojaService.AtualizarCategoriasProdutoAsync(id, categoriaIds);
+            return NoContent();
+        }
     }
 }

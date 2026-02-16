@@ -1,0 +1,17 @@
+using System.Text.Json.Serialization;
+
+namespace Controle.Domain.Entities;
+
+public class ComboItem
+{
+    public int Id { get; set; }
+    
+    public int ComboId { get; set; }
+    [JsonIgnore]
+    public Combo? Combo { get; set; }
+
+    public int ProdutoLojaId { get; set; }
+    public ProdutoLoja? ProdutoLoja { get; set; } // Serialized for frontend display
+
+    public int Quantidade { get; set; } // Quantidade deste produto no combo
+}

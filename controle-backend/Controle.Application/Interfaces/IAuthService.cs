@@ -16,5 +16,7 @@ namespace Controle.Application.Interfaces
         Task<IEnumerable<UsuarioResponse>> GetAllUsuariosAsync();
         Task<Result> AtivarUsuarioAsync(Guid usuarioId);
         Task<Result> DesativarUsuarioAsync(Guid usuarioId);
+        Task<Result> DeletarUsuarioAsync(Guid usuarioId);
+        Task<Result> AlterarSenhaUsuarioAsync(Guid usuarioId, string novaSenha);
     }
 }

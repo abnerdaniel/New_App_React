@@ -69,6 +69,12 @@ namespace Controle.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
+                    b.Property<DateTime?>("DataFim")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DataInicio")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("DiasSemana")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -188,6 +194,9 @@ namespace Controle.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int>("PedidosCancelados")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Telefone")
                         .HasColumnType("text");
 
@@ -215,6 +224,69 @@ namespace Controle.Infrastructure.Migrations
                     b.ToTable("CientesFinais");
                 });
 
+            modelBuilder.Entity("Controle.Domain.Entities.Combo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("CategoriaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Descricao")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImagemUrl")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("LojaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Preco")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.ToTable("Combos");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ComboItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ComboId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProdutoLojaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantidade")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComboId");
+
+                    b.HasIndex("ProdutoLojaId");
+
+                    b.ToTable("ComboItems");
+                });
+
             modelBuilder.Entity("Controle.Domain.Entities.Endereco", b =>
                 {
                     b.Property<int>("Id")
@@ -222,6 +294,9 @@ namespace Controle.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Apelido")
+                        .HasColumnType("text");
 
                     b.Property<string>("Bairro")
                         .IsRequired()
@@ -238,6 +313,9 @@ namespace Controle.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Complemento")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Destinatario")
                         .HasColumnType("text");
 
                     b.Property<string>("Estado")
@@ -303,10 +381,19 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<bool?>("AbertaManualmente")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("AceitandoPedidos")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean");
 
+                    b.Property<double?>("Avaliacao")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("Bairro")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Categoria")
                         .HasColumnType("text");
 
                     b.Property<string>("Cep")
@@ -357,7 +444,18 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<string>("Numero")
                         .HasColumnType("text");
 
+                    b.Property<bool>("PermitirCancelamentoCliente")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Senha")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("StatusMaximoCancelamento")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -403,6 +501,43 @@ namespace Controle.Infrastructure.Migrations
                     b.ToTable("Lojas");
                 });
 
+            modelBuilder.Entity("Controle.Domain.Entities.Mesa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClienteNomeTemporario")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DataAbertura")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LojaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Nome")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Numero")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PedidoAtualId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PedidoAtualId");
+
+                    b.ToTable("Mesas");
+                });
+
             modelBuilder.Entity("Controle.Domain.Entities.Pedido", b =>
                 {
                     b.Property<int>("Id")
@@ -411,10 +546,7 @@ namespace Controle.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AtendenteId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ClienteId")
+                    b.Property<int?>("ClienteId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("DataVenda")
@@ -429,11 +561,20 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<int?>("EnderecoDeEntregaId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("GarcomId")
+                    b.Property<int?>("FuncionarioId")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("IsRetirada")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("LojaId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("MetodoPagamento")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MotivoCancelamento")
+                        .HasColumnType("text");
 
                     b.Property<int?>("NumeroFila")
                         .HasColumnType("integer");
@@ -441,18 +582,101 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<int?>("NumeroMesa")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Observacao")
+                        .HasColumnType("text");
+
                     b.Property<int>("Quantidade")
                         .HasColumnType("integer");
 
                     b.Property<string>("Status")
                         .HasColumnType("text");
 
+                    b.Property<decimal?>("TrocoPara")
+                        .HasColumnType("numeric");
+
                     b.Property<int?>("ValorTotal")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("EnderecoDeEntregaId");
+
+                    b.HasIndex("FuncionarioId");
+
+                    b.HasIndex("LojaId");
+
                     b.ToTable("Pedidos");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.PedidoItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("ComboId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NomeProduto")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("PedidoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PrecoVenda")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ProdutoLojaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantidade")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComboId");
+
+                    b.HasIndex("PedidoId");
+
+                    b.HasIndex("ProdutoLojaId");
+
+                    b.ToTable("PedidoItems");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.PedidoItemAdicional", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("PedidoItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PrecoVenda")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProdutoLojaId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PedidoItemId");
+
+                    b.HasIndex("ProdutoLojaId");
+
+                    b.ToTable("PedidoItemAdicionais");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Produto", b =>
@@ -471,6 +695,9 @@ namespace Controle.Infrastructure.Migrations
 
                     b.Property<string>("Fabricante")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsAdicional")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid?>("LojaId")
                         .HasColumnType("uuid");
@@ -513,6 +740,36 @@ namespace Controle.Infrastructure.Migrations
                     b.ToTable("Produtos");
                 });
 
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoAdicional", b =>
+                {
+                    b.Property<int>("ProdutoPaiId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProdutoFilhoId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ProdutoPaiId", "ProdutoFilhoId");
+
+                    b.HasIndex("ProdutoFilhoId");
+
+                    b.ToTable("ProdutoAdicionais");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoCategoria", b =>
+                {
+                    b.Property<int>("ProdutoLojaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CategoriaId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ProdutoLojaId", "CategoriaId");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.ToTable("ProdutoCategorias");
+                });
+
             modelBuilder.Entity("Controle.Domain.Entities.ProdutoLoja", b =>
                 {
                     b.Property<int>("Id")
@@ -531,6 +788,9 @@ namespace Controle.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("Disponivel")
+                        .HasColumnType("boolean");
+
                     b.Property<int?>("Estoque")
                         .HasColumnType("integer");
 
@@ -543,15 +803,14 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<int>("ProdutoId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("QuantidadeEstoque")
-                        .HasColumnType("integer");
-
                     b.Property<int?>("Vendas")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CategoriaId");
+
+                    b.HasIndex("ProdutoId");
 
                     b.ToTable("ProdutosLojas");
                 });
@@ -602,38 +861,6 @@ namespace Controle.Infrastructure.Migrations
                     b.ToTable("Usuarios");
                 });
 
-            modelBuilder.Entity("PedidoItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("NomeProduto")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("PedidoId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PrecoVenda")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ProdutoLojaId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Quantidade")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PedidoId");
-
-                    b.ToTable("PedidoItems");
-                });
-
             modelBuilder.Entity("Controle.Domain.Entities.Categoria", b =>
                 {
                     b.HasOne("Controle.Domain.Entities.Cardapio", "Cardapio")
@@ -645,22 +872,165 @@ namespace Controle.Infrastructure.Migrations
                     b.Navigation("Cardapio");
                 });
 
+            modelBuilder.Entity("Controle.Domain.Entities.Combo", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.Categoria", "Categoria")
+                        .WithMany("Combos")
+                        .HasForeignKey("CategoriaId");
+
+                    b.Navigation("Categoria");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ComboItem", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.Combo", "Combo")
+                        .WithMany("Itens")
+                        .HasForeignKey("ComboId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Controle.Domain.Entities.ProdutoLoja", "ProdutoLoja")
+                        .WithMany()
+                        .HasForeignKey("ProdutoLojaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Combo");
+
+                    b.Navigation("ProdutoLoja");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.Mesa", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.Pedido", "PedidoAtual")
+                        .WithMany()
+                        .HasForeignKey("PedidoAtualId");
+
+                    b.Navigation("PedidoAtual");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.Pedido", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.ClienteFinal", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId");
+
+                    b.HasOne("Controle.Domain.Entities.Endereco", "EnderecoDeEntrega")
+                        .WithMany()
+                        .HasForeignKey("EnderecoDeEntregaId");
+
+                    b.HasOne("Controle.Domain.Entities.Funcionario", "Funcionario")
+                        .WithMany()
+                        .HasForeignKey("FuncionarioId");
+
+                    b.HasOne("Controle.Domain.Entities.Loja", "Loja")
+                        .WithMany()
+                        .HasForeignKey("LojaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("EnderecoDeEntrega");
+
+                    b.Navigation("Funcionario");
+
+                    b.Navigation("Loja");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.PedidoItem", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.Combo", "Combo")
+                        .WithMany()
+                        .HasForeignKey("ComboId");
+
+                    b.HasOne("Controle.Domain.Entities.Pedido", null)
+                        .WithMany("Sacola")
+                        .HasForeignKey("PedidoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Controle.Domain.Entities.ProdutoLoja", "ProdutoLoja")
+                        .WithMany()
+                        .HasForeignKey("ProdutoLojaId");
+
+                    b.Navigation("Combo");
+
+                    b.Navigation("ProdutoLoja");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.PedidoItemAdicional", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.PedidoItem", "PedidoItem")
+                        .WithMany("Adicionais")
+                        .HasForeignKey("PedidoItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Controle.Domain.Entities.ProdutoLoja", "ProdutoLoja")
+                        .WithMany()
+                        .HasForeignKey("ProdutoLojaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PedidoItem");
+
+                    b.Navigation("ProdutoLoja");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoAdicional", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.Produto", "ProdutoFilho")
+                        .WithMany()
+                        .HasForeignKey("ProdutoFilhoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Controle.Domain.Entities.Produto", "ProdutoPai")
+                        .WithMany("Adicionais")
+                        .HasForeignKey("ProdutoPaiId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ProdutoFilho");
+
+                    b.Navigation("ProdutoPai");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoCategoria", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.Categoria", "Categoria")
+                        .WithMany("ProdutoCategorias")
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Controle.Domain.Entities.ProdutoLoja", "ProdutoLoja")
+                        .WithMany("ProdutoCategorias")
+                        .HasForeignKey("ProdutoLojaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Categoria");
+
+                    b.Navigation("ProdutoLoja");
+                });
+
             modelBuilder.Entity("Controle.Domain.Entities.ProdutoLoja", b =>
                 {
                     b.HasOne("Controle.Domain.Entities.Categoria", "Categoria")
                         .WithMany("Produtos")
                         .HasForeignKey("CategoriaId");
 
-                    b.Navigation("Categoria");
-                });
-
-            modelBuilder.Entity("PedidoItem", b =>
-                {
-                    b.HasOne("Controle.Domain.Entities.Pedido", null)
-                        .WithMany("Sacola")
-                        .HasForeignKey("PedidoId")
+                    b.HasOne("Controle.Domain.Entities.Produto", "Produto")
+                        .WithMany()
+                        .HasForeignKey("ProdutoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Categoria");
+
+                    b.Navigation("Produto");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Cardapio", b =>
@@ -670,12 +1040,36 @@ namespace Controle.Infrastructure.Migrations
 
             modelBuilder.Entity("Controle.Domain.Entities.Categoria", b =>
                 {
+                    b.Navigation("Combos");
+
+                    b.Navigation("ProdutoCategorias");
+
                     b.Navigation("Produtos");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.Combo", b =>
+                {
+                    b.Navigation("Itens");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Pedido", b =>
                 {
                     b.Navigation("Sacola");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.PedidoItem", b =>
+                {
+                    b.Navigation("Adicionais");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.Produto", b =>
+                {
+                    b.Navigation("Adicionais");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoLoja", b =>
+                {
+                    b.Navigation("ProdutoCategorias");
                 });
 #pragma warning restore 612, 618
         }

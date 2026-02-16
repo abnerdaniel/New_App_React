@@ -35,7 +35,33 @@ namespace Controle.API.Controllers
             var pedido = await _pedidoService.RealizarPedidoAsync(dto);
             // Retorna 201 Created. O header Location aponta para a fila de pedidos da loja por enquanto, 
             // já que não temos um endpoint GetPedidoById específico exposto ainda (embora pudesse ser criado).
-            return CreatedAtAction(nameof(ListarPedidosFila), new { lojaId = pedido.LojaId }, pedido);
+            return CreatedAtAction(nameof(GetPedidoById), new { id = pedido.Id }, pedido);
+        }
+
+        /// <summary>
+        /// Obtém os detalhes de um pedido pelo ID.
+        /// </summary>
+        [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetPedidoById(int id)
+        {
+            var pedido = await _pedidoService.GetPedidoByIdAsync(id);
+            if (pedido == null) return NotFound();
+            return Ok(pedido);
+        }
+
+        /// <summary>
+        /// Obtém o histórico de pedidos de um cliente.
+        /// </summary>
+        [HttpGet("cliente/{clienteId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetPedidosByClienteId(int clienteId)
+        {
+            var pedidos = await _pedidoService.GetPedidosByClienteIdAsync(clienteId);
+            return Ok(pedidos);
         }
 
         /// <summary>
@@ -84,6 +110,44 @@ namespace Controle.API.Controllers
         public async Task<IActionResult> CancelarPedido(int pedidoId, [FromBody] string motivo)
         {
             var pedido = await _pedidoService.CancelarPedidoLojistaAsync(pedidoId, motivo);
+            return Ok(pedido);
+        }
+
+        /// <summary>
+        /// Cancela um pedido pelo cliente.
+        /// </summary>
+        [HttpPatch("{pedidoId}/cancelar-cliente")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CancelarPedidoCliente(int pedidoId, [FromQuery] int clienteId, [FromBody] string motivo)
+        {
+            try 
+            {
+                var pedido = await _pedidoService.CancelarPedidoClienteAsync(pedidoId, motivo, clienteId);
+                return Ok(pedido);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+        [HttpPatch("{pedidoId}/observacao")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AtualizarObservacao(int pedidoId, [FromBody] string novaObservacao)
+        {
+            var pedido = await _pedidoService.AtualizarObservacaoAsync(pedidoId, novaObservacao);
+            return Ok(pedido);
+        }
+        [HttpPost("{id}/adicionar-itens")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AdicionarItens(int id, [FromBody] List<ItemPedidoDTO> itens)
+        {
+            var pedido = await _pedidoService.AdicionarItensAsync(id, itens);
             return Ok(pedido);
         }
     }

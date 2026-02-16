@@ -41,7 +41,9 @@ namespace Controle.Infrastructure.Repositories
 
         public async Task<Produto?> GetByIdAsync(int id)
         {
-            return await _context.Produtos.FindAsync(id);
+            return await _context.Produtos
+                .Include(p => p.Adicionais)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task UpdateAsync(Produto produto)

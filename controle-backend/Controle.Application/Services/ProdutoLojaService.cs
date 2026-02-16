@@ -58,8 +58,18 @@ namespace Controle.Application.Services
                     URL_Video = dto.NovoProduto.URL_Video,
                     URL_Audio = dto.NovoProduto.URL_Audio,
                     URL_Documento = dto.NovoProduto.URL_Documento,
-                    LojaId = dto.LojaId // Vincula o produto à loja se for criado neste fluxo
+                    LojaId = dto.LojaId, // Vincula o produto à loja se for criado neste fluxo
+                    
+                    IsAdicional = dto.NovoProduto.IsAdicional
                 };
+
+                if (dto.NovoProduto.AdicionaisIds != null && dto.NovoProduto.AdicionaisIds.Any())
+                {
+                    foreach (var idAdicional in dto.NovoProduto.AdicionaisIds)
+                    {
+                        produto.Adicionais.Add(new ProdutoAdicional { ProdutoFilhoId = idAdicional });
+                    }
+                }
                 
                 await _produtoRepository.AddAsync(produto);
                 // O ID do produto será gerado pelo banco e populado na entidade após o AddAsync (considerando que o repo chame SaveChanges)
@@ -82,10 +92,18 @@ namespace Controle.Application.Services
                 ProdutoId = produto.Id,
                 Preco = (int)dto.Preco, 
                 Estoque = dto.Estoque,
-                Descricao = dto.NovoProduto?.Descricao ?? produto.Descricao ?? string.Empty 
-                // Usar a descrição do produto como padrão se não fornecida.
-                // ProdutoLoja tem sua própria descrição.
+                Descricao = dto.NovoProduto?.Descricao ?? produto.Descricao ?? string.Empty,
+                Disponivel = dto.Disponivel
             };
+
+            // Se CategoriaId foi informado, já cria o vínculo
+            if (dto.CategoriaId.HasValue && dto.CategoriaId.Value > 0)
+            {
+                produtoLoja.ProdutoCategorias.Add(new ProdutoCategoria 
+                { 
+                    CategoriaId = dto.CategoriaId.Value 
+                });
+            }
             
             // Se CreateProdutoLojaRequest não tiver descrição específica para a relação com a loja, usamos a do produto.
             // O DTO tem 'NovoProduto' que tem 'Descricao'.
@@ -102,9 +120,63 @@ namespace Controle.Application.Services
             if (produtoLoja == null) throw new DomainException("Produto da loja não encontrado.");
 
             if (dto.Preco.HasValue) produtoLoja.Preco = (int)dto.Preco.Value;
-            if (dto.Estoque.HasValue) produtoLoja.Estoque = dto.Estoque.Value;
+            if (dto.Estoque.HasValue) 
+            {
+                produtoLoja.Estoque = dto.Estoque.Value;
+            }
             if (dto.Desconto.HasValue) produtoLoja.Desconto = dto.Desconto.Value;
             if (!string.IsNullOrEmpty(dto.Descricao)) produtoLoja.Descricao = dto.Descricao;
+            if (dto.Desconto.HasValue) produtoLoja.Desconto = dto.Desconto.Value;
+            if (!string.IsNullOrEmpty(dto.Descricao)) produtoLoja.Descricao = dto.Descricao;
+            if (dto.Disponivel.HasValue) produtoLoja.Disponivel = dto.Disponivel.Value;
+            
+            // Legacy CategoriaId update: If provided, clear and add. 
+            // Note: This overrides 'CategoriaIds' if both are present in the logic, but for now user sends specific update.
+            // Ideally should deprecate CategoriaId in UpdateProdutoLojaRequest.
+            if (dto.CategoriaId.HasValue) 
+            {
+                 produtoLoja.ProdutoCategorias.Clear();
+                 if(dto.CategoriaId.Value != 0) {
+                     produtoLoja.ProdutoCategorias.Add(new ProdutoCategoria { ProdutoLojaId = produtoLoja.Id, CategoriaId = dto.CategoriaId.Value });
+                 }
+            }
+            // Multi-category update (takes precedence if populated and CategoriaId is null/ignored?)
+            // Actually, let's allow CategoriaIds to add/replace.
+            if (dto.CategoriaIds != null && dto.CategoriaIds.Any())
+            {
+                 produtoLoja.ProdutoCategorias.Clear();
+                 foreach(var catId in dto.CategoriaIds)
+                 {
+                     produtoLoja.ProdutoCategorias.Add(new ProdutoCategoria { ProdutoLojaId = produtoLoja.Id, CategoriaId = catId });
+                 }
+
+            }
+
+            // Atualização do Produto Pai (IsAdicional/AdicionaisIds)
+            // Precisamos carregar o produto pai com includes se quisermos atualizar a coleção.
+            // O repositorio ProdutoLoja carrega Produto? Sim, geralmente. Mas Adicionais? Talvez nao.
+            // Vamos assumir que ProdutoService.AtualizarAsync já faz o trabalho sujo se chamarmos ele.
+            // Mas aqui estamos no ProdutoLojaService.
+            // Melhor abordagem: Injetar IProdutoService aqui? Ou fazer via repositorio.
+            // Pela simplicidade e risco de injeção circular, vamos fazer direto via ProdutoRepository se possivel.
+            if (dto.IsAdicional.HasValue || (dto.AdicionaisIds != null))
+            {
+                 var produtoPai = await _produtoRepository.GetByIdAsync(produtoLoja.ProdutoId);
+                 if (produtoPai != null)
+                 {
+                     if (dto.IsAdicional.HasValue) produtoPai.IsAdicional = dto.IsAdicional.Value;
+                     
+                     if (dto.AdicionaisIds != null)
+                     {
+                         produtoPai.Adicionais.Clear();
+                         foreach (var idAdicional in dto.AdicionaisIds)
+                         {
+                             produtoPai.Adicionais.Add(new ProdutoAdicional { ProdutoFilhoId = idAdicional, ProdutoPaiId = produtoPai.Id });
+                         }
+                     }
+                     await _produtoRepository.UpdateAsync(produtoPai);
+                 }
+            }
 
             await _produtoLojaRepository.UpdateAsync(produtoLoja);
             return produtoLoja;
@@ -122,27 +194,51 @@ namespace Controle.Application.Services
         public async Task<IEnumerable<ProdutoEstoqueDTO>> ObterEstoquePorLojaAsync(Guid lojaId)
         {
             var produtosLoja = await _produtoLojaRepository.GetByLojaIdAsync(lojaId);
-            var resultado = new List<ProdutoEstoqueDTO>();
 
-            foreach (var pl in produtosLoja)
+            // Now mapping is purely in-memory, no extra DB calls.
+            return produtosLoja.Select(pl => new ProdutoEstoqueDTO
             {
-                var produto = await _produtoRepository.GetByIdAsync(pl.ProdutoId);
-                if (produto != null)
-                {
-                    resultado.Add(new ProdutoEstoqueDTO
-                    {
-                        ProdutoId = produto.Id,
-                        Nome = produto.Nome,
-                        Tipo = produto.Tipo,
-                        ImagemUrl = produto.URL_Imagem,
-                        Preco = pl.Preco,
-                        Estoque = pl.Estoque ?? 0,
-                        LojaId = pl.LojaId,
-                        ProdutoLojaId = pl.Id
-                    });
-                }
+                ProdutoId = pl.ProdutoId,
+                // Fallback to empty if Produto is null (though it shouldn't be with valid data)
+                Nome = pl.Produto?.Nome ?? "Produto Desconhecido",
+                Tipo = pl.Produto?.Tipo ?? string.Empty,
+                ImagemUrl = pl.Produto?.URL_Imagem,
+                Preco = pl.Preco,
+                Estoque = pl.Estoque ?? 0,
+                LojaId = pl.LojaId,
+                ProdutoLojaId = pl.Id,
+                // Prefer 'Descricao' from ProdutoLoja if set, otherwise from Produto
+                // Actually DTO doesn't have Descricao? Checked DTO file, it only has Nome/Tipo/etc.
+                // Wait, checked previously: 'Nome' comes from Produto.
+                
+                
+                CategoriaId = pl.ProdutoCategorias.FirstOrDefault()?.CategoriaId, 
+                CategoriaIds = pl.ProdutoCategorias.Select(pc => pc.CategoriaId).ToList(),
+                IsAdicional = pl.Produto?.IsAdicional ?? false,
+                AdicionaisIds = pl.Produto?.Adicionais.Select(pa => pa.ProdutoFilhoId).ToList() ?? new List<int>(),
+                Disponivel = pl.Disponivel
+            }).ToList();
+        }
+
+        public async Task AtualizarCategoriasProdutoAsync(int produtoLojaId, List<int> categoriaIds)
+        {
+            var produtoLoja = await _produtoLojaRepository.GetByIdAsync(produtoLojaId);
+            if (produtoLoja == null) throw new DomainException("Produto não encontrado.");
+
+            // Clear existing
+            produtoLoja.ProdutoCategorias.Clear();
+            
+            // Add new
+            foreach(var catId in categoriaIds)
+            {
+                produtoLoja.ProdutoCategorias.Add(new ProdutoCategoria 
+                { 
+                    ProdutoLojaId = produtoLojaId, 
+                    CategoriaId = catId 
+                });
             }
-            return resultado;
+
+            await _produtoLojaRepository.UpdateAsync(produtoLoja);
         }
     }
 }

@@ -23,6 +23,84 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Registra um novo cliente final.
+        /// </summary>
+        /// <response code="201">Cliente registrado com sucesso.</response>
+        /// <response code="400">Dados inválidos ou email já cadastrado.</response>
+        [HttpPost("cadastro")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ClienteLoginResponseDTO), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Register([FromBody] ClienteRegisterDTO dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _clienteService.RegisterAsync(dto);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.Error });
+            }
+
+            return StatusCode(StatusCodes.Status201Created, result.Data);
+        }
+
+        /// <summary>
+        /// Realiza login do cliente final.
+        /// </summary>
+        /// <response code="200">Login realizado com sucesso.</response>
+        /// <response code="400">Credenciais inválidas.</response>
+        [HttpPost("login")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ClienteLoginResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Login([FromBody] ClienteLoginDTO dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _clienteService.LoginAsync(dto);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.Error });
+            }
+
+            return Ok(result.Data);
+        }
+
+        /// <summary>
+        /// Realiza login do cliente usando o Google.
+        /// </summary>
+        /// <response code="200">Login realizado com sucesso.</response>
+        /// <response code="400">Token inválido ou erro no processo.</response>
+        [HttpPost("google-login")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ClienteLoginResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> LoginWithGoogle([FromBody] ClienteGoogleLoginRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _clienteService.LoginWithGoogleAsync(request.IdToken);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.Error });
+            }
+
+            return Ok(result.Data);
+        }
+
+        /// <summary>
         /// Adiciona um novo endereço para o cliente.
         /// </summary>
         /// <param name="clienteId">ID do cliente.</param>
@@ -64,6 +142,39 @@ namespace Controle.API.Controllers
         {
             var enderecos = await _clienteService.ListarEnderecosAsync(clienteId);
             return Ok(enderecos);
+        }
+
+        /// <summary>
+        /// Atualiza um endereço existente.
+        /// </summary>
+        [HttpPut("{clienteId}/enderecos/{enderecoId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> AtualizarEndereco(int clienteId, int enderecoId, [FromBody] EnderecoDTO enderecoDto)
+        {
+            if (enderecoId != enderecoDto.Id && enderecoDto.Id != 0) return BadRequest("ID do endereço inconsistente.");
+            
+            enderecoDto.Id = enderecoId; // Garante ID correto
+            var result = await _clienteService.AtualizarEnderecoAsync(clienteId, enderecoDto);
+
+            if (!result.Success) return BadRequest(new { message = result.Error });
+
+            return Ok(new { message = "Endereço atualizado com sucesso." });
+        }
+
+        /// <summary>
+        /// Remove um endereço.
+        /// </summary>
+        [HttpDelete("{clienteId}/enderecos/{enderecoId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> RemoverEndereco(int clienteId, int enderecoId)
+        {
+            var result = await _clienteService.RemoverEnderecoAsync(clienteId, enderecoId);
+
+            if (!result.Success) return BadRequest(new { message = result.Error });
+
+            return Ok(new { message = "Endereço removido com sucesso." });
         }
 
         /// <summary>

@@ -140,8 +140,42 @@ namespace Controle.Application.Services
 
             if (dto.Ativo.HasValue) loja.Ativo = dto.Ativo.Value;
 
+            // Configurações
+            if (!string.IsNullOrEmpty(dto.Categoria)) loja.Categoria = dto.Categoria;
+            if (dto.Avaliacao.HasValue) loja.Avaliacao = dto.Avaliacao.Value;
+            if (dto.TempoMinimoEntrega.HasValue) loja.TempoMinimoEntrega = dto.TempoMinimoEntrega.Value;
+            if (dto.TempoMaximoEntrega.HasValue) loja.TempoMaximoEntrega = dto.TempoMaximoEntrega.Value;
+            if (dto.TaxaEntregaFixa.HasValue) loja.TaxaEntregaFixa = dto.TaxaEntregaFixa.Value;
+
             _context.Lojas.Update(loja);
             await _context.SaveChangesAsync();
+
+            return loja;
+        }
+
+        public async Task<Loja?> GetLojaByIdAsync(Guid lojaId)
+        {
+            return await _context.Lojas.FindAsync(lojaId);
+        }
+
+        public async Task<Loja?> GetLojaByIdentifierAsync(string identifier)
+        {
+            if (Guid.TryParse(identifier, out var lojaId))
+            {
+                return await _context.Lojas.FindAsync(lojaId);
+            }
+
+            // Busca por Slug ou Nome (insensível a maiúsculas)
+            var loja = await _context.Lojas
+                .FirstOrDefaultAsync(l => l.Slug.ToLower() == identifier.ToLower() || l.Nome.ToLower() == identifier.Replace("-", " ").ToLower());
+
+            // Se achou pelo nome mas sem slug, vamos gerar o slug para o futuro (Auto-Fix)
+            if (loja != null && string.IsNullOrEmpty(loja.Slug))
+            {
+               loja.Slug = identifier.ToLower().Replace(" ", "-");
+               _context.Lojas.Update(loja);
+               await _context.SaveChangesAsync();
+            }
 
             return loja;
         }
@@ -151,6 +185,12 @@ namespace Controle.Application.Services
             return await _context.Lojas
                 .Where(l => l.UsuarioId == usuarioId)
                 .ToListAsync();
+        }
+
+        public async Task AtualizarLojaDirectAsync(Loja loja)
+        {
+            _context.Lojas.Update(loja);
+            await _context.SaveChangesAsync();
         }
     }
 }

@@ -21,6 +21,19 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Obtém os dados completos de uma loja pelo ID.
+        /// </summary>
+        [HttpGet("{lojaId}")]
+        [ProducesResponseType(typeof(Loja), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLojaById(string lojaId)
+        {
+            var loja = await _lojaService.GetLojaByIdentifierAsync(lojaId);
+            if (loja == null) return NotFound();
+            return Ok(loja);
+        }
+
+        /// <summary>
         /// Lista as lojas do usuário logado.
         /// </summary>
         [HttpGet("usuario/{usuarioId}")]
@@ -115,6 +128,22 @@ namespace Controle.API.Controllers
         public async Task<IActionResult> AbrirFecharLoja(Guid lojaId, [FromBody] bool aberta)
         {
             var loja = await _lojaService.AbrirFecharLojaAsync(lojaId, aberta);
+            return Ok(loja);
+        }
+
+        /// <summary>
+        /// Ativa ou desativa o recebimento de pedidos delivery.
+        /// </summary>
+        [HttpPatch("{lojaId}/delivery")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ToggleDelivery(Guid lojaId, [FromBody] bool aceitando)
+        {
+            var loja = await _lojaService.GetLojaByIdAsync(lojaId);
+            if (loja == null) return NotFound();
+
+            loja.AceitandoPedidos = aceitando;
+            await _lojaService.AtualizarLojaDirectAsync(loja);
             return Ok(loja);
         }
     }

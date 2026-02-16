@@ -11,5 +11,7 @@ namespace Controle.Application.DTOs
         public string Complemento { get; set; } = string.Empty;
         public string Numero { get; set; } = string.Empty;
         public string Referencia { get; set; } = string.Empty;
+        public string Destinatario { get; set; } = string.Empty;
+        public string Apelido { get; set; } = string.Empty;
     }
 }

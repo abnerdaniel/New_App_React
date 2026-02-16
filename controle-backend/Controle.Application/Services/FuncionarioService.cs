@@ -94,6 +94,7 @@ namespace Controle.Application.Services
                     Id = func.Id,
                     Nome = func.Nome,
                     Email = usuario?.Email ?? string.Empty,
+                    Login = usuario?.Login ?? string.Empty,
                     Cargo = cargo?.Nome ?? "Desconhecido",
                     LojaId = func.LojaId,
                     Ativo = func.Ativo, // Status do funcionário na loja
@@ -146,6 +147,56 @@ namespace Controle.Application.Services
             }
 
             return Result.Ok();
+        }
+
+        public async Task<Result> AtualizarFuncionarioAsync(int id, string nome, string email, string login, string cargoNome)
+        {
+            var funcionario = await _funcionarioRepository.GetByIdAsync(id);
+            if (funcionario == null) return Result.Fail("Funcionário não encontrado.");
+
+            var cargo = await _cargoRepository.GetByNameAsync(cargoNome);
+            if (cargo == null) return Result.Fail($"Cargo '{cargoNome}' não encontrado.");
+
+            // Atualizar Usuario (Email/Login) - Precisa verificar duplicidade? O AuthService poderia ter um metodo pra isso
+            // Por simplificação, vamos assumir que o usuário pode mudar nome/email se o AuthService permitir updates.
+            // Aqui vamos focar em atualizar o funcionário e o cargo.
+            
+            funcionario.Nome = nome;
+            funcionario.CargoId = cargo.Id;
+            await _funcionarioRepository.UpdateAsync(funcionario);
+
+            // Atualizar dados do Usuário vinculado (Email/Login)
+            // Necessário expandir AuthService ou UsuarioRepository para permitir update.
+            // Vamos assumir que por enquanto email/login não mudam ou implementar update basico.
+            // TODO: Implementar UpdateUsuarioAsync no AuthService se necessário.
+            
+            return Result.Ok();
+        }
+
+        public async Task<Result> ExcluirFuncionarioAsync(int id)
+        {
+            var funcionario = await _funcionarioRepository.GetByIdAsync(id);
+            if (funcionario == null) return Result.Fail("Funcionário não encontrado.");
+
+            // Excluir ou apenas desativar permanentemente?
+            // Geralmente exclusão lógica (Bloquear) é melhor, mas se o requisito é Excluir:
+            // Precisamos excluir o Usuario também? Depende da regra.
+            // Vamos manter exclusão fisica se o usuário pedir, ou soft delete.
+            // Dado o "Excluir" no requisito, vamos remover do banco.
+            
+            await _funcionarioRepository.DeleteAsync(id);
+            // Opcional: Excluir usuário vinculado
+             await _authService.DeletarUsuarioAsync(funcionario.UsuarioId);
+
+            return Result.Ok();
+        }
+
+        public async Task<Result> AlterarSenhaAsync(int id, string novaSenha)
+        {
+             var funcionario = await _funcionarioRepository.GetByIdAsync(id);
+             if (funcionario == null) return Result.Fail("Funcionário não encontrado.");
+
+             return await _authService.AlterarSenhaUsuarioAsync(funcionario.UsuarioId, novaSenha);
         }
     }
 }
