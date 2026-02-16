@@ -13,6 +13,7 @@ import { ClientAuthProvider } from './context/ClientAuthContext';
 
 import { WaiterProvider } from './context/WaiterContext';
 import { GarcomPage } from './pages/Garcom/GarcomPage';
+import { CozinhaPage } from './pages/Cozinha/CozinhaPage';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
               <Route path="/pedido-sucesso/:id" element={<PedidoSucesso />} />
               <Route path="/pedido/:id" element={<PedidoStatus />} />
               <Route path="/meus-pedidos" element={<MeusPedidos />} />
+              <Route path="/cozinha" element={<CozinhaPage />} />
             </Routes>
           </BrowserRouter>
         </WaiterProvider>

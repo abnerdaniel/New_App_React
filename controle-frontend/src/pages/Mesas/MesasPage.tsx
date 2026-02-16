@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { listarMesas, configurarMesas, atualizarApelido, abrirMesa, liberarMesa, removerItemPedido, aplicarDesconto, listarProdutosLoja, adicionarItemPedido, type Mesa, type ProdutoLojaItem } from '../../api/mesas.api';
+import { listarMesas, configurarMesas, atualizarApelido, abrirMesa, liberarMesa, removerItemPedido, aplicarDesconto, listarProdutosLoja, adicionarItemPedido, atualizarStatusItem, atualizarStatusMesa, type Mesa, type ProdutoLojaItem } from '../../api/mesas.api';
 import { Settings, User, CheckCircle, XCircle, Clock, ChefHat, Eye, Unlock, Trash2, Percent, Plus, Search } from 'lucide-react';
 
 export function MesasPage() {
@@ -120,7 +120,7 @@ export function MesasPage() {
   };
 
   // Derived data
-  const mesasOcupadas = mesas.filter(m => m.status === 'Ocupada' && m.pedidoAtual);
+  const mesasOcupadas = mesas.filter(m => m.status !== 'Livre' && m.pedidoAtual);
 
   const getWaitTime = (mesa: Mesa) => {
     if (!mesa.dataAbertura) return 0;
@@ -218,7 +218,11 @@ export function MesasPage() {
                 className={`
                     relative p-3 rounded-xl border-2 shadow-sm flex flex-col items-center justify-between aspect-square transition-all cursor-pointer hover:shadow-md
                     ${mesa.status === 'Livre' ? 'bg-green-50 border-green-200 hover:border-green-400' : ''}
-                    ${mesa.status === 'Ocupada' ? 'bg-red-50 border-red-200 hover:border-red-400' : ''}
+                    ${mesa.status === 'Ocupada' ? 'bg-white border-gray-200 hover:border-gray-400' : ''}
+                    ${mesa.status === 'Pagamento' ? 'bg-orange-50 border-orange-200 hover:border-orange-400 animate-pulse' : ''}
+                    ${mesa.status === 'Chamando' ? 'bg-red-50 border-red-200 hover:border-red-400 animate-pulse' : ''}
+                    ${mesa.status === 'Cozinha' ? 'bg-yellow-50 border-yellow-200 hover:border-yellow-400' : ''}
+                    ${!['Livre', 'Ocupada', 'Pagamento', 'Chamando', 'Cozinha'].includes(mesa.status) ? 'bg-gray-50 border-gray-200' : ''}
                     ${mode === 'config' ? 'opacity-70 pointer-events-none' : ''}
                 `}
               >
@@ -237,7 +241,11 @@ export function MesasPage() {
                   ) : (
                       <div className="w-full text-center">
                         <div className={`mb-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider inline-block
-                            ${mesa.status === 'Livre' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}
+                            ${mesa.status === 'Livre' ? 'bg-green-100 text-green-800' : ''}
+                            ${mesa.status === 'Ocupada' ? 'bg-gray-100 text-gray-800' : ''}
+                            ${mesa.status === 'Pagamento' ? 'bg-orange-100 text-orange-800' : ''}
+                            ${mesa.status === 'Chamando' ? 'bg-red-100 text-red-800' : ''}
+                            ${mesa.status === 'Cozinha' ? 'bg-yellow-100 text-yellow-800' : ''}
                         `}>
                             {mesa.status}
                         </div>
@@ -255,20 +263,20 @@ export function MesasPage() {
                             </div>
                         )}
                         
-                        {mesa.status === 'Ocupada' && (
-                             <div className="mt-1 w-full border-t pt-1 border-red-200">
-                                <span className="text-xs font-bold text-red-700">
+                        {mesa.status !== 'Livre' && (
+                             <div className="mt-1 w-full border-t pt-1 border-gray-200">
+                                <span className="text-xs font-bold text-gray-700">
                                     {formatCurrency(total)}
                                 </span>
                              </div>
                         )}
 
-                        {mesa.status === 'Ocupada' && (
+                        {mesa.status !== 'Livre' && (
                              <button 
                                 onClick={(e) => { e.stopPropagation(); handleLiberarMesa(mesa); }}
                                 className="absolute top-1 right-1 text-red-400 hover:text-red-700 p-0.5 bg-white/50 rounded-full hover:bg-white"
                                 title="Liberar Mesa"
-                             >
+                              >
                                 <XCircle size={14} />
                              </button>
                         )}
@@ -466,9 +474,38 @@ export function MesasPage() {
                       <div className="text-xs text-gray-500 uppercase tracking-wider">Tempo</div>
                       <div className="font-bold text-gray-800">{getWaitTime(detailMesa)} min</div>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="bg-gray-50 rounded-lg p-3 relative">
                       <div className="text-xs text-gray-500 uppercase tracking-wider">Status</div>
-                      <div className="font-bold text-orange-600">{detailMesa.pedidoAtual?.status || 'Aberto'}</div>
+                      <div className="font-bold text-sm flex items-center justify-between">
+                          <span className={`${
+                            detailMesa.status === 'Pagamento' ? 'text-orange-600' : 
+                            detailMesa.status === 'Chamando' ? 'text-red-600' : 'text-gray-800'
+                          }`}>
+                            {detailMesa.status}
+                          </span>
+                      </div>
+                      
+                      {/* Dropdown to change status */}
+                      <select 
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        value={detailMesa.status}
+                        onChange={async (e) => {
+                             const newStatus = e.target.value;
+                             try {
+                                 await atualizarStatusMesa(detailMesa.id, newStatus);
+                                 fetchMesas();
+                                 setDetailMesa({...detailMesa, status: newStatus});
+                             } catch {
+                                 alert('Erro ao atualizar status');
+                             }
+                        }}
+                      >
+                          <option value="Livre">Livre</option>
+                          <option value="Ocupada">Ocupada</option>
+                          <option value="Pagamento">Pagamento</option>
+                          <option value="Chamando">Chamando</option>
+                          <option value="Cozinha">Cozinha/Atendimento</option>
+                      </select>
                     </div>
                   </div>
 
@@ -488,6 +525,38 @@ export function MesasPage() {
                               <div className="flex justify-between items-center">
                                 <div className="flex-1 min-w-0">
                                   {isCombo && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold mr-1.5">🎁 Combo</span>}
+                                  
+                                  {/* Status Toggle */}
+                                  <button 
+                                    onClick={async () => {
+                                        const nextStatus = item.status === 'Pendente' ? 'Preparando' 
+                                            : item.status === 'Preparando' ? 'Entregue' 
+                                            : 'Pendente';
+                                        
+                                        try {
+                                            await atualizarStatusItem(item.id, nextStatus);
+                                            // Optimistic update or refresh
+                                            await fetchMesas();
+                                            const updatedMesas = await listarMesas(activeLoja!.id);
+                                            const updated = updatedMesas.find(m => m.id === detailMesa.id);
+                                            if (updated) setDetailMesa(updated);
+                                        } catch {
+                                            alert('Erro ao atualizar status');
+                                        }
+                                    }}
+                                    className={`
+                                        inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase mr-2 border transition-colors
+                                        ${!item.status || item.status === 'Pendente' ? 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' : ''}
+                                        ${item.status === 'Preparando' ? 'bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-200' : ''}
+                                        ${item.status === 'Entregue' ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' : ''}
+                                    `}
+                                    title="Clique para alterar status"
+                                  >
+                                      {!item.status || item.status === 'Pendente' ? <Clock size={10} /> : 
+                                       item.status === 'Preparando' ? <ChefHat size={10} /> : <CheckCircle size={10} />}
+                                      {item.status || 'Pendente'}
+                                  </button>
+
                                   <span className="font-medium text-gray-800">{itemName}</span>
                                   <span className="text-gray-500 ml-2">x{item.quantidade}</span>
                                 </div>

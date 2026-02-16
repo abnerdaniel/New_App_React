@@ -6,7 +6,7 @@ export interface Mesa {
   numero: number;
   nome?: string;
   clienteNomeTemporario?: string;
-  status: 'Livre' | 'Ocupada' | 'Pagamento' | 'Fechada';
+  status: 'Livre' | 'Ocupada' | 'Pagamento' | 'Fechada' | 'Chamando' | 'Cozinha' | string;
   pedidoAtualId?: number;
   pedidoAtual?: {
       id: number;
@@ -43,7 +43,8 @@ export interface Mesa {
                   nome: string;
                   preco: number;
               }
-          }
+          };
+          status?: string;
       }>;
       total?: number;
   };
@@ -53,6 +54,20 @@ export interface Mesa {
 export const listarMesas = async (lojaId: string): Promise<Mesa[]> => {
   const response = await api.get<Mesa[]>(`/api/mesas/${lojaId}`);
   return response.data;
+};
+
+// ...
+
+export const atualizarStatusItem = async (itemId: number, status: string): Promise<void> => {
+  await api.patch(`/api/mesas/pedido-item/${itemId}/status`, JSON.stringify(status), {
+      headers: { 'Content-Type': 'application/json' }
+  });
+};
+
+export const atualizarStatusMesa = async (mesaId: number, status: string): Promise<void> => {
+  await api.patch(`/api/mesas/${mesaId}/status`, JSON.stringify(status), {
+      headers: { 'Content-Type': 'application/json' }
+  });
 };
 
 export const configurarMesas = async (lojaId: string, quantidade: number): Promise<void> => {

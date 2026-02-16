@@ -103,6 +103,13 @@ namespace Controle.API.Controllers
             await _mesaService.AdicionarItemPedidoAsync(pedidoId, request.ProdutoLojaId, request.Quantidade);
             return Ok();
         }
+
+        [HttpPatch("pedido-item/{itemId}/status")]
+        public async Task<IActionResult> AtualizarStatusItem(int itemId, [FromBody] string status)
+        {
+            await _mesaService.AtualizarStatusItemPedidoAsync(itemId, status);
+            return Ok();
+        }
     }
 
     public class ConfigurarMesasRequest

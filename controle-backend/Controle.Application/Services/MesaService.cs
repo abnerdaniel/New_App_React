@@ -254,4 +254,14 @@ public class MesaService : IMesaService
         _context.Set<PedidoItem>().Add(item);
         await _context.SaveChangesAsync();
     }
+
+    public async Task AtualizarStatusItemPedidoAsync(int pedidoItemId, string status)
+    {
+        var item = await _context.Set<PedidoItem>().FindAsync(pedidoItemId);
+        if (item == null) throw new DomainException("Item não encontrado.");
+
+        item.Status = status;
+        _context.Set<PedidoItem>().Update(item);
+        await _context.SaveChangesAsync();
+    }
 }

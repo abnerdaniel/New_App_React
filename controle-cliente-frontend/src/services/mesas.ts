@@ -14,8 +14,24 @@ export interface Mesa {
   nome?: string;
   pedidoAtualId?: number;
   clienteNomeTemporario?: string;
-  status: 'Livre' | 'Ocupada' | 'Pagamento' | 'Fechada';
+  status: 'Livre' | 'Ocupada' | 'Pagamento' | 'Fechada' | 'Cozinha' | 'Chamando' | string;
   dataAbertura?: string;
+  pedidoAtual?: {
+      id: number;
+      sacola: Array<{
+          id: number;
+          quantidade: number;
+          precoVenda: number;
+          nomeProduto?: string;
+          produtoLoja?: {
+              produto?: {
+                  nome: string;
+              }
+          };
+          status?: string;
+      }>;
+      total?: number;
+  };
 }
 
 export const listarMesas = async (lojaId: string) => {
@@ -28,6 +44,19 @@ export const listarMesas = async (lojaId: string) => {
 export const abrirMesa = async (id: number, nomeCliente?: string) => {
   const response = await axios.post(`${API_URL}/api/mesas/${id}/abrir`, { nomeCliente }, {
     headers: getAuthHeaders(),
+  });
+  return response.data;
+};
+
+export const atualizarStatusItem = async (itemId: number, status: string) => {
+  await axios.patch(`${API_URL}/api/mesas/pedido-item/${itemId}/status`, JSON.stringify(status), {
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }
+  });
+};
+
+export const atualizarStatusMesa = async (mesaId: number, status: string) => {
+  const response = await axios.patch(`${API_URL}/api/mesas/${mesaId}/status`, JSON.stringify(status), {
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }
   });
   return response.data;
 };
