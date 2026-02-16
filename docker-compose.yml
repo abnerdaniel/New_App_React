@@ -1,0 +1,75 @@
+services:
+  # Backend .NET API
+  backend-api:
+    image: ghcr.io/abnerdaniel/controle-backend:latest
+    build:
+      context: ./controle-backend
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      # Permite sobrescrever a conexão do banco via variável de ambiente ou secrets
+      # Exemplo: ConnectionStrings__DefaultConnection=Host=meu-postgres;Port=5432;...
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik_public"
+        - "traefik.http.routers.controle-api.rule=Host(`api.food.meajudaaqui.com.br`)"
+        - "traefik.http.routers.controle-api.entrypoints=websecure"
+        - "traefik.http.routers.controle-api.tls.certresolver=le"
+        - "traefik.http.services.controle-api.loadbalancer.server.port=8080"
+      restart_policy:
+        condition: on-failure
+    networks:
+      - traefik_public
+      - backend-network
+
+  # Frontend Admin (React)
+  frontend-admin:
+    image: ghcr.io/abnerdaniel/controle-frontend:latest
+    build:
+      context: ./controle-frontend
+      dockerfile: Dockerfile
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik_public"
+        - "traefik.http.routers.controle-admin.rule=Host(`admin.food.meajudaaqui.com.br`)"
+        - "traefik.http.routers.controle-admin.entrypoints=websecure"
+        - "traefik.http.routers.controle-admin.tls.certresolver=le"
+        - "traefik.http.services.controle-admin.loadbalancer.server.port=80"
+      restart_policy:
+        condition: on-failure
+    networks:
+      - traefik_public
+
+  # Frontend Cliente (React)
+  frontend-cliente:
+    image: ghcr.io/abnerdaniel/controle-cliente-frontend:latest
+    build:
+      context: ./controle-cliente-frontend
+      dockerfile: Dockerfile
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik_public"
+        - "traefik.http.routers.controle-app.rule=Host(`food.meajudaaqui.com.br`)"
+        - "traefik.http.routers.controle-app.entrypoints=websecure"
+        - "traefik.http.routers.controle-app.tls.certresolver=le"
+        - "traefik.http.services.controle-app.loadbalancer.server.port=80"
+      restart_policy:
+        condition: on-failure
+    networks:
+      - traefik_public
+
+networks:
+  traefik_public:
+    external: true
+  backend-network:
+    driver: overlay
+    internal: true
