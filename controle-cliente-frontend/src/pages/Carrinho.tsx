@@ -20,7 +20,7 @@ export function CartPage() {
   };
 
   /* API URL setup */
-  const API_URL = 'http://localhost:5024'; 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5024'; 
   // Should ideally be in a config file
 
   const handleLancarMesa = async () => {

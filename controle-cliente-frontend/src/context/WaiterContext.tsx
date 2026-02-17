@@ -39,7 +39,7 @@ export function WaiterProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
      // Hardcoded URL for now, or import from config
-     const API_URL = 'http://localhost:5024'; 
+     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5024'; 
      try {
          const response = await axios.post(`${API_URL}/api/auth/login`, { login: email, password });
          const data = response.data;

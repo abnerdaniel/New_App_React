@@ -47,6 +47,8 @@ jobs:
         with:
           context: .
           push: true
+          build-args: |
+            VITE_API_URL=https://api.food.meajudaaqui.com.br
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 

@@ -6,7 +6,7 @@ import { User, LogOut, Lock, CheckCircle, Clock } from 'lucide-react';
 import axios from 'axios';
 
 // Use env var or default. Must match mesas.ts
-const API_URL = 'http://localhost:5024'; 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5024'; 
 
 export function GarcomPage() {
   const navigate = useNavigate();
