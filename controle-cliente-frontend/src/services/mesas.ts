@@ -14,6 +14,7 @@ export interface Mesa {
   nome?: string;
   pedidoAtualId?: number;
   clienteNomeTemporario?: string;
+  clienteNome?: string;
   status: 'Livre' | 'Ocupada' | 'Pagamento' | 'Fechada' | 'Cozinha' | 'Chamando' | string;
   dataAbertura?: string;
   pedidoAtual?: {

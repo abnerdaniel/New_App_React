@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Trash2, Edit2, ArrowLeft, MoreVertical, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Edit2, ArrowLeft, GripVertical } from 'lucide-react';
 import { ItemSelectorModal } from '../../components/ItemSelectorModal';
 
 // --- Interfaces ---

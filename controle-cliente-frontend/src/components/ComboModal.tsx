@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Minus, Plus, ShoppingBag } from 'lucide-react';
+import { X, Minus, Plus } from 'lucide-react';
 import type { Produto, Combo } from '../types';
 import { ProductImage } from './ProductImage';
 
