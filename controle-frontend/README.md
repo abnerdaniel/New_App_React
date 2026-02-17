@@ -140,7 +140,8 @@ export const api = axios.create({
 });
 ```
 
-**⚠️ Importante**: 
+**⚠️ Importante**:
+
 - Certifique-se de que a URL corresponde à URL do backend
 - Para desenvolvimento local, geralmente é `http://localhost:5000` ou `https://localhost:7080`
 - Se o backend estiver em outra porta, ajuste conforme necessário
@@ -150,15 +151,19 @@ export const api = axios.create({
 ### Modo de Desenvolvimento
 
 1. **Inicie o servidor de desenvolvimento:**
+
    ```bash
    npm run dev
    ```
+
    ou
+
    ```bash
    yarn dev
    ```
 
 2. **Acesse a aplicação:**
+
    ```
    http://localhost:5173
    ```
@@ -168,10 +173,13 @@ export const api = axios.create({
 ### Build para Produção
 
 1. **Crie o build de produção:**
+
    ```bash
    npm run build
    ```
+
    ou
+
    ```bash
    yarn build
    ```
@@ -231,13 +239,13 @@ O frontend se comunica com o backend através de requisições HTTP usando Axios
 ### Exemplo de Uso
 
 ```typescript
-import { buscarPessoa, criarPessoa } from '../api/pessoas.api';
+import { buscarPessoa, criarPessoa } from "../api/pessoas.api";
 
 // Buscar pessoa
 const pessoa = await buscarPessoa(1);
 
 // Criar pessoa
-const novaPessoa = await criarPessoa({ nome: 'João', idade: 30 });
+const novaPessoa = await criarPessoa({ nome: "João", idade: 30 });
 ```
 
 ## 📜 Scripts Disponíveis
@@ -268,10 +276,10 @@ import { NovaPagina } from '../pages/NovaPagina/NovaPaginaPage'
 2. Use a instância `api` do Axios configurada:
 
 ```typescript
-import { api } from './axios';
+import { api } from "./axios";
 
 export const novoEndpoint = async (data: TipoData) => {
-  const response = await api.post('/api/endpoint', data);
+  const response = await api.post("/api/endpoint", data);
   return response.data;
 };
 ```
