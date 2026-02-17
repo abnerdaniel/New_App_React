@@ -6,6 +6,14 @@ namespace Controle.Application.DTOs
     {
         public Guid LojaId { get; set; }
         public string NomeLoja { get; set; } = string.Empty;
+        public string? Descricao { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? CapaUrl { get; set; }
+        public double? Avaliacao { get; set; }
+        public int TempoEntregaMin { get; set; }
+        public int TempoEntregaMax { get; set; }
+        public decimal TaxaEntrega { get; set; }
+        public string Categoria { get; set; } = string.Empty;
         public bool Aberta { get; set; }
         public CardapioDTO? Cardapio { get; set; }
     }

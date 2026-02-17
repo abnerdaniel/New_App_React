@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { api } from "../../api/axios";
+import { cloudinaryService } from "../../services/cloudinary.service";
 import { useAuth } from "../../contexts/AuthContext";
-import { Plus, Search, Edit2, Trash2, X } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
 
 interface ProdutoEstoqueDTO {
   produtoId: number;
@@ -113,6 +114,8 @@ export function EstoquePage() {
   const [produtos, setProdutos] = useState<ProdutoEstoqueDTO[]>([]);
   const [catalogo, setCatalogo] = useState<ProdutoCatalogoDTO[]>([]); // Produtos disponíveis para cadastro
   const [loading, setLoading] = useState(false);
+
+  const [uploading, setUploading] = useState(false);
   const [filterTerm, setFilterTerm] = useState("");
 
   // Cardapio & Categoria State
@@ -234,7 +237,8 @@ export function EstoquePage() {
           isAdicional: formData.isAdicional,
           adicionaisIds: formData.adicionaisIds,
           categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
-          disponivel: formData.disponivel
+          disponivel: formData.disponivel,
+          imagemUrl: formData.imagemUrl
           // descricao: formData.descricao 
         });
         alert("Produto atualizado!");
@@ -574,13 +578,66 @@ export function EstoquePage() {
                                     />
                                 </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-gray-500 uppercase">URL da Imagem</label>
-                                        <input 
-                                            className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                                            value={formData.imagemUrl}
-                                            onChange={e => setFormData({...formData, imagemUrl: e.target.value})}
-                                            placeholder="https://..."
-                                        />
+                                        <label className="text-xs font-bold text-gray-500 uppercase">Imagem do Produto</label>
+                                        
+                                        <div className="flex items-start gap-4">
+                                            {/* Preview */}
+                                            <div className="w-24 h-24 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden relative group">
+                                                {formData.imagemUrl ? (
+                                                    <>
+                                                        <img src={formData.imagemUrl} alt="Preview" className="w-full h-full object-cover" />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFormData(prev => ({ ...prev, imagemUrl: "" }))}
+                                                            className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                                                        >
+                                                            <Trash2 size={20} />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <ImageIcon className="text-gray-400" size={32} />
+                                                )}
+                                                {uploading && (
+                                                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                                                        <Loader2 className="animate-spin text-brand-primary" size={24} />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex-1 space-y-2">
+                                                {/* Upload Button */}
+                                                <div>
+                                                    <input
+                                                        type="file"
+                                                        id="imageUpload"
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (!file) return;
+                                                            
+                                                            setUploading(true);
+                                                            try {
+                                                                const url = await cloudinaryService.uploadImage(file);
+                                                                setFormData(prev => ({ ...prev, imagemUrl: url }));
+                                                            } catch (error) {
+                                                                alert("Erro ao fazer upload da imagem.");
+                                                            } finally {
+                                                                setUploading(false);
+                                                            }
+                                                        }}
+                                                    />
+                                                    <label 
+                                                        htmlFor="imageUpload"
+                                                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+                                                    >
+                                                        <Upload size={16} />
+                                                        {uploading ? "Enviando..." : "Carregar Foto"}
+                                                    </label>
+                                                </div>
+
+                                            </div>
+                                        </div>
                                     </div>
                                     
                                     <div className="flex items-center gap-2 pt-2">

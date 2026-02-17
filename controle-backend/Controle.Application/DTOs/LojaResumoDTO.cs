@@ -7,8 +7,11 @@ namespace Controle.Application.DTOs
         public Guid Id { get; set; }
         public string Nome { get; set; } = string.Empty;
         public string? Descricao { get; set; }
-        public string? ImagemUrl { get; set; }
-        public string? BannerUrl { get; set; }
+
+        public string? LogoUrl { get; set; }
+        public string? CapaUrl { get; set; }
+        public string? ImagemUrl { get; set; } // Legacy alias for Logo
+        public string? BannerUrl { get; set; } // Legacy alias for Capa
         public double? Avaliacao { get; set; }
         public int TempoEntregaMin { get; set; }
         public int TempoEntregaMax { get; set; }

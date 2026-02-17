@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { api } from "../../api/axios";
+import { cloudinaryService } from "../../services/cloudinary.service";
+import { Loader2, Image as ImageIcon, Trash2 } from "lucide-react";
 
 export function SetupCompany() {
   const { user } = useAuth();
@@ -9,6 +11,8 @@ export function SetupCompany() {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCapa, setUploadingCapa] = useState(false);
 
   const [formData, setFormData] = useState<any>({
     nome: "",
@@ -32,7 +36,9 @@ export function SetupCompany() {
     bairro: "",
     cidade: "",
     estado: "",
-    abertaManualmente: true
+    abertaManualmente: true,
+    logoUrl: "",
+    capaUrl: ""
   });
 
   useEffect(() => {
@@ -74,7 +80,9 @@ export function SetupCompany() {
             tempoMinimoEntrega: lojaDetalhada.tempoMinimoEntrega,
             tempoMaximoEntrega: lojaDetalhada.tempoMaximoEntrega,
             taxaEntregaFixa: lojaDetalhada.taxaEntregaFixa,
-            abertaManualmente: lojaDetalhada.abertaManualmente
+            abertaManualmente: lojaDetalhada.abertaManualmente,
+            logoUrl: lojaDetalhada.logoUrl || "",
+            capaUrl: lojaDetalhada.capaUrl || ""
           }));
         } catch (error) {
           console.error("Erro ao buscar detalhes da loja:", error);
@@ -177,6 +185,165 @@ export function SetupCompany() {
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+
+          {/* IMAGENS DA LOJA */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+               {/* LOGO UPLOAD */}
+               <div className="flex flex-col items-center gap-2">
+                   <label className="text-sm font-medium text-text-dark">Logo da Loja</label>
+                   <div className="w-32 h-32 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative group bg-gray-50">
+                        {formData.logoUrl ? (
+                            <>
+                                <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData((prev: any) => ({ ...prev, logoUrl: "" }))}
+                                    className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white rounded-full"
+                                >
+                                    <Trash2 size={24} />
+                                </button>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center text-gray-400">
+                                <ImageIcon size={32} />
+                                <span className="text-xs mt-1">Sem Logo</span>
+                            </div>
+                        )}
+                        
+                        {uploadingLogo && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                                <Loader2 className="animate-spin text-brand-primary" size={24} />
+                            </div>
+                        )}
+                        
+                        {!formData.logoUrl && !uploadingLogo && (
+                            <label className="absolute inset-0 cursor-pointer flex items-center justify-center">
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        setUploadingLogo(true);
+                                        try {
+                                            const url = await cloudinaryService.uploadImage(file);
+                                            setFormData((prev: any) => ({ ...prev, logoUrl: url }));
+                                        } catch (err) {
+                                            alert("Erro ao enviar logo.");
+                                        } finally {
+                                            setUploadingLogo(false);
+                                        }
+                                    }}
+                                />
+                            </label>
+                        )}
+                   </div>
+                    {/* Botão explícito apenas se tiver imagem para trocar */}
+                   {formData.logoUrl && (
+                        <label className={`text-xs text-brand-primary font-bold cursor-pointer hover:underline ${uploadingLogo ? 'opacity-50' : ''}`}>
+                            Trocar Logo
+                            <input 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden"
+                                disabled={uploadingLogo}
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    setUploadingLogo(true);
+                                    try {
+                                        const url = await cloudinaryService.uploadImage(file);
+                                        setFormData((prev: any) => ({ ...prev, logoUrl: url }));
+                                    } catch (err) {
+                                        alert("Erro ao enviar logo.");
+                                    } finally {
+                                        setUploadingLogo(false);
+                                    }
+                                }}
+                            />
+                        </label>
+                   )}
+               </div>
+
+               {/* CAPA UPLOAD */}
+               <div className="md:col-span-2 flex flex-col gap-2">
+                   <label className="text-sm font-medium text-text-dark">Capa do Cardápio</label>
+                   <div className="w-full h-32 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative group bg-gray-50">
+                        {formData.capaUrl ? (
+                            <>
+                                <img src={formData.capaUrl} alt="Capa" className="w-full h-full object-cover" />
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData((prev: any) => ({ ...prev, capaUrl: "" }))}
+                                    className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                                >
+                                    <Trash2 size={24} />
+                                </button>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center text-gray-400">
+                                <ImageIcon size={32} />
+                                <span className="text-xs mt-1">Sem Capa (Recomendado: 1200x400)</span>
+                            </div>
+                        )}
+
+                        {uploadingCapa && (
+                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                                <Loader2 className="animate-spin text-brand-primary" size={24} />
+                            </div>
+                        )}
+
+                        {!formData.capaUrl && !uploadingCapa && (
+                            <label className="absolute inset-0 cursor-pointer flex items-center justify-center">
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        setUploadingCapa(true);
+                                        try {
+                                            const url = await cloudinaryService.uploadImage(file);
+                                            setFormData((prev: any) => ({ ...prev, capaUrl: url }));
+                                        } catch (err) {
+                                            alert("Erro ao enviar capa.");
+                                        } finally {
+                                            setUploadingCapa(false);
+                                        }
+                                    }}
+                                />
+                            </label>
+                        )}
+                   </div>
+                    {/* Botão explícito apenas se tiver imagem para trocar */}
+                   {formData.capaUrl && (
+                        <label className={`text-xs text-brand-primary font-bold cursor-pointer hover:underline self-end ${uploadingCapa ? 'opacity-50' : ''}`}>
+                            Trocar Capa
+                            <input 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden"
+                                disabled={uploadingCapa}
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    setUploadingCapa(true);
+                                    try {
+                                        const url = await cloudinaryService.uploadImage(file);
+                                        setFormData((prev: any) => ({ ...prev, capaUrl: url }));
+                                    } catch (err) {
+                                        alert("Erro ao enviar capa.");
+                                    } finally {
+                                        setUploadingCapa(false);
+                                    }
+                                }}
+                            />
+                        </label>
+                   )}
+               </div>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="col-span-1 md:col-span-2">

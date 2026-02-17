@@ -38,6 +38,7 @@ public class Loja
 
     // Configurações da Loja
     public string? LogoUrl { get; set; }
+    public string? CapaUrl { get; set; }
     public int? TempoMinimoEntrega { get; set; } // Em minutos
     public int? TempoMaximoEntrega { get; set; } // Em minutos
     public decimal? TaxaEntregaFixa { get; set; }

@@ -128,7 +128,22 @@ namespace Controle.Application.Services
             {
                 LojaId = loja.Id,
                 NomeLoja = loja.Nome,
-                Aberta = loja.AbertaManualmente ?? (cardapioSelecionado != null) // Respeita manual, senão verifica cardápio
+                Descricao = loja.Categoria ?? "Loja", // Using Categoria as description fallback or add Descricao to Loja? Loja has no Descricao! Wait, Loja entity has no Descricao? 
+                // Loja entity: public string? Categoria { get; set; }
+                // Let's check Loja entity again. Step 450.
+                // Loja entity has no Descricao field! It has Categoria.
+                // Okay, I will use Categoria as Categoria and leave Descricao empty or use a default.
+                // Wait, LojaResumoDTO has Descricao. Where does it come from? 
+                // In ListarLojasAtivasAsync it is set to "".
+                
+                LogoUrl = loja.LogoUrl,
+                CapaUrl = loja.CapaUrl,
+                Avaliacao = loja.Avaliacao,
+                TempoEntregaMin = loja.TempoMinimoEntrega ?? 30,
+                TempoEntregaMax = loja.TempoMaximoEntrega ?? 45,
+                TaxaEntrega = loja.TaxaEntregaFixa ?? 5.0m,
+                Categoria = loja.Categoria ?? "Diversos",
+                Aberta = loja.AbertaManualmente ?? (cardapioSelecionado != null)
             };
 
             if (cardapioSelecionado != null)
@@ -212,14 +227,16 @@ namespace Controle.Application.Services
                 {
                     Id = l.Id,
                     Nome = l.Nome,
-                    Descricao = "",
-                    ImagemUrl = l.LogoUrl,
-                    BannerUrl = l.LogoUrl, // Fallback pois não tem Capa
-                    Avaliacao = 4.8, 
+                    Descricao = l.Categoria, // Mapping Categoria to Descricao for now as Loja has no Descricao
+                    LogoUrl = l.LogoUrl,
+                    CapaUrl = l.CapaUrl, 
+                    ImagemUrl = l.LogoUrl, // Legacy
+                    BannerUrl = l.CapaUrl, // Legacy
+                    Avaliacao = l.Avaliacao ?? 4.8, 
                     TempoEntregaMin = l.TempoMinimoEntrega ?? 30,
                     TempoEntregaMax = l.TempoMaximoEntrega ?? 45,
                     TaxaEntrega = l.TaxaEntregaFixa ?? 5.0m,
-                    Categoria = "Diversos", // Não tem categoria na entidade Loja
+                    Categoria = l.Categoria ?? "Diversos",
                     Aberta = l.AbertaManualmente ?? true
                 })
                 .ToListAsync();

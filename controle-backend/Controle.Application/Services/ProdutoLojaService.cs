@@ -125,10 +125,19 @@ namespace Controle.Application.Services
                 produtoLoja.Estoque = dto.Estoque.Value;
             }
             if (dto.Desconto.HasValue) produtoLoja.Desconto = dto.Desconto.Value;
-            if (!string.IsNullOrEmpty(dto.Descricao)) produtoLoja.Descricao = dto.Descricao;
-            if (dto.Desconto.HasValue) produtoLoja.Desconto = dto.Desconto.Value;
-            if (!string.IsNullOrEmpty(dto.Descricao)) produtoLoja.Descricao = dto.Descricao;
+            if (dto.Descricao != null) produtoLoja.Descricao = dto.Descricao;
             if (dto.Disponivel.HasValue) produtoLoja.Disponivel = dto.Disponivel.Value;
+
+            // Atualizar Imagem no Produto Pai
+            if (dto.ImagemUrl != null)
+            {
+                var produtoPai = await _produtoRepository.GetByIdAsync(produtoLoja.ProdutoId);
+                if (produtoPai != null)
+                {
+                    produtoPai.URL_Imagem = dto.ImagemUrl;
+                    await _produtoRepository.UpdateAsync(produtoPai);
+                }
+            }
             
             // Legacy CategoriaId update: If provided, clear and add. 
             // Note: This overrides 'CategoriaIds' if both are present in the logic, but for now user sends specific update.

@@ -33,5 +33,9 @@ namespace Controle.Application.DTOs
         public int? TempoMinimoEntrega { get; set; }
         public int? TempoMaximoEntrega { get; set; }
         public decimal? TaxaEntregaFixa { get; set; }
+        
+        // Imagens
+        public string? LogoUrl { get; set; }
+        public string? CapaUrl { get; set; }
     }
 }

@@ -54,14 +54,15 @@ jobs:
 
       - name: Webhook Trigger Deploy to VPS
         run: |
-          # AQUI ACONTECE A MÁGICA: Concatenamos Stack + Serviço 
+          # 1. Prepara as variáveis (Mais fácil de ler no log)
           FULL_SERVICE_NAME="${{ env.STACK_NAME }}_${{ env.SERVICE_NAME }}"
+          IMAGE_URL="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
 
-          echo "Disparando deploy para: $FULL_SERVICE_NAME"
+          echo "🚀 Disparando deploy para: $FULL_SERVICE_NAME"
+          echo "📦 Imagem: $IMAGE_URL"
 
+          # 2. Envia usando SINTAXE SEGURA (Aspas duplas externas, escape interno)
           curl -X POST ${{ secrets.DEPLOY_WEBHOOK_URL }} \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer ${{ secrets.DEPLOY_WEBHOOK_SECRET }}" \
-          --data '{
-            "service_swarm": "'"$FULL_SERVICE_NAME"'", 
-            "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_WEBHOOK_SECRET }}" \
+            --data "{\"service_swarm\": \"$FULL_SERVICE_NAME\", \"image\": \"$IMAGE_URL\"}"

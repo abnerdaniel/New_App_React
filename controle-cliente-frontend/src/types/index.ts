@@ -2,7 +2,9 @@ export interface Loja {
   id: string;
   nome: string;
   descricao?: string;
-  imagemUrl?: string; // URL da logo ou banner
+  logoUrl?: string; // Nova URL da logo
+  capaUrl?: string; // Nova URL da capa
+  imagemUrl?: string; // URL da logo ou banner (Legacy)
   bannerUrl?: string;
   avaliacao?: number;
   tempoEntregaMin: number;

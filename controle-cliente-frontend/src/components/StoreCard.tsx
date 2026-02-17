@@ -14,7 +14,7 @@ export function StoreCard({ loja, onClick }: StoreCardProps) {
     >
       <div className="h-40 bg-gray-200 overflow-hidden relative">
         <img 
-            src={loja.bannerUrl || loja.imagemUrl} 
+            src={loja.capaUrl || loja.bannerUrl || loja.logoUrl || loja.imagemUrl} 
             alt={loja.nome} 
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
             loading="lazy"
@@ -25,26 +25,38 @@ export function StoreCard({ loja, onClick }: StoreCardProps) {
           </div>
         )}
       </div>
-      <div className="p-4 flex flex-col gap-1">
-        <div className="flex justify-between items-start">
-          <h3 className="font-semibold text-gray-900 line-clamp-1">{loja.nome}</h3>
-          {loja.avaliacao !== undefined && (
-            <div className="flex items-center gap-1 text-yellow-500 text-sm font-medium">
-              <Star className="w-3 h-3 fill-current" />
-              <span>{loja.avaliacao}</span>
+      <div className="p-4 flex gap-3">
+        {loja.logoUrl && (
+           <div className="shrink-0">
+             <img 
+               src={loja.logoUrl} 
+               alt={loja.nome} 
+               className="w-12 h-12 rounded-full object-cover border border-gray-100 shadow-sm"
+               loading="lazy"
+             />
+           </div>
+        )}
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <div className="flex justify-between items-start">
+            <h3 className="font-semibold text-gray-900 line-clamp-1">{loja.nome}</h3>
+            {loja.avaliacao !== undefined && (
+                <div className="flex items-center gap-1 text-yellow-500 text-sm font-medium shrink-0 ml-1">
+                <Star className="w-3 h-3 fill-current" />
+                <span>{loja.avaliacao}</span>
+                </div>
+            )}
             </div>
-          )}
-        </div>
-        <p className="text-xs text-gray-500 line-clamp-1">{loja.categoria} • {loja.descricao}</p>
-        <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
-            <div className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                <span>{loja.tempoEntregaMin}-{loja.tempoEntregaMax} min</span>
+            <p className="text-xs text-gray-500 line-clamp-1">{loja.categoria} • {loja.descricao}</p>
+            <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
+                <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>{loja.tempoEntregaMin}-{loja.tempoEntregaMax} min</span>
+                </div>
+                <span>•</span>
+                <span className={loja.taxaEntrega === 0 ? 'text-green-600 font-medium' : ''}>
+                    {loja.taxaEntrega === 0 ? 'Grátis' : `R$ ${loja.taxaEntrega.toFixed(2).replace('.', ',')}`}
+                </span>
             </div>
-            <span>•</span>
-            <span className={loja.taxaEntrega === 0 ? 'text-green-600 font-medium' : ''}>
-                {loja.taxaEntrega === 0 ? 'Grátis' : `R$ ${loja.taxaEntrega.toFixed(2).replace('.', ',')}`}
-            </span>
         </div>
       </div>
     </div>

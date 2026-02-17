@@ -97,7 +97,12 @@ namespace Controle.Application.Services
                 Complemento = dto.Complemento,
                 Bairro = dto.Bairro,
                 Cidade = dto.Cidade,
+
                 Estado = dto.Estado,
+                
+                // Imagens
+                LogoUrl = dto.LogoUrl,
+                CapaUrl = dto.CapaUrl,
                 
                 UsuarioId = dto.UsuarioId,
                 Ativo = dto.Ativo,
@@ -137,6 +142,10 @@ namespace Controle.Application.Services
             if (!string.IsNullOrEmpty(dto.Bairro)) loja.Bairro = dto.Bairro;
             if (!string.IsNullOrEmpty(dto.Cidade)) loja.Cidade = dto.Cidade;
             if (!string.IsNullOrEmpty(dto.Estado)) loja.Estado = dto.Estado;
+
+            // Imagens
+            if (!string.IsNullOrEmpty(dto.LogoUrl)) loja.LogoUrl = dto.LogoUrl;
+            if (!string.IsNullOrEmpty(dto.CapaUrl)) loja.CapaUrl = dto.CapaUrl;
 
             if (dto.Ativo.HasValue) loja.Ativo = dto.Ativo.Value;
 

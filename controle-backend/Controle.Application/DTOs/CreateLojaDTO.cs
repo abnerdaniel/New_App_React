@@ -24,6 +24,10 @@ namespace Controle.Application.DTOs
         public string? Bairro { get; set; }
         public string? Cidade { get; set; }
         public string? Estado { get; set; }
+        
+        // Imagens
+        public string? LogoUrl { get; set; }
+        public string? CapaUrl { get; set; }
 
         public Guid UsuarioId { get; set; }
         public bool Ativo { get; set; } = true;

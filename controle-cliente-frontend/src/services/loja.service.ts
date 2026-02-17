@@ -6,11 +6,13 @@ export const lojaService = {
     try {
       const response = await api.get<any[]>('/vitrine'); 
       return response.data.map(loja => ({
-        id: loja.id, // Corrigido: Backend retorna 'id' no LojaResumoDTO
-        nome: loja.nome || 'Loja sem nome', // Corrigido: Backend retorna 'nome'
+        id: loja.id,
+        nome: loja.nome || 'Loja sem nome',
         descricao: loja.descricao || 'Loja parceira',
-        imagemUrl: loja.imagemUrl || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=1000',
-        bannerUrl: loja.bannerUrl || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000',
+        logoUrl: loja.logoUrl || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=1000',
+        capaUrl: loja.capaUrl || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000',
+        imagemUrl: loja.imagemUrl, // Legacy
+        bannerUrl: loja.bannerUrl, // Legacy
         avaliacao: loja.avaliacao || 4.8, 
         tempoEntregaMin: loja.tempoEntregaMin || 30,
         tempoEntregaMax: loja.tempoEntregaMax || 45,
@@ -33,15 +35,17 @@ export const lojaService = {
       return {
         id: data.lojaId,
         nome: data.nomeLoja || 'Loja sem nome',
-        descricao: 'Loja parceira', 
-        imagemUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=1000', 
-        bannerUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000', 
-        avaliacao: 5,
-        tempoEntregaMin: 30,
-        tempoEntregaMax: 45,
-        taxaEntrega: 5.00,
-        categoria: 'Diversos',
-        aberto: data.aberta ?? true // Mapeando de 'aberta' (backend) para 'aberto' (frontend)
+        descricao: data.descricao || 'Loja parceira', 
+        logoUrl: data.logoUrl || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=1000',
+        capaUrl: data.capaUrl || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000',
+        imagemUrl: data.logoUrl, // Legacy fallback
+        bannerUrl: data.capaUrl, // Legacy fallback
+        avaliacao: data.avaliacao ?? 5,
+        tempoEntregaMin: data.tempoEntregaMin,
+        tempoEntregaMax: data.tempoEntregaMax,
+        taxaEntrega: data.taxaEntrega,
+        categoria: data.categoria || 'Diversos',
+        aberto: data.aberta ?? true
       };
     } catch (error) {
        console.error('Erro ao buscar loja:', error);

@@ -127,7 +127,7 @@ export function LojaPage() {
       {/* Header Imagem */}
       <div className="h-48 md:h-64 relative bg-gray-200">
         <img 
-          src={loja.bannerUrl || loja.imagemUrl} 
+          src={loja.capaUrl || loja.bannerUrl || loja.imagemUrl} 
           alt={loja.nome}
           className={`w-full h-full object-cover ${isLojaFechada ? 'grayscale' : ''}`}
         />
@@ -204,34 +204,50 @@ export function LojaPage() {
             </div>
         )}
         <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{loja.nome}</h1>
-              <p className="text-gray-500 text-sm mt-1">{loja.categoria} • {loja.descricao}</p>
-            </div>
-            <div className="flex flex-col items-end">
-                 {loja.avaliacao !== undefined && (
-                    <div className="flex items-center gap-1 text-yellow-500 font-bold bg-yellow-50 px-2 py-1 rounded-lg">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span>{loja.avaliacao}</span>
+          <div className="flex gap-4 sm:gap-6">
+            
+            {/* Logo da Loja (Ao lado do nome) */}
+            {loja.logoUrl && (
+               <div className="shrink-0">
+                  <img 
+                    src={loja.logoUrl} 
+                    alt={loja.nome} 
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border border-gray-100 shadow-sm" 
+                  />
+               </div>
+            )}
+
+            <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start">
+                    <div>
+                    <h1 className="text-2xl font-bold text-gray-900 line-clamp-1">{loja.nome}</h1>
+                    <p className="text-gray-500 text-sm mt-1">{loja.categoria} • {loja.descricao}</p>
                     </div>
-                )}
-                 {isLojaFechada && (
-                   <span className="mt-2 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-100">
-                     Fechada no momento
-                   </span>
-                 )}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4 mt-4 text-sm text-gray-600 border-t pt-4 border-gray-100">
-            <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-gray-400" />
-                <span>{loja.tempoEntregaMin}-{loja.tempoEntregaMax} min</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-gray-400" />
-                <span>2.4 km (Entrega R$ {loja.taxaEntrega.toFixed(2)})</span>
+                    <div className="flex flex-col items-end shrink-0 ml-2">
+                        {loja.avaliacao !== undefined && (
+                            <div className="flex items-center gap-1 text-yellow-500 font-bold bg-yellow-50 px-2 py-1 rounded-lg">
+                            <Star className="w-4 h-4 fill-current" />
+                            <span>{loja.avaliacao}</span>
+                            </div>
+                        )}
+                        {isLojaFechada && (
+                        <span className="mt-2 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-100 whitespace-nowrap">
+                            Fechada
+                        </span>
+                        )}
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-4 mt-4 text-sm text-gray-600 border-t pt-4 border-gray-100">
+                    <div className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span>{loja.tempoEntregaMin}-{loja.tempoEntregaMax} min</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span>2.4 km (Entrega R$ {loja.taxaEntrega.toFixed(2)})</span>
+                    </div>
+                </div>
             </div>
           </div>
         </div>
