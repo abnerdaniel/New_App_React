@@ -1,29 +1,31 @@
 /* src/styles/global.css */
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 @theme {
-  --color-brand-primary: #EA1D2C;
-  --color-brand-hover: #C91622;
-  --color-surface: #FFFFFF;
-  --color-surface-background: #F7F7F7;
-  --color-text-dark: #3E3E3E;
+  --color-brand-primary: #ea1d2c;
+  --color-brand-hover: #c91622;
+  --color-surface: #ffffff;
+  --color-surface-background: #f7f7f7;
+  --color-text-dark: #3e3e3e;
   --color-text-muted: #717171;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 :root {
   /* Legacy Vars for fallback */
-  --primary: #EA1D2C; 
-  --white: #FFFFFF;
+  --primary: #ea1d2c;
+  --white: #ffffff;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   background-color: var(--color-surface-background);
   color: var(--color-text-dark);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* Remove all legacy button/input/login styles - let Tailwind handle it */
@@ -38,14 +40,16 @@ button {
 }
 
 .header {
-  background: var(--white); /* iFood style: White header usually, with red accents. Or Red header? Design system says Primary is Red. Let's stick to Primary Header for now or White Header with Red nuances. */
+  background: var(
+    --white
+  ); /* iFood style: White header usually, with red accents. Or Red header? Design system says Primary is Red. Let's stick to Primary Header for now or White Header with Red nuances. */
   /* Re-reading Design System: "Brand Primary... (Header)" -> Suggests Red Header or Red elements in header. 
      Common delivery apps have White headers with Red Logos/Buttons. 
      However, old style was solid block. 
      Let's make Header WHITE standard for modern feel, and use Primary for interactions. 
      Wait, user said "Brand Primary ... Header". 
      Let's stick to Primary Background for strong brand identity as requested. */
-  background: var(--primary); 
+  background: var(--primary);
   color: var(--white);
   padding: 1rem;
   box-shadow: 0 4px 12px rgba(234, 29, 44, 0.15); /* Soft red shadow */
@@ -124,23 +128,37 @@ button {
   border: none;
   cursor: pointer;
   font-weight: 500; /* Medium */
-  transition: background-color 0.2s, opacity 0.2s;
+  transition:
+    background-color 0.2s,
+    opacity 0.2s;
 }
 
-button[type="submit"], .btn-primary {
+button[type="submit"],
+.btn-primary {
   background: var(--primary);
   color: var(--white);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-button[type="submit"]:hover, .btn-primary:hover {
+button[type="submit"]:hover,
+.btn-primary:hover {
   background: var(--primary-hover);
 }
 
-.btn-save { background: var(--success); color: var(--white); }
-.btn-delete { background: var(--danger); color: var(--white); padding: 4px 8px; font-size: 0.8rem; }
+.btn-save {
+  background: var(--success);
+  color: var(--white);
+}
+.btn-delete {
+  background: var(--danger);
+  color: var(--white);
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
 
-button:hover { opacity: 0.95; }
+button:hover {
+  opacity: 0.95;
+}
 
 /* Tabelas */
 table {

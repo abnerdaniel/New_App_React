@@ -218,13 +218,16 @@ public class MesaService : IMesaService
     public async Task<IEnumerable<Controle.Application.DTOs.ProdutoLojaDto>> ListarProdutosLojaAsync(Guid lojaId)
     {
         return await _context.Set<ProdutoLoja>()
-            .Where(pl => pl.LojaId == lojaId && pl.Disponivel)
+            .Where(pl => pl.LojaId == lojaId) // Removed Disponivel check for debugging
             .Include(pl => pl.Produto)
+            .Include(pl => pl.Categoria)
             .Select(pl => new Controle.Application.DTOs.ProdutoLojaDto {
                 Id = pl.Id,
                 Nome = pl.Produto != null ? pl.Produto.Nome : pl.Descricao,
                 Preco = pl.Preco,
-                Descricao = pl.Descricao
+                Descricao = pl.Descricao,
+                ImagemUrl = pl.ImagemUrl ?? (pl.Produto != null ? pl.Produto.URL_Imagem : null),
+                CategoriaNome = pl.Categoria != null ? pl.Categoria.Nome : (pl.Produto != null ? pl.Produto.Tipo : "Outros")
             })
             .OrderBy(p => p.Nome)
             .ToListAsync();

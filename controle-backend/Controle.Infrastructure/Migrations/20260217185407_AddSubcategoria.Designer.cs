@@ -3,6 +3,7 @@ using System;
 using Controle.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Controle.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260217185407_AddSubcategoria")]
+    partial class AddSubcategoria
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -384,9 +387,6 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<bool>("AceitandoPedidos")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("AceiteAutomatico")
-                        .HasColumnType("boolean");
-
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean");
 
@@ -418,9 +418,6 @@ namespace Controle.Infrastructure.Migrations
 
                     b.Property<DateTime>("DataCriacao")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("DespachoAutomatico")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -803,9 +800,6 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<int?>("Estoque")
                         .HasColumnType("integer");
 
-                    b.Property<string>("ImagemUrl")
-                        .HasColumnType("text");
-
                     b.Property<Guid>("LojaId")
                         .HasColumnType("uuid");
 
@@ -813,6 +807,9 @@ namespace Controle.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int>("ProdutoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SubcategoriaId")
                         .HasColumnType("integer");
 
                     b.Property<int?>("Vendas")
@@ -824,7 +821,31 @@ namespace Controle.Infrastructure.Migrations
 
                     b.HasIndex("ProdutoId");
 
+                    b.HasIndex("SubcategoriaId");
+
                     b.ToTable("ProdutosLojas");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.Subcategoria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoriaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.ToTable("Subcategorias");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Usuario", b =>
@@ -1040,9 +1061,26 @@ namespace Controle.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Controle.Domain.Entities.Subcategoria", "Subcategoria")
+                        .WithMany("Produtos")
+                        .HasForeignKey("SubcategoriaId");
+
                     b.Navigation("Categoria");
 
                     b.Navigation("Produto");
+
+                    b.Navigation("Subcategoria");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.Subcategoria", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.Categoria", "Categoria")
+                        .WithMany("Subcategorias")
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Categoria");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Cardapio", b =>
@@ -1057,6 +1095,8 @@ namespace Controle.Infrastructure.Migrations
                     b.Navigation("ProdutoCategorias");
 
                     b.Navigation("Produtos");
+
+                    b.Navigation("Subcategorias");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Combo", b =>
@@ -1082,6 +1122,11 @@ namespace Controle.Infrastructure.Migrations
             modelBuilder.Entity("Controle.Domain.Entities.ProdutoLoja", b =>
                 {
                     b.Navigation("ProdutoCategorias");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.Subcategoria", b =>
+                {
+                    b.Navigation("Produtos");
                 });
 #pragma warning restore 612, 618
         }

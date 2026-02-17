@@ -102,6 +102,8 @@ export interface ProdutoLojaItem {
   nome: string;
   preco: number;
   descricao: string;
+  categoriaNome: string; // Added from backend
+  imagemUrl?: string; // Added from backend DTO
 }
 
 export const listarProdutosLoja = async (lojaId: string): Promise<ProdutoLojaItem[]> => {

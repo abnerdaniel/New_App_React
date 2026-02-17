@@ -101,5 +101,24 @@ namespace Controle.Application.Services
                 OrdemExibicao = c.OrdemExibicao
             };
         }
+
+        public async Task ReordenarCategoriasAsync(List<KeyValuePair<int, int>> ordem)
+        {
+            if (ordem == null || !ordem.Any()) return;
+
+            var ids = ordem.Select(x => x.Key).ToList();
+            var categorias = await _context.Categorias.Where(c => ids.Contains(c.Id)).ToListAsync();
+
+            foreach (var item in ordem)
+            {
+                var categoria = categorias.FirstOrDefault(c => c.Id == item.Key);
+                if (categoria != null)
+                {
+                    categoria.OrdemExibicao = item.Value;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+        }
     }
 }

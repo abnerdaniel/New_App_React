@@ -2,29 +2,36 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Trash2, Edit2, ArrowLeft, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Edit2, ArrowLeft, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import { ItemSelectorModal } from '../../components/ItemSelectorModal';
 
 // --- Interfaces ---
+interface Subcategoria {
+    id: number;
+    nome: string;
+    categoriaId: number;
+}
+
 interface Categoria {
     id: number;
     nome: string;
     ordemExibicao: number;
     cardapioId: number;
+    subcategorias?: Subcategoria[];
 }
 
 interface ItemMenu {
     id: number;
     nome: string;
     preco: number;
-    descricao?: string; // Add description for UI
-    imagemUrl?: string; // Add image for UI
+    descricao?: string;
+    imagemUrl?: string;
     type: 'PRODUTO' | 'COMBO';
-    categoriaIds?: number[]; // For Products
-    categoriaId?: number | null; // For Combos (Legacy/Current)
-    disponivel?: boolean; // For Products
-    ativo?: boolean; // For Combos
-    // Helper for easier access
+    categoriaIds?: number[]; 
+    categoriaId?: number | null; 
+    subcategoriaId?: number | null;
+    disponivel?: boolean; 
+    ativo?: boolean; 
     original: any; 
 }
 
@@ -40,7 +47,7 @@ export function CardapioDetalhes() {
 
     const [cardapio, setCardapio] = useState<Cardapio | null>(null);
     const [categorias, setCategorias] = useState<Categoria[]>([]);
-    const [allItems, setAllItems] = useState<ItemMenu[]>([]); // Setup for Modal
+    const [allItems, setAllItems] = useState<ItemMenu[]>([]); 
     const [loading, setLoading] = useState(true);
 
     // Modal State
@@ -73,6 +80,8 @@ export function CardapioDetalhes() {
             setCardapio(cardapioRes.data);
             setCategorias(catRes.data);
 
+            // Fetch subcategories (Removed)
+
             // Map all items for the selector
             const products: ItemMenu[] = prodRes.data.map((p: any) => ({
                 id: p.produtoLojaId,
@@ -82,6 +91,7 @@ export function CardapioDetalhes() {
                 imagemUrl: p.imagemUrl || p.produto?.imagemUrl, // Adjust based on actual DTO
                 type: 'PRODUTO',
                 categoriaIds: p.categoriaIds || (p.categoriaId ? [p.categoriaId] : []),
+                subcategoriaId: p.subcategoriaId, // Ensure this is mapped
                 disponivel: p.disponivel,
                 original: p
             }));
@@ -211,6 +221,41 @@ export function CardapioDetalhes() {
         }
     };
 
+    const moveCategory = async (catId: number, direction: 'UP' | 'DOWN') => {
+        const index = categorias.findIndex(c => c.id === catId);
+        if (index === -1) return;
+        
+        const newCategorias = [...categorias];
+        if (direction === 'UP') {
+            if (index === 0) return;
+            [newCategorias[index - 1], newCategorias[index]] = [newCategorias[index], newCategorias[index - 1]];
+        } else {
+            if (index === newCategorias.length - 1) return;
+            [newCategorias[index], newCategorias[index + 1]] = [newCategorias[index + 1], newCategorias[index]];
+        }
+        
+        // Optimistic UI update
+        setCategorias(newCategorias);
+
+        // Prepare payload: List of { Key: id, Value: order }
+        // We reassign order based on new array index
+        const payload = newCategorias.map((cat, idx) => ({
+            Key: cat.id,
+            Value: idx
+        }));
+
+        try {
+            await api.post('/api/categorias/reordenar', payload);
+        } catch (error) {
+            console.error("Erro ao reordenar", error);
+            alert("Erro ao salvar ordem das categorias.");
+            loadData(); // Revert on error
+        }
+    };
+
+    // Subcategory Form State (Removed)
+    // Actions related to subcategories removed for rollback.
+
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
             {/* Header */}
@@ -282,68 +327,58 @@ export function CardapioDetalhes() {
                                     </span>
                                 </div>
                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button 
+                                        onClick={() => moveCategory(cat.id, 'UP')} 
+                                        className="p-2 hover:bg-white rounded-lg text-gray-500 hover:text-blue-600 disabled:opacity-30"
+                                        disabled={categorias.indexOf(cat) === 0}
+                                        title="Mover para cima"
+                                    >
+                                        <ArrowUp size={16}/>
+                                    </button>
+                                    <button 
+                                        onClick={() => moveCategory(cat.id, 'DOWN')} 
+                                        className="p-2 hover:bg-white rounded-lg text-gray-500 hover:text-blue-600 disabled:opacity-30"
+                                        disabled={categorias.indexOf(cat) === categorias.length - 1}
+                                        title="Mover para baixo"
+                                    >
+                                        <ArrowDown size={16}/>
+                                    </button>
+                                    <div className="w-px h-6 bg-gray-300 mx-2 self-center"></div>
                                     <button onClick={() => { setEditingCat(cat); setCatName(cat.nome); setShowCatForm(true); }} className="p-2 hover:bg-white rounded-lg text-gray-500 hover:text-blue-600"><Edit2 size={16}/></button>
                                     <button onClick={() => deleteCat(cat.id)} className="p-2 hover:bg-white rounded-lg text-gray-500 hover:text-red-600"><Trash2 size={16}/></button>
                                 </div>
                             </div>
 
-                            {/* Items List */}
                             <div className="divide-y divide-gray-100">
+                                {catItems.map(item => (
+                                    <ItemRow 
+                                        key={`${item.type}-${item.id}`} 
+                                        item={item} 
+                                        catId={cat.id} 
+                                        onRemove={removeItem} 
+                                        onToggle={toggleStatus}
+                                    />
+                                ))}
                                 {catItems.length === 0 && (
-                                    <div className="p-8 text-center text-gray-400 text-sm italic">
-                                        Categoria vazia. Adicione itens abaixo.
+                                    <div className="px-6 py-8 text-center text-gray-400 italic">
+                                        Nenhum item nesta categoria.
                                     </div>
                                 )}
-                                {catItems.map(item => {
-                                    const isUnavailable = item.type === 'PRODUTO' ? item.disponivel === false : item.ativo === false;
-                                    return (
-                                        <div key={`${item.type}-${item.id}`} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
-                                            <div className="flex items-center gap-4 flex-1">
-                                                {/* Status Toggle (Switch Style) */}
-                                                <button 
-                                                    onClick={() => toggleStatus(item)}
-                                                    className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${!isUnavailable ? 'bg-green-500' : 'bg-gray-300'}`}
-                                                    title={isUnavailable ? "Indisponível (Clique para ativar)" : "Disponível (Clique para desativar)"}
-                                                >
-                                                    <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${!isUnavailable ? 'translate-x-4' : 'translate-x-0'}`}></div>
-                                                </button>
-
-                                                <div className="flex-1 opacity-100 transition-opacity" style={{opacity: isUnavailable ? 0.5 : 1}}>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-gray-800">{item.nome}</span>
-                                                        {item.type === 'COMBO' && <span className="text-[10px] bg-purple-100 text-purple-700 font-bold px-1.5 rounded">COMBO</span>}
-                                                    </div>
-                                                    <p className="text-sm text-gray-500">
-                                                        {(item.preco/100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <button 
-                                                onClick={() => removeItem(item, cat.id)}
-                                                className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                title="Remover da categoria"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    );
-                                })}
                             </div>
 
-                            {/* Add Item Actions */}
+                            {/* Actions */}
                             <div className="bg-gray-50/50 p-3 border-t flex justify-center gap-3">
                                 <button 
                                     onClick={() => openAddModal(cat.id, 'PRODUTO')}
                                     className="px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                 >
-                                    <Plus size={14} className="text-brand-primary" /> Adicionar Produto
+                                    <Plus size={14} className="text-brand-primary" /> Add Produto
                                 </button>
                                 <button 
                                     onClick={() => openAddModal(cat.id, 'COMBO')}
                                     className="px-4 py-2 bg-white border border-gray-200 shadow-sm rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                                 >
-                                    <Plus size={14} className="text-purple-600" /> Adicionar Combo
+                                    <Plus size={14} className="text-purple-600" /> Add Combo
                                 </button>
                             </div>
                         </div>
@@ -369,6 +404,44 @@ export function CardapioDetalhes() {
                         : []
                 }
             />
+        </div>
+    );
+}
+
+// Sub-component for Item Row 
+function ItemRow({ item, catId, onRemove, onToggle }: any) {
+    const isUnavailable = item.type === 'PRODUTO' ? item.disponivel === false : item.ativo === false;
+
+    return (
+        <div className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
+            <div className="flex items-center gap-4 flex-1">
+                {/* Status Toggle (Switch Style) */}
+                <button 
+                    onClick={() => onToggle(item)}
+                    className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${!isUnavailable ? 'bg-green-500' : 'bg-gray-300'}`}
+                    title={isUnavailable ? "Indisponível (Clique para ativar)" : "Disponível (Clique para desativar)"}
+                >
+                    <div className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform ${!isUnavailable ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                </button>
+
+                <div className="flex-1 opacity-100 transition-opacity" style={{opacity: isUnavailable ? 0.5 : 1}}>
+                    <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-800">{item.nome}</span>
+                        {item.type === 'COMBO' && <span className="text-[10px] bg-purple-100 text-purple-700 font-bold px-1.5 rounded">COMBO</span>}
+                    </div>
+                    <p className="text-sm text-gray-500">
+                        {(item.preco/100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}
+                    </p>
+                </div>
+            </div>
+
+            <button 
+                onClick={() => onRemove(item, catId)}
+                className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                title="Remover da categoria"
+            >
+                <Trash2 size={16} />
+            </button>
         </div>
     );
 }

@@ -46,13 +46,20 @@ namespace Controle.Application.Services
                     throw new DomainException("Endereço de entrega é obrigatório para entregas.");
                 }
 
+                // Ensure Loja is tracked by the current context to avoid FK issues
+                if (_context.Entry(loja).State == EntityState.Detached)
+                {
+                    _context.Lojas.Attach(loja);
+                }
+
                 var pedido = new Pedido
                 {
-                    LojaId = loja.Id, // Resolve to the real Guid from the entity
+                    Loja = loja, // Set navigation property explicitly
+                    LojaId = loja.Id,
                     ClienteId = pedidoDto.ClienteId,
                     EnderecoDeEntregaId = pedidoDto.IsRetirada ? null : pedidoDto.EnderecoEntregaId,
                     DataVenda = DateTime.UtcNow,
-                    Status = "Aguardando Aceitação", // Novo Status Inicial
+                    Status = DetermineStatus(loja, pedidoDto), // New Logic
                     Sacola = new List<PedidoItem>(),
                     Descricao = pedidoDto.IsRetirada ? "Retirada em Loja" : "Pedido via App",
                     MetodoPagamento = pedidoDto.MetodoPagamento,
@@ -305,10 +312,28 @@ namespace Controle.Application.Services
 
         public async Task<Pedido> AtualizarStatusPedidoAsync(int pedidoId, string novoStatus)
         {
-            var pedido = await _context.Pedidos.FindAsync(pedidoId);
+            var pedido = await _context.Pedidos
+                .Include(p => p.Loja) // Need Loja config
+                .FirstOrDefaultAsync(p => p.Id == pedidoId);
+
             if (pedido == null) throw new DomainException("Pedido não encontrado.");
 
             pedido.Status = novoStatus;
+
+            // Auto-Dispatch Logic
+            if (novoStatus == "Pronto" && (pedido.Loja?.DespachoAutomatico == true))
+            {
+                // Verifica se é entrega (não retirada) para mudar para "Saiu para Entrega"
+                // Se for Retirada, "Pronto" é o estado final antes de "Entregue/Concluido"? 
+                // Geralmente Retirada: Pronto -> Entregue.
+                // Entrega: Pronto -> Saiu para Entrega -> Entregue.
+                
+                if (!pedido.IsRetirada)
+                {
+                    pedido.Status = "Saiu para Entrega";
+                }
+            }
+
             _context.Pedidos.Update(pedido);
             await _context.SaveChangesAsync();
 
@@ -524,6 +549,24 @@ namespace Controle.Application.Services
 
             return pedido;
         }
+
+        private string DetermineStatus(Loja loja, RealizarPedidoDTO dto)
+        {
+            // Logic for PDV / Direct Sales
+            if (dto.IsRetirada)
+            {
+                if (dto.EnviarParaCozinha == true) return "Em Preparo";
+                if (dto.EnviarParaCozinha == false && dto.EnviarParaCozinha.HasValue) 
+                {
+                    // If explicitly false, likely a direct completed sale
+                    return "Concluido"; 
+                }
+            }
+
+            // Default Logic
+            return loja.AceiteAutomatico ? "Em Preparo" : "Aguardando Aceitação";
+        }
+
         public async Task<Pedido> AdicionarItensAsync(int pedidoId, List<ItemPedidoDTO> itens)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();

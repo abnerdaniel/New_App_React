@@ -14,6 +14,7 @@ public class ProdutoLoja
     public int? Estoque { get; set; }
     public int? Vendas { get; set; }
     public bool Disponivel { get; set; } = true;
+    public string? ImagemUrl { get; set; } // Store specific image override
     public int ProdutoId { get; set; }
     // [Obsolete] QuantidadeEstoque removido.
     public int? CategoriaId { get; set; }

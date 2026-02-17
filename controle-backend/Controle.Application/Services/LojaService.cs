@@ -106,6 +106,8 @@ namespace Controle.Application.Services
                 
                 UsuarioId = dto.UsuarioId,
                 Ativo = dto.Ativo,
+                AceiteAutomatico = dto.AceiteAutomatico,
+                DespachoAutomatico = dto.DespachoAutomatico,
                 DataCriacao = System.DateTime.UtcNow
             };
 
@@ -155,6 +157,9 @@ namespace Controle.Application.Services
             if (dto.TempoMinimoEntrega.HasValue) loja.TempoMinimoEntrega = dto.TempoMinimoEntrega.Value;
             if (dto.TempoMaximoEntrega.HasValue) loja.TempoMaximoEntrega = dto.TempoMaximoEntrega.Value;
             if (dto.TaxaEntregaFixa.HasValue) loja.TaxaEntregaFixa = dto.TaxaEntregaFixa.Value;
+
+            if (dto.AceiteAutomatico.HasValue) loja.AceiteAutomatico = dto.AceiteAutomatico.Value;
+            if (dto.DespachoAutomatico.HasValue) loja.DespachoAutomatico = dto.DespachoAutomatico.Value;
 
             _context.Lojas.Update(loja);
             await _context.SaveChangesAsync();

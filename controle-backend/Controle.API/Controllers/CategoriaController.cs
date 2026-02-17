@@ -62,5 +62,16 @@ namespace Controle.API.Controllers
                  return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("reordenar")]
+        public async Task<IActionResult> Reordenar([FromBody] List<KeyValuePair<int, int>> ordem)
+        {
+            try {
+                await _categoriaService.ReordenarCategoriasAsync(ordem);
+                return Ok();
+            } catch (System.Exception ex) {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

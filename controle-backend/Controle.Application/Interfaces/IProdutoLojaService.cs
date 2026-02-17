@@ -13,5 +13,6 @@ namespace Controle.Application.Interfaces
         Task<bool> DeleteProdutoLojaAsync(int id);
         Task<IEnumerable<ProdutoEstoqueDTO>> ObterEstoquePorLojaAsync(Guid lojaId);
         Task AtualizarCategoriasProdutoAsync(int produtoLojaId, List<int> categoriaIds);
+
     }
 }

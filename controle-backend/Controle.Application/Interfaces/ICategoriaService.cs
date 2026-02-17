@@ -12,5 +12,6 @@ namespace Controle.Application.Interfaces
         Task ExcluirCategoriaAsync(int id);
         Task<IEnumerable<CategoriaSimplesDTO>> ListarPorCardapioAsync(int cardapioId);
         Task<CategoriaSimplesDTO?> ObterPorIdAsync(int id);
+        Task ReordenarCategoriasAsync(List<KeyValuePair<int, int>> ordem);
     }
 }

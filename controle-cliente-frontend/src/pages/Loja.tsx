@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom'; // Import Link
-import { ArrowLeft, Star, Clock, MapPin, User, LogOut } from 'lucide-react';
+import { ArrowLeft, Star, Clock, MapPin, User, LogOut, Search } from 'lucide-react';
 import type { Loja, Categoria, Combo } from '../types';
 import { lojaService } from '../services/loja.service';
 
@@ -17,11 +17,16 @@ import { PedidosAtivosWidget } from '../components/PedidosAtivosWidget'; // New
 import { ProductImage } from '../components/ProductImage';
 import { useWaiter } from '../context/WaiterContext';
 
+import { CategoryNav } from '../components/CategoryNav';
+import { MiniCartWidget } from '../components/MiniCartWidget';
+
 export function LojaPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [loja, setLoja] = useState<Loja | null>(null);
   const [cardapio, setCardapio] = useState<Categoria[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null); // New State
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   
   // Product Modal State
@@ -34,7 +39,7 @@ export function LojaPage() {
   const [isComboModalOpen, setIsComboModalOpen] = useState(false);
 
   // Cart Context
-  const { addItem, total, count } = useCart();
+  const { addItem } = useCart();
   const { isAuthenticated, cliente, logout } = useClientAuth();
   const { isWaiterMode, mesaSelecionada, sairModoGarcom } = useWaiter();
 
@@ -113,6 +118,11 @@ export function LojaPage() {
 
   // Determine if store is closed
   const isLojaFechada = loja ? !loja.aberto : false;
+
+  // Filter categories
+  const filteredCategories = activeCategory 
+    ? cardapio.filter(cat => cat.id === activeCategory)
+    : cardapio;
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
@@ -253,87 +263,58 @@ export function LojaPage() {
         </div>
       </div>
 
-      {/* Cardápio */}
-      <div className="max-w-4xl mx-auto px-4 mt-8">
-        {cardapio.map(categoria => (
-            <div key={categoria.id} id={categoria.id} className="mb-8">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">{categoria.nome}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Produtos */}
-                    {categoria.produtos.map(produto => {
-                        const indisponivel = produto.disponivel === false;
-                        return (
-                            <div 
-                                key={`prod-${produto.id}`} 
-                                className={`bg-white border border-gray-100 rounded-lg p-3 flex gap-4 transition-colors shadow-sm duration-100 relative
-                                    ${indisponivel ? 'opacity-60 grayscale cursor-not-allowed bg-gray-50' : 'hover:border-gray-200 cursor-pointer active:scale-[0.99]'}
-                                `}
-                                onClick={() => !indisponivel && handleProductClick(produto)}
-                            >
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-gray-900">{produto.nome}</h3>
-                                    <p className="text-sm text-gray-500 line-clamp-2 mt-1 mb-2">{produto.descricao}</p>
-                                    <span className="text-green-700 font-medium">
-                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(produto.preco)}
-                                    </span>
-                                    {indisponivel && <span className="text-xs font-bold text-red-500 ml-2 border border-red-200 bg-red-50 px-1 rounded">Indisponível</span>}
-                                </div>
-                                    <ProductImage 
-                                        src={produto.imagemUrl} 
-                                        alt={produto.nome} 
-                                        className="w-24 h-24 object-cover rounded-md bg-gray-100"
-                                        productType={produto.tipo}
-                                    />
-                            </div>
-                        );
-                    })}
-
-                    {/* Combos */}
-                    {categoria.combos && categoria.combos.map(combo => {
-                        const indisponivel = combo.ativo === false;
-                        return (
-                            <div 
-                                key={`combo-${combo.id}`} 
-                                className={`bg-orange-50 border border-orange-100 rounded-lg p-3 flex gap-4 transition-colors shadow-sm duration-100 relative
-                                    ${indisponivel ? 'opacity-60 grayscale cursor-not-allowed bg-gray-50 border-gray-200' : 'hover:border-orange-200 cursor-pointer active:scale-[0.99]'}
-                                `}
-                                onClick={() => !indisponivel && handleComboClick(combo)}
-                            >
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="font-semibold text-gray-900">{combo.nome}</h3>
-                                        {indisponivel && <span className="text-xs font-bold text-red-500 border border-red-200 bg-red-50 px-1 rounded">Indisponível</span>}
-                                    </div>
-                                    <p className="text-sm text-gray-500 line-clamp-2 mt-1 mb-2">{combo.descricao}</p>
-                                    
-                                    {/* Lista de Itens do Combo */}
-                                    {combo.itens && combo.itens.length > 0 && (
-                                        <ul className="mb-2 space-y-1">
-                                            {combo.itens.map((item) => (
-                                                <li key={item.id} className="text-xs text-gray-600 flex items-center gap-1">
-                                                    <span className="font-medium text-gray-800">{item.quantidade}x</span>
-                                                    <span>{item.nomeProduto}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-
-                                    <span className="text-green-700 font-medium">
-                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(combo.preco)}
-                                    </span>
-                                </div>
-                                    <ProductImage 
-                                        src={combo.imagemUrl} 
-                                        alt={combo.nome} 
-                                        className="w-24 h-24 object-cover rounded-md bg-gray-100"
-                                        isCombo={true}
-                                    />
-                            </div>
-                        );
-                    })}
+       {/* Category Navigation & Search */}
+      <div className="sticky top-0 z-20 bg-gray-50 pt-2 pb-2 shadow-sm">
+           <div className="max-w-4xl mx-auto px-4 mb-2">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input 
+                        type="text" 
+                        placeholder="Buscar itens no cardápio..." 
+                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-primary/50 text-sm"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
+           </div>
+           
+           {!searchQuery && (
+                <CategoryNav 
+                        categories={cardapio.map(c => ({ id: c.id, nome: c.nome }))}
+                        activeCategory={activeCategory}
+                        onSelect={setActiveCategory}
+                />
+           )}
+      </div>
+
+       {/* Cardápio */}
+      <div className="max-w-4xl mx-auto px-4 mt-4">
+        {filteredCategories.length === 0 && searchQuery && (
+            <div className="text-center py-10 text-gray-500">
+                Nehum item encontrado para "{searchQuery}"
             </div>
-        ))}
+        )}
+
+        {filteredCategories.map(categoria => {
+            // Flatten products (ignore subcategories for now per rollback)
+            const products = categoria.produtos;
+            const combos = categoria.combos || [];
+            
+            // "Show More" Logic
+            // We need a state for each category to know if it's expanded. 
+            // Since we are mapping, we can't easily use a simple useState hook for each *inside* the map unless we extract a component.
+            // Let's extract a CategorySection component to handle this state cleanly.
+            return (
+                <CategorySection 
+                    key={categoria.id} 
+                    categoria={categoria} 
+                    products={products} 
+                    combos={combos}
+                    onProductClick={handleProductClick}
+                    onComboClick={handleComboClick}
+                />
+            );
+        })}
       </div>
 
       <ProductModal 
@@ -351,24 +332,137 @@ export function LojaPage() {
         onAddToCart={handleAddComboToCart}
         isStoreClosed={isLojaFechada}
       />
-
-        {count > 0 && (
-            <div className="fixed bottom-4 left-4 right-4 z-40 max-w-4xl mx-auto">
-                <div 
-                    onClick={() => navigate('/carrinho')}
-                    className="bg-red-600 text-white p-4 rounded-xl shadow-lg flex justify-between items-center cursor-pointer hover:bg-red-700 transition-colors"
-                >
-                    <div className="flex items-center gap-2">
-                        <div className="bg-white/20 px-2 py-1 rounded text-sm font-bold">{count}</div>
-                        <span className="font-medium">Ver Sacola</span>
-                    </div>
-                    <span className="font-bold">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
-                    </span>
-                </div>
-            </div>
-        )}
-        <PedidosAtivosWidget />
+      
+      <MiniCartWidget />
+      <PedidosAtivosWidget />
     </div>
   );
+}
+
+
+
+function CategorySection({ 
+    categoria, 
+    products, 
+    combos, 
+    onProductClick, 
+    onComboClick 
+}: { 
+    categoria: Categoria, 
+    products: Produto[], 
+    combos: Combo[],
+    onProductClick: (p: Produto) => void,
+    onComboClick: (c: Combo) => void
+}) {
+    const [expanded, setExpanded] = useState(false);
+    const INITIAL_LIMIT = 6;
+    
+    // Combine items to count total for "Show More" logic? 
+    // Usually "Show More" applies to the main product list. Combos are often few.
+    // Let's apply it to products.
+    
+    const hasMore = products.length > INITIAL_LIMIT;
+    const visibleProducts = expanded ? products : products.slice(0, INITIAL_LIMIT);
+
+    return (
+        <div id={`cat-${categoria.id}`} className="mb-8 scroll-mt-32">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">{categoria.nome}</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {visibleProducts.map(produto => (
+                    <ProductCard key={`prod-${produto.id}`} produto={produto} onClick={onProductClick} />
+                ))}
+            </div>
+
+            {hasMore && !expanded && (
+                <button 
+                    onClick={() => setExpanded(true)}
+                    className="w-full py-2 bg-white border border-gray-200 rounded-lg text-brand-primary font-medium hover:bg-gray-50 transition-colors mb-4 shadow-sm"
+                >
+                    Ver mais {products.length - INITIAL_LIMIT} itens em {categoria.nome}
+                </button>
+            )}
+
+            {/* Combos */}
+            {combos && combos.length > 0 && (
+                <div className="mt-6">
+                    <h3 className="text-md font-semibold text-gray-600 mb-2">Combos</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {combos.map(combo => (
+                            <ComboCard key={`combo-${combo.id}`} combo={combo} onClick={onComboClick} />
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Sub-components to keep clean
+function ProductCard({ produto, onClick }: { produto: Produto, onClick: (p: Produto) => void }) {
+    const indisponivel = produto.disponivel === false;
+    return (
+        <div 
+            className={`bg-white border border-gray-100 rounded-lg p-3 flex gap-4 transition-colors shadow-sm duration-100 relative
+                ${indisponivel ? 'opacity-60 grayscale cursor-not-allowed bg-gray-50' : 'hover:border-gray-200 cursor-pointer active:scale-[0.99]'}
+            `}
+            onClick={() => !indisponivel && onClick(produto)}
+        >
+            <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">{produto.nome}</h3>
+                <p className="text-sm text-gray-500 line-clamp-2 mt-1 mb-2">{produto.descricao}</p>
+                <span className="text-green-700 font-medium">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(produto.preco)}
+                </span>
+                {indisponivel && <span className="text-xs font-bold text-red-500 ml-2 border border-red-200 bg-red-50 px-1 rounded">Indisponível</span>}
+            </div>
+            <ProductImage 
+                src={produto.imagemUrl} 
+                alt={produto.nome} 
+                className="w-24 h-24 object-cover rounded-md bg-gray-100"
+                productType={produto.tipo}
+            />
+        </div>
+    );
+}
+
+function ComboCard({ combo, onClick }: { combo: Combo, onClick: (c: Combo) => void }) {
+    const indisponivel = combo.ativo === false;
+    return (
+        <div 
+            className={`bg-orange-50 border border-orange-100 rounded-lg p-3 flex gap-4 transition-colors shadow-sm duration-100 relative
+                ${indisponivel ? 'opacity-60 grayscale cursor-not-allowed bg-gray-50 border-gray-200' : 'hover:border-orange-200 cursor-pointer active:scale-[0.99]'}
+            `}
+            onClick={() => !indisponivel && onClick(combo)}
+        >
+            <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-gray-900">{combo.nome}</h3>
+                    {indisponivel && <span className="text-xs font-bold text-red-500 border border-red-200 bg-red-50 px-1 rounded">Indisponível</span>}
+                </div>
+                <p className="text-sm text-gray-500 line-clamp-2 mt-1 mb-2">{combo.descricao}</p>
+                
+                {combo.itens && combo.itens.length > 0 && (
+                    <ul className="mb-2 space-y-1">
+                        {combo.itens.map((item) => (
+                            <li key={item.id} className="text-xs text-gray-600 flex items-center gap-1">
+                                <span className="font-medium text-gray-800">{item.quantidade}x</span>
+                                <span>{item.nomeProduto}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+
+                <span className="text-green-700 font-medium">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(combo.preco)}
+                </span>
+            </div>
+            <ProductImage 
+                src={combo.imagemUrl} 
+                alt={combo.nome} 
+                className="w-24 h-24 object-cover rounded-md bg-gray-100"
+                isCombo={true}
+            />
+        </div>
+    );
 }

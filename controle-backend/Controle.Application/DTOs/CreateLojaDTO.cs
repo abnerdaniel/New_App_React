@@ -31,5 +31,8 @@ namespace Controle.Application.DTOs
 
         public Guid UsuarioId { get; set; }
         public bool Ativo { get; set; } = true;
+
+        public bool AceiteAutomatico { get; set; } = false;
+        public bool DespachoAutomatico { get; set; } = false;
     }
 }

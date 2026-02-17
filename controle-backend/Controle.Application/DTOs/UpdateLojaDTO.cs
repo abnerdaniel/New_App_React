@@ -37,5 +37,8 @@ namespace Controle.Application.DTOs
         // Imagens
         public string? LogoUrl { get; set; }
         public string? CapaUrl { get; set; }
+
+        public bool? AceiteAutomatico { get; set; }
+        public bool? DespachoAutomatico { get; set; }
     }
 }

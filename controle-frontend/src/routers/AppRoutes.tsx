@@ -10,6 +10,7 @@ import { PrivateRoute } from '../components/auth/PrivateRoute'
 // New Pages
 import { Dashboard } from '../pages/Dashboard/Dashboard'
 import { MesasPage } from '../pages/Mesas/MesasPage'
+import { PDVPage } from '../pages/PDV/PDVPage'
 import { DeliveryPage } from '../pages/Delivery/DeliveryPage'
 import { CardapioPage } from '../pages/Cardapio/CardapioPage'
 import { CardapioDetalhes } from '../pages/Cardapio/CardapioDetalhes'
@@ -34,6 +35,7 @@ export function AppRoutes() {
       {/* Main Modules */}
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/mesas" element={<PrivateRoute><MesasPage /></PrivateRoute>} />
+      <Route path="/pdv" element={<PrivateRoute><PDVPage /></PrivateRoute>} />
       <Route path="/delivery" element={<PrivateRoute><DeliveryPage /></PrivateRoute>} />
       <Route path="/cardapio" element={<PrivateRoute><CardapioPage /></PrivateRoute>} />
       <Route path="/cardapio/:id/detalhes" element={<PrivateRoute><CardapioDetalhes /></PrivateRoute>} />

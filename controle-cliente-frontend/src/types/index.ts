@@ -36,6 +36,7 @@ export interface Produto {
   adicionais?: Produto[]; // Produtos extras
   isAdicional?: boolean;
   disponivel?: boolean;
+  subcategoriaId?: number;
 }
 
 export interface ComboItem {
@@ -57,11 +58,18 @@ export interface Combo {
   ativo?: boolean;
 }
 
+export interface Subcategoria {
+  id: number;
+  nome: string;
+  categoriaId: number;
+}
+
 export interface Categoria {
   id: string;
   nome: string;
   produtos: Produto[];
   combos: Combo[];
+  subcategorias?: Subcategoria[];
 }
 
 export interface Endereco {

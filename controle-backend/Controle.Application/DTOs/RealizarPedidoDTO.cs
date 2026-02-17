@@ -5,12 +5,13 @@ namespace Controle.Application.DTOs
     public class RealizarPedidoDTO
     {
         public string LojaId { get; set; } = string.Empty;
-        public int ClienteId { get; set; }
+        public int? ClienteId { get; set; }
         public int? EnderecoEntregaId { get; set; }
         public bool IsRetirada { get; set; } = false;
         public string MetodoPagamento { get; set; } = string.Empty;
         public decimal? TrocoPara { get; set; }
         public string? Observacao { get; set; }
+        public bool? EnviarParaCozinha { get; set; } // New flag for PDV
         public List<ItemPedidoDTO> Itens { get; set; } = new();
     }
 

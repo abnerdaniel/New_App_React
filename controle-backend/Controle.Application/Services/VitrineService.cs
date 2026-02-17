@@ -76,13 +76,13 @@ namespace Controle.Application.Services
                 
                 // Chain 1: Categoria -> ProdutoCategorias -> ProdutoLoja -> Produto -> Adicionais
                 .Include(c => c.Categorias)
-                .ThenInclude(cat => cat.Produtos) // Legacy fallback?
-                .ThenInclude(pl => pl.Produto) // Needed?
+                .ThenInclude(cat => cat.Produtos) 
+                .ThenInclude(pl => pl.Produto) 
                 .Include(c => c.Categorias)
                 .ThenInclude(cat => cat.Combos)
                 .ThenInclude(cb => cb.Itens)
                 .ThenInclude(cbi => cbi.ProdutoLoja)
-                .ThenInclude(pl => pl.Produto) // Ensure combo items also have product loaded if needed
+                .ThenInclude(pl => pl.Produto) 
                 .ToListAsync();
 
             // 4. Lógica de Seleção de Cardápio:
@@ -128,14 +128,7 @@ namespace Controle.Application.Services
             {
                 LojaId = loja.Id,
                 NomeLoja = loja.Nome,
-                Descricao = loja.Categoria ?? "Loja", // Using Categoria as description fallback or add Descricao to Loja? Loja has no Descricao! Wait, Loja entity has no Descricao? 
-                // Loja entity: public string? Categoria { get; set; }
-                // Let's check Loja entity again. Step 450.
-                // Loja entity has no Descricao field! It has Categoria.
-                // Okay, I will use Categoria as Categoria and leave Descricao empty or use a default.
-                // Wait, LojaResumoDTO has Descricao. Where does it come from? 
-                // In ListarLojasAtivasAsync it is set to "".
-                
+                Descricao = loja.Categoria ?? "Loja", 
                 LogoUrl = loja.LogoUrl,
                 CapaUrl = loja.CapaUrl,
                 Avaliacao = loja.Avaliacao,
@@ -158,8 +151,7 @@ namespace Controle.Application.Services
                         Nome = c.Nome,
                         Produtos = c.ProdutoCategorias
                             .Select(pc => pc.ProdutoLoja)
-                            .Where(p => p != null && p.LojaId == lojaId) // Ensure correct store and not null
-                            // Execute query to memory first to allow complex mapping and logging
+                            .Where(p => p != null && p.LojaId == lojaId) 
                             .ToList() 
                             .Select(p => 
                             {
@@ -190,11 +182,9 @@ namespace Controle.Application.Services
                                         .Where(ex => !ex.Esgotado) 
                                         .ToList() ?? new List<ProdutoLojaDTO>()
                                 };
-                                //Console.WriteLine($"[DEBUG VITRINE] Produto: {prodDto.Nome}, ID: {prodDto.Id}, Disponivel (DB): {p.Disponivel}, Disponivel (DTO): {prodDto.Disponivel}");
                                 return prodDto;
                             }).ToList(),
                         Combos = c.Combos
-                        // Removed filtering: .Where(cb => cb.Ativo)
                         .Select(cb => new ComboDTO
                         {
                             Id = cb.Id,
@@ -202,7 +192,7 @@ namespace Controle.Application.Services
                             Descricao = cb.Descricao,
                             Preco = cb.Preco,
                             ImagemUrl = cb.ImagemUrl,
-                            Ativo = cb.Ativo, // Map Status
+                            Ativo = cb.Ativo, 
                             Itens = cb.Itens.Select(i => new ComboItemDTO
                             {
                                 Id = i.Id,

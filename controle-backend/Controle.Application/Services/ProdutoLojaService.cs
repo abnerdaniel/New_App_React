@@ -248,6 +248,9 @@ namespace Controle.Application.Services
             }
 
             await _produtoLojaRepository.UpdateAsync(produtoLoja);
+            await _produtoLojaRepository.UpdateAsync(produtoLoja);
         }
+
+
     }
 }

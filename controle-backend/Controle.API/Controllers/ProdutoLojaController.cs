@@ -123,5 +123,6 @@ namespace Controle.API.Controllers
             await _produtoLojaService.AtualizarCategoriasProdutoAsync(id, categoriaIds);
             return NoContent();
         }
+
     }
 }

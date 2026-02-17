@@ -53,4 +53,8 @@ public class Loja
     
     // Configuração de Delivery
     public bool AceitandoPedidos { get; set; } = true; // Se false, não aceita novos pedidos delivery
+    
+    // Automação
+    public bool AceiteAutomatico { get; set; } = false; // Se true, pedido vai direto para "Em Preparo" ao chegar
+    public bool DespachoAutomatico { get; set; } = false; // Se true, pedido vai direto para "Saiu para Entrega" ao ficar "Pronto"
 }

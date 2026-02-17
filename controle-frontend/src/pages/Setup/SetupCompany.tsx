@@ -38,7 +38,9 @@ export function SetupCompany() {
     estado: "",
     abertaManualmente: true,
     logoUrl: "",
-    capaUrl: ""
+    capaUrl: "",
+    aceiteAutomatico: false,
+    despachoAutomatico: false
   });
 
   useEffect(() => {
@@ -82,7 +84,9 @@ export function SetupCompany() {
             taxaEntregaFixa: lojaDetalhada.taxaEntregaFixa,
             abertaManualmente: lojaDetalhada.abertaManualmente,
             logoUrl: lojaDetalhada.logoUrl || "",
-            capaUrl: lojaDetalhada.capaUrl || ""
+            capaUrl: lojaDetalhada.capaUrl || "",
+            aceiteAutomatico: lojaDetalhada.aceiteAutomatico,
+            despachoAutomatico: lojaDetalhada.despachoAutomatico
           }));
         } catch (error) {
           console.error("Erro ao buscar detalhes da loja:", error);
@@ -510,22 +514,61 @@ export function SetupCompany() {
                         <h4 className="text-base font-medium text-gray-900">Status da Loja</h4>
                         <p className="text-sm text-gray-500">Defina se sua loja está aberta ou fechada para pedidos.</p>
                     </div>
-                    <div className="flex items-center">
-                         <label className="relative inline-flex items-center cursor-pointer">
+                     <div className="flex items-center">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                             <input 
+                                 type="checkbox" 
+                                 name="abertaManualmente"
+                                 checked={formData.abertaManualmente === true} 
+                                 onChange={(e) => setFormData((prev: any) => ({ ...prev, abertaManualmente: e.target.checked }))}
+                                 className="sr-only peer"
+                             />
+                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                             <span className="ml-3 text-sm font-medium text-gray-900">{formData.abertaManualmente ? 'Aberta' : 'Fechada'}</span>
+                         </label>
+                     </div>
+                 </div>
+             </div>
+             
+             {/* Automação de Pedidos */}
+             <div className="mt-4">
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <h4 className="text-base font-medium text-blue-900 mb-3">Automação de Pedidos</h4>
+                    <div className="flex flex-col gap-3">
+                        
+                        <label className="flex items-center cursor-pointer">
                             <input 
                                 type="checkbox" 
-                                name="abertaManualmente"
-                                checked={formData.abertaManualmente === true} 
-                                onChange={(e) => setFormData((prev: any) => ({ ...prev, abertaManualmente: e.target.checked }))}
-                                className="sr-only peer"
+                                name="aceiteAutomatico"
+                                checked={formData.aceiteAutomatico === true} 
+                                onChange={(e) => setFormData((prev: any) => ({ ...prev, aceiteAutomatico: e.target.checked }))}
+                                className="w-4 h-4 text-brand-primary bg-gray-100 border-gray-300 rounded focus:ring-brand-primary"
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
-                            <span className="ml-3 text-sm font-medium text-gray-900">{formData.abertaManualmente ? 'Aberta' : 'Fechada'}</span>
+                            <div className="ml-3">
+                                <span className="text-sm font-medium text-gray-900">Aceitar pedidos automaticamente</span>
+                                <p className="text-xs text-gray-500">Novos pedidos irão direto para "Em Preparo".</p>
+                            </div>
                         </label>
+
+                        <label className="flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                name="despachoAutomatico"
+                                checked={formData.despachoAutomatico === true} 
+                                onChange={(e) => setFormData((prev: any) => ({ ...prev, despachoAutomatico: e.target.checked }))}
+                                className="w-4 h-4 text-brand-primary bg-gray-100 border-gray-300 rounded focus:ring-brand-primary"
+                            />
+                            <div className="ml-3">
+                                <span className="text-sm font-medium text-gray-900">Despachar pedidos prontos automaticamente</span>
+                                <p className="text-xs text-gray-500">Ao marcar como "Pronto", o sistema muda para "Saiu para Entrega".</p>
+                            </div>
+                        </label>
+
                     </div>
                 </div>
-            </div>
-          </div>
+             </div>
+
+           </div>
 
 
 

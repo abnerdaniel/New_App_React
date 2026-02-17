@@ -52,8 +52,8 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="bg-brand-primary text-white p-4 shadow-md flex justify-between items-center z-40 relative">
-      <div className="flex items-center gap-3">
+    <header className="bg-brand-primary text-white p-2 md:p-4 shadow-md flex justify-between items-center z-40 relative w-full">
+      <div className="flex items-center gap-2 md:gap-3">
           {/* Mobile Menu Button */}
           <button 
             onClick={onMobileMenuClick}
@@ -64,18 +64,18 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
           </button>
 
          {/* Logo placeholder - text based for now */}
-         <div className="bg-white text-brand-primary font-black text-xl w-10 h-10 flex items-center justify-center rounded-lg shadow-sm">
+         <div className="bg-white text-brand-primary font-black text-xl w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg shadow-sm shrink-0">
             OF
          </div>
-         <h1 className="text-xl font-bold tracking-tight">OpenFood</h1>
+         <h1 className="text-xl font-bold tracking-tight hidden md:block">OpenFood</h1>
       </div>
       {user && (
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         
         {/* Status Toggle */}
         {activeLoja && (
-            <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
-                <span className="text-xs font-semibold uppercase tracking-wider opacity-80">
+            <div className="flex items-center gap-2 bg-white/10 px-2 py-1 md:px-3 md:py-1.5 rounded-lg border border-white/20">
+                <span className="text-xs font-semibold uppercase tracking-wider opacity-80 hidden md:block">
                     {activeLoja.aberta ? 'Aberta' : 'Fechada'}
                 </span>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -95,11 +95,11 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
             <div className="relative" ref={storeMenuRef}>
                 <button 
                   onClick={() => setShowStoreMenu(!showStoreMenu)}
-                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors border border-white/20"
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-2 py-1.5 md:px-3 rounded-lg transition-colors border border-white/20"
                   title="Trocar Loja"
                 >
-                    <Store size={16} />
-                    <span className="text-sm font-semibold truncate max-w-[150px]">
+                    <Store size={18} />
+                    <span className="text-sm font-semibold truncate max-w-[150px] hidden md:block">
                         {activeLoja?.nome || "Selecione a Loja"}
                     </span>
                     <span className="text-xs text-white/50">▼</span>
@@ -134,7 +134,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
           <div className="relative">
             <button 
               onClick={() => setShowMenu(!showMenu)} 
-              className="text-white text-xl p-2 hover:bg-white/10 rounded-full transition-colors focus:outline-none"
+              className="text-white text-xl p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors focus:outline-none"
               title="Configurações"
             >
               ⚙️
@@ -166,7 +166,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
             </div>
             <button 
                 onClick={handleLogout} 
-                className="bg-white/10 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white hover:text-brand-primary transition-all border border-white/20"
+                className="bg-white/10 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-semibold hover:bg-white hover:text-brand-primary transition-all border border-white/20 whitespace-nowrap"
             >
                 Sair
             </button>
