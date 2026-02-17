@@ -1,0 +1,84 @@
+{
+  "name": "Deploy Swarm Dinamico",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "deploy",
+        "options": {}
+      },
+      "id": "c7f2a1b3-4d5e-6f7g-8h9i-0j1k2l3m4n5o",
+      "name": "Webhook GitHub",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        460,
+        240
+      ],
+      "webhookId": "deploy-action"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.headers.authorization }}",
+              "value2": "Bearer SUASENHASECRETA"
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6",
+      "name": "Verifica Senha",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=bash /root/deploy_generico.sh {{ $json.body.service_swarm }} {{ $json.body.image }}"
+      },
+      "id": "f6e5d4c3-b2a1-0z9y-8x7w-v6u5t4s3r2q1",
+      "name": "Rodar Script SSH",
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        900,
+        220
+      ],
+      "credentials": {
+        "ssh": {
+          "id": "SELECIONE_SUA_CREDENCIAL_AQUI",
+          "name": "Servidor VPS"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook GitHub": {
+      "main": [
+        [
+          {
+            "node": "Verifica Senha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica Senha": {
+      "main": [
+        [
+          {
+            "node": "Rodar Script SSH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
