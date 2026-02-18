@@ -159,12 +159,13 @@ namespace Controle.Application.Services
             // Auto-login
             var token = GenerateJwtToken(cliente);
 
-            return Result<ClienteLoginResponseDTO>.Ok(new ClienteLoginResponseDTO
+                return Result<ClienteLoginResponseDTO>.Ok(new ClienteLoginResponseDTO
             {
                 Id = cliente.Id,
                 Nome = cliente.Nome,
                 Email = cliente.Email,
-                Token = token
+                Token = token,
+                Telefone = cliente.Telefone ?? string.Empty
             });
         }
 
@@ -188,7 +189,8 @@ namespace Controle.Application.Services
                 Id = cliente.Id,
                 Nome = cliente.Nome,
                 Email = cliente.Email,
-                Token = token
+                Token = token,
+                Telefone = cliente.Telefone ?? string.Empty
             });
         }
 
@@ -235,7 +237,8 @@ namespace Controle.Application.Services
                     Id = cliente.Id,
                     Nome = cliente.Nome,
                     Email = cliente.Email,
-                    Token = token
+                    Token = token,
+                    Telefone = cliente.Telefone ?? string.Empty
                 });
             }
             catch (InvalidJwtException ex)
@@ -246,6 +249,18 @@ namespace Controle.Application.Services
             {
                 return Result<ClienteLoginResponseDTO>.Fail($"Erro ao processar login com Google: {ex.Message}");
             }
+        }
+
+        public async Task<Result> UpdateProfileAsync(int clienteId, UpdateClienteProfileDTO dto)
+        {
+            var cliente = await _clienteFinalRepository.GetByIdAsync(clienteId);
+            if (cliente == null) return Result.Fail("Cliente não encontrado.");
+
+            cliente.Nome = dto.Nome;
+            cliente.Telefone = dto.Telefone;
+
+            await _clienteFinalRepository.UpdateAsync(cliente);
+            return Result.Ok();
         }
 
 

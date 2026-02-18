@@ -7,6 +7,7 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { PedidoSucesso } from './pages/PedidoSucesso';
 import { PedidoStatus } from './pages/PedidoStatus';
 import { MeusPedidos } from './pages/MeusPedidos';
+import { PerfilPage } from './pages/PerfilPage';
 
 import { CartProvider } from './context/CartContext';
 import { ClientAuthProvider } from './context/ClientAuthContext';
@@ -25,6 +26,7 @@ function App() {
               <Route path="/pedido-sucesso/:id" element={<PedidoSucesso />} />
               <Route path="/pedido/:id" element={<PedidoStatus />} />
               <Route path="/meus-pedidos" element={<MeusPedidos />} />
+              <Route path="/perfil" element={<PerfilPage />} />
             </Routes>
           </BrowserRouter>
       </CartProvider>

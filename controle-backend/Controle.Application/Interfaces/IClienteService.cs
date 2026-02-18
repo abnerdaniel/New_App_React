@@ -15,5 +15,6 @@ namespace Controle.Application.Interfaces
         Task<Result<ClienteLoginResponseDTO>> LoginWithGoogleAsync(string idToken);
         Task<Result> AtualizarEnderecoAsync(int clienteId, EnderecoDTO enderecoDto);
         Task<Result> RemoverEnderecoAsync(int clienteId, int enderecoId);
+        Task<Result> UpdateProfileAsync(int clienteId, UpdateClienteProfileDTO dto);
     }
 }

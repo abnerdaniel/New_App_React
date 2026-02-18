@@ -35,5 +35,15 @@ namespace Controle.Application.DTOs
         public string Nome { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Token { get; set; } = string.Empty;
+        public string Telefone { get; set; } = string.Empty;
+    }
+
+    public class UpdateClienteProfileDTO
+    {
+        [Required(ErrorMessage = "O nome é obrigatório.")]
+        public string Nome { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "O telefone é obrigatório.")]
+        public string Telefone { get; set; } = string.Empty;
     }
 }

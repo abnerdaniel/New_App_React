@@ -6,6 +6,7 @@ interface ClientUser {
   nome: string;
   email: string;
   token: string;
+  telefone?: string;
 }
 
 interface ClientAuthContextData {
@@ -14,6 +15,7 @@ interface ClientAuthContextData {
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
+  updateProfile: (data: { nome: string; telefone: string }) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -37,9 +39,9 @@ export const ClientAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const login = async (email: string, password: string) => {
     const response = await api.post('/clientes/login', { email, password });
-    const { token, id, nome } = response.data;
+    const { token, id, nome, telefone } = response.data;
 
-    const user = { id, nome, email, token };
+    const user = { id, nome, email, token, telefone };
 
     localStorage.setItem('@App:clientToken', token);
     localStorage.setItem('@App:clientUser', JSON.stringify(user));
@@ -50,9 +52,9 @@ export const ClientAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const register = async (data: any) => {
     const response = await api.post('/clientes/cadastro', data);
-    const { token, id, nome, email } = response.data;
+    const { token, id, nome, email, telefone } = response.data;
 
-    const user = { id, nome, email, token };
+    const user = { id, nome, email, token, telefone };
 
     localStorage.setItem('@App:clientToken', token);
     localStorage.setItem('@App:clientUser', JSON.stringify(user));
@@ -63,15 +65,24 @@ export const ClientAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const loginWithGoogle = async (idToken: string) => {
     const response = await api.post('/clientes/google-login', { idToken });
-    const { token, id, nome, email } = response.data;
+    const { token, id, nome, email, telefone } = response.data;
 
-    const user = { id, nome, email, token };
+    const user = { id, nome, email, token, telefone };
 
     localStorage.setItem('@App:clientToken', token);
     localStorage.setItem('@App:clientUser', JSON.stringify(user));
 
     api.defaults.headers.Authorization = `Bearer ${token}`;
     setCliente(user);
+  };
+
+  const updateProfile = async (data: { nome: string; telefone: string }) => {
+      if (!cliente) return;
+      await api.put(`/clientes/${cliente.id}`, data);
+      
+      const updatedUser = { ...cliente, nome: data.nome, telefone: data.telefone };
+      localStorage.setItem('@App:clientUser', JSON.stringify(updatedUser));
+      setCliente(updatedUser);
   };
 
   const logout = () => {
@@ -82,7 +93,7 @@ export const ClientAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   return (
-    <ClientAuthContext.Provider value={{ cliente, loading, login, register, loginWithGoogle, logout, isAuthenticated: !!cliente }}>
+    <ClientAuthContext.Provider value={{ cliente, loading, login, register, loginWithGoogle, updateProfile, logout, isAuthenticated: !!cliente }}>
       {children}
     </ClientAuthContext.Provider>
   );

@@ -191,5 +191,20 @@ namespace Controle.API.Controllers
             var historico = await _clienteService.GetHistoricoPedidosAsync(clienteId);
             return Ok(historico);
         }
+
+        /// <summary>
+        /// Atualiza o perfil do cliente (Nome e Telefone).
+        /// </summary>
+        [HttpPut("{clienteId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateProfile(int clienteId, [FromBody] UpdateClienteProfileDTO dto)
+        {
+            var result = await _clienteService.UpdateProfileAsync(clienteId, dto);
+
+            if (!result.Success) return BadRequest(new { message = result.Error });
+
+            return Ok(new { message = "Perfil atualizado com sucesso." });
+        }
     }
 }

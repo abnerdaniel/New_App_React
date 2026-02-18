@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, User } from 'lucide-react';
 import type { Loja } from '../types';
 import { lojaService } from '../services/loja.service';
 import { StoreCard } from '../components/StoreCard';
+import { useClientAuth } from '../context/ClientAuthContext';
 
 export function Home() {
   const navigate = useNavigate();
+  const { cliente } = useClientAuth();
   const [lojas, setLojas] = useState<Loja[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -28,8 +30,17 @@ export function Home() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <header className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">O que vamos pedir hoje?</h1>
-            <div className="mt-4 relative">
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold text-gray-900">O que vamos pedir hoje?</h1>
+                <button 
+                    onClick={() => navigate(cliente ? '/perfil' : '/identificacao')}
+                    className="flex items-center gap-2 text-brand-primary font-medium hover:underline bg-white px-4 py-2 rounded-full shadow-sm"
+                >
+                    <User size={20} />
+                    {cliente ? 'Meu Perfil' : 'Entrar'}
+                </button>
+            </div>
+            <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input 
                     type="text" 

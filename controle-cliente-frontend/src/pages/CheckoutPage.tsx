@@ -5,14 +5,15 @@ import { useCart } from '../context/CartContext';
 import { ArrowLeft, MapPin, DollarSign, Store, Trash2, Edit2 } from 'lucide-react';
 import { api } from '../services/api';
 import type { Endereco, Loja } from '../types';
+import { PhoneModal } from '../components/PhoneModal';
 
 export function CheckoutPage() {
   const { cliente } = useClientAuth();
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
 
-  // const [step, setStep] = useState(1); // Unused for now, single page checkout? // 1: Endereço, 2: Pagamento
   const [loading, setLoading] = useState(false);
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
 
   // Endereço
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
@@ -56,7 +57,7 @@ export function CheckoutPage() {
 
   const loadEnderecos = async (selectNewest = false) => {
     try {
-      const response = await api.get(`/clientes/${cliente?.id}/enderecos`);
+      const response = await api.get(`/clientes/${cliente.id}/enderecos`);
       setEnderecos(response.data);
       
       if (response.data.length > 0) {
@@ -115,12 +116,12 @@ export function CheckoutPage() {
     try {
       setLoading(true);
       if (editingAddressId) {
-          await api.put(`/clientes/${cliente?.id}/enderecos/${editingAddressId}`, {
+          await api.put(`/clientes/${cliente.id}/enderecos/${editingAddressId}`, {
               ...novoEndereco,
               id: editingAddressId
           });
       } else {
-          await api.post(`/clientes/${cliente?.id}/enderecos`, novoEndereco);
+          await api.post(`/clientes/${cliente.id}/enderecos`, novoEndereco);
       }
       
       await loadEnderecos(true); // Recarrega e seleciona o novo/editado
@@ -153,7 +154,7 @@ export function CheckoutPage() {
   const handleDeleteAddress = async (enderecoId: number) => {
       if (!confirm("Tem certeza que deseja remover este endereço?")) return;
       try {
-          await api.delete(`/clientes/${cliente?.id}/enderecos/${enderecoId}`);
+          await api.delete(`/clientes/${cliente.id}/enderecos/${enderecoId}`);
           loadEnderecos();
       } catch (error) {
           console.error(error);
@@ -162,6 +163,12 @@ export function CheckoutPage() {
   };
 
   const handleFinalizarPedido = async () => {
+    // Validação de Telefone Obrigatório
+    if (!cliente?.telefone) {
+        setIsPhoneModalOpen(true);
+        return;
+    }
+
     if (!isRetirada && !selectedEndereco) {
         alert('Selecione um endereço de entrega ou escolha Retirada.');
         return;
@@ -169,7 +176,6 @@ export function CheckoutPage() {
 
     try {
         setLoading(true);
-        // Montar DTO de pedido (backend precisa de ajuste para aceitar detalhes de pagamento ou salvar como obs)
         // Montar DTO de pedido
         const itensPedido = items
             .filter(item => item.quantidade > 0) // Garante que não envia itens zerados
@@ -213,7 +219,7 @@ export function CheckoutPage() {
 
         const pedidoDto = {
             lojaId: items[0].produto.lojaId, // Assume todos da mesma loja
-            clienteId: cliente?.id,
+            clienteId: cliente.id,
             enderecoEntregaId: isRetirada ? null : selectedEndereco,
             isRetirada: isRetirada,
             itens: itensPedido,
@@ -457,6 +463,12 @@ export function CheckoutPage() {
             {loading ? 'Enviando...' : 'Confirmar Pedido'}
         </button>
       </div>
+
+      <PhoneModal 
+          isOpen={isPhoneModalOpen} 
+          onClose={() => setIsPhoneModalOpen(false)}
+          onSuccess={() => setIsPhoneModalOpen(false)}
+      />
     </div>
   );
 }
