@@ -51,18 +51,29 @@ export function LojaPage() {
         setCardapio(cardapioData);
         if (lojaData) {
             document.title = lojaData.nome;
-            localStorage.setItem('lojaId', lojaData.id); // Persist store ID
+            localStorage.setItem('lojaId', lojaData.id);
             
-            // Persist store Slug
             const slug = lojaData.slug || lojaData.nome.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
             localStorage.setItem('lojaSlug', slug);
+
+            // Dynamic Favicon for Store
+            const link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+            if (link && lojaData.logoUrl) {
+                 const img = new Image();
+                 img.src = lojaData.logoUrl;
+                 img.onload = () => { link.href = img.src; };
+            }
         }
         setLoading(false);
       });
     }
     
     return () => {
-        document.title = 'Delivery App';
+        document.title = 'Controle Food';
+        const link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+        if (link) {
+            link.href = '/logo.png';
+        }
     };
   }, [id]);
 
