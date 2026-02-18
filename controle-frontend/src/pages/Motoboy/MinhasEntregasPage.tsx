@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useWaiter } from '../../contexts/WaiterContext';
 import axios from 'axios';
 import type { Pedido } from '../../types/Pedido';
-import { MapPin, Phone, CheckCircle, Package, RefreshCw, LogOut } from 'lucide-react';
+import { MapPin, Phone, CheckCircle, Package, RefreshCw, LogOut, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { formatPhoneForWhatsapp } from '../../utils/formatters';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5024';
 
@@ -161,9 +162,21 @@ function CardEntrega({ pedido, onConfirm, isHistory }: { pedido: Pedido, onConfi
                      
                      {/* Telefone Cliente */}
                      {pedido.cliente?.telefone && (
-                         <div className="flex items-center gap-2 text-blue-600 mt-1 font-medium bg-blue-50 px-2 py-1 rounded w-fit">
-                             <Phone size={14} />
-                             <a href={`tel:${pedido.cliente.telefone}`}>{pedido.cliente.telefone}</a>
+                         <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <div className="flex items-center gap-2 text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded w-fit">
+                                <Phone size={14} />
+                                <a href={`tel:${pedido.cliente.telefone}`}>{pedido.cliente.telefone}</a>
+                            </div>
+                            <a 
+                                href={`https://wa.me/${formatPhoneForWhatsapp(pedido.cliente.telefone)}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-green-600 hover:text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200 text-sm font-bold transition-colors"
+                                title="Abrir WhatsApp"
+                            >
+                                <MessageCircle size={14} />
+                                WhatsApp
+                            </a>
                          </div>
                      )}
 

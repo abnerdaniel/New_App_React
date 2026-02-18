@@ -3,7 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getPedidosFila, updateObservacao, updateStatus } from '../../api/pedidos.api';
 import { api } from '../../api/axios';
 import type { Pedido } from '../../types/Pedido';
-import { Smile, Meh, Frown, Power, Truck, ShoppingBag, MapPin, Bike } from 'lucide-react';
+import { Smile, Meh, Frown, Power, Truck, ShoppingBag, MapPin, Bike, Phone, MessageCircle } from 'lucide-react';
+import { formatPhoneForWhatsapp } from '../../utils/formatters';
 
 export function DeliveryPage() {
   const { activeLoja } = useAuth();
@@ -281,9 +282,21 @@ export function DeliveryPage() {
                   )}
                   
                   {(pedido.cliente?.telefone) && (
-                      <span className="flex items-center gap-1 text-blue-800 font-semibold cursor-pointer" onClick={() => window.open(`tel:${pedido.cliente?.telefone}`)}>
-                          📞 {pedido.cliente.telefone}
-                      </span>
+                      <div className="flex items-center gap-2 mt-1">
+                          <span className="flex items-center gap-1 text-blue-800 font-semibold cursor-pointer text-xs bg-blue-50 px-2 py-1 rounded" onClick={() => window.open(`tel:${pedido.cliente?.telefone}`)}>
+                              <Phone size={12} /> {pedido.cliente.telefone}
+                          </span>
+                          <a 
+                                href={`https://wa.me/${formatPhoneForWhatsapp(pedido.cliente.telefone)}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-green-600 hover:text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200 text-xs font-bold transition-colors"
+                                title="Abrir WhatsApp"
+                            >
+                                <MessageCircle size={12} />
+                                WhatsApp
+                            </a>
+                      </div>
                   )}
                 </div>
 

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../api/axios';
-import { Clock, User, CheckCircle, Truck, UtensilsCrossed, AlertCircle, ChefHat, MapPin, Bike, Phone, X } from 'lucide-react';
+import { Clock, User, CheckCircle, Truck, UtensilsCrossed, AlertCircle, ChefHat, MapPin, Bike, Phone, X, MessageCircle } from 'lucide-react';
+import { formatPhoneForWhatsapp } from '../../utils/formatters';
 
 interface PedidoMonitor {
   id: number;
@@ -266,10 +267,22 @@ export function MonitorPedidos() {
                                          <div className="w-full">
                                              <p className="font-bold">{pedido.cliente.nome}</p>
                                              {pedido.cliente.telefone && (
-                                                <div className="flex items-center gap-2 text-blue-600 font-medium">
+                                            <div className="flex items-center gap-2 text-blue-600 font-medium flex-wrap">
+                                                <div className="flex items-center gap-1">
                                                     <Phone size={12} />
                                                     <a href={`tel:${pedido.cliente.telefone}`} className="hover:underline">{pedido.cliente.telefone}</a>
                                                 </div>
+                                                <a 
+                                                    href={`https://wa.me/${formatPhoneForWhatsapp(pedido.cliente.telefone)}`} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-green-600 hover:text-green-700 bg-green-50 px-1.5 py-0.5 rounded border border-green-200 text-xs font-bold transition-colors"
+                                                    title="Abrir WhatsApp"
+                                                >
+                                                    <MessageCircle size={12} />
+                                                    WhatsApp
+                                                </a>
+                                            </div>
                                              )}
                                          </div>
                                      </div>
