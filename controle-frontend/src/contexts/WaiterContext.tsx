@@ -1,6 +1,21 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import axios from 'axios';
-import { type Mesa } from '../services/mesas';
+
+// Import Mesa type if available, otherwise define local or import from service
+// We will import after creating service. For now, let's use 'any' or define locally to avoid circular dependency if service imports context.
+// Better: Define interface here or in types file. Service usually imports types.
+// Let's define minimal Mesa interface here to match usage.
+
+export interface Mesa {
+    id: number;
+    lojaId: string;
+    numero: number;
+    nome?: string;
+    pedidoAtualId?: number;
+    clienteNomeTemporario?: string;
+    status: string;
+    pedidoAtual?: any; 
+}
 
 interface WaiterUser {
   nome: string;
@@ -38,13 +53,13 @@ export function WaiterProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-     // Hardcoded URL for now, or import from config
+     // Use environment variable for API URL
      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5024'; 
      try {
          const response = await axios.post(`${API_URL}/api/auth/login`, { login: email, password });
          const data = response.data;
          
-         console.log('Login Response:', data); // Debugging
+         console.log('Login Response:', data);
 
          const token = data.token || data.Token;
 
@@ -59,7 +74,6 @@ export function WaiterProvider({ children }: { children: ReactNode }) {
 
             if (funcionarios.length > 0) {
                 const func = funcionarios[0];
-                // Check for lojaId, LojaId, loja_id
                 selectedLojaId = func.lojaId || func.LojaId || func.loja_id || '';
             } else if (lojas.length > 0) {
                  selectedLojaId = lojas[0].id || lojas[0].Id;
@@ -82,7 +96,7 @@ export function WaiterProvider({ children }: { children: ReactNode }) {
          }
      } catch (error: any) {
          console.error('Erro detalhado no login:', error.response?.data || error.message);
-         throw error; // Re-throw to be handled by the UI
+         throw error;
      }
   };
 

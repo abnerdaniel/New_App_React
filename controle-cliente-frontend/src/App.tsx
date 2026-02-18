@@ -11,19 +11,13 @@ import { MeusPedidos } from './pages/MeusPedidos';
 import { CartProvider } from './context/CartContext';
 import { ClientAuthProvider } from './context/ClientAuthContext';
 
-import { WaiterProvider } from './context/WaiterContext';
-import { GarcomPage } from './pages/Garcom/GarcomPage';
-import { CozinhaPage } from './pages/Cozinha/CozinhaPage';
-
 function App() {
   return (
     <ClientAuthProvider>
       <CartProvider>
-        <WaiterProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/garcom" element={<GarcomPage />} />
               <Route path="/loja/:id" element={<LojaPage />} />
               <Route path="/carrinho" element={<CartPage />} />
               <Route path="/identificacao" element={<Identificacao />} />
@@ -31,10 +25,8 @@ function App() {
               <Route path="/pedido-sucesso/:id" element={<PedidoSucesso />} />
               <Route path="/pedido/:id" element={<PedidoStatus />} />
               <Route path="/meus-pedidos" element={<MeusPedidos />} />
-              <Route path="/cozinha" element={<CozinhaPage />} />
             </Routes>
           </BrowserRouter>
-        </WaiterProvider>
       </CartProvider>
     </ClientAuthProvider>
   );

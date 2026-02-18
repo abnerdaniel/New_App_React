@@ -4,12 +4,16 @@ import { AppRoutes } from './routers/AppRoutes'
 import { AuthProvider } from './contexts/AuthContext'
 
 
+import { WaiterProvider } from './contexts/WaiterContext'
+
 function App() {
   return (
     <AuthProvider>
-      <Layout>
-        <AppRoutes />
-      </Layout>
+      <WaiterProvider>
+        <Layout>
+          <AppRoutes />
+        </Layout>
+      </WaiterProvider>
     </AuthProvider>
   )
 }

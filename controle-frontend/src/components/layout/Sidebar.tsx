@@ -26,6 +26,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
     { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
     { icon: HandPlatter, label: "Controle de Mesas", path: "/mesas" },
     { icon: Store, label: "PDV / Balcão", path: "/pdv" },
+    { icon: UtensilsCrossed, label: "Monitor de Pedidos", path: "/monitor-pedidos" },
     { icon: Bike, label: "Controle de Delivery", path: "/delivery" },
     { icon: UtensilsCrossed, label: "Cardápio", path: "/cardapio" },
     { icon: Package, label: "Inventário", path: "/estoque" },

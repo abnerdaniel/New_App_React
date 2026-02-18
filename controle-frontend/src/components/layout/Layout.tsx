@@ -11,10 +11,19 @@ interface Props {
 export function Layout({ children }: Props) {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
+  const isEmployeeLogin = location.pathname === '/login-funcionario';
+  const isGarcom = location.pathname.startsWith('/garcom');
+  const isCozinha = location.pathname === '/cozinha';
+  const isStandalone = isLoginPage || isEmployeeLogin || isGarcom || isCozinha;
+
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
 
   if (isLoginPage) {
     return <main className="page-content-full">{children}</main>;
+  }
+
+  if (isEmployeeLogin || isGarcom || isCozinha) {
+     return <main className="w-full min-h-screen bg-gray-50">{children}</main>;
   }
 
   return (

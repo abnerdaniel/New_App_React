@@ -3,12 +3,10 @@ import axios from 'axios';
 import { ArrowLeft, Trash2, Minus, Plus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useClientAuth } from '../context/ClientAuthContext';
-import { useWaiter } from '../context/WaiterContext';
 
 export function CartPage() {
   const { items, removeItem, updateQuantity, total, count, clearCart } = useCart();
   const { isAuthenticated } = useClientAuth();
-  const { isWaiterMode, mesaSelecionada } = useWaiter();
   const navigate = useNavigate();
 
   const handleFinalizar = () => {
@@ -22,52 +20,6 @@ export function CartPage() {
   /* API URL setup */
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5024'; 
   // Should ideally be in a config file
-
-  const handleLancarMesa = async () => {
-      if (!isWaiterMode || !mesaSelecionada) return;
-
-      if (!mesaSelecionada.pedidoAtualId) {
-          alert('Erro: A mesa selecionada não possui um pedido aberto. Abra a mesa primeiro.');
-          return;
-      }
-
-      try {
-          const itensDTO = items.map(item => {
-              const isCombo = item.produto.id.toString().startsWith('combo-');
-              let idProduto: number | null = null;
-              let idCombo: number | null = null;
-
-              if (isCombo) {
-                  // Formato: combo-{id}-{timestamp}
-                  const parts = item.produto.id.toString().split('-');
-                  if (parts.length >= 2) {
-                      idCombo = parseInt(parts[1]);
-                  }
-              } else {
-                  idProduto = parseInt(item.produto.id);
-              }
-
-              return {
-                  idProduto: idProduto,
-                  idCombo: idCombo,
-                  qtd: item.quantidade,
-                  adicionaisIds: item.extras?.map(e => parseInt(e.id)) || []
-              };
-          });
-
-          const token = localStorage.getItem('waiterToken');
-          await axios.post(`${API_URL}/api/pedidos/${mesaSelecionada.pedidoAtualId}/adicionar-itens`, itensDTO, {
-              headers: { Authorization: `Bearer ${token}` }
-          });
-
-          // alert(`Itens lançados na Mesa ${mesaSelecionada.numero} com sucesso!`);
-          clearCart();
-          navigate(`/loja/${localStorage.getItem('waiterLojaId')}`); // Use waiterLojaId
-      } catch (error) {
-          console.error('Erro ao lançar itens:', error);
-          alert('Falha ao lançar itens na mesa. Verifique o console ou tente novamente.');
-      }
-  };
 
   if (items.length === 0) {
     return (
@@ -175,21 +127,12 @@ export function CartPage() {
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="max-w-2xl mx-auto">
-            {isWaiterMode && mesaSelecionada ? (
-                <button 
-                    onClick={handleLancarMesa}
-                    className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100 active:scale-[0.99] duration-100 flex items-center justify-center gap-2"
-                >
-                    <span>Lançar na Mesa {mesaSelecionada?.numero}</span>
-                </button>
-            ) : (
-                <button 
-                    onClick={handleFinalizar}
-                    className="w-full bg-red-600 text-white font-bold py-3.5 rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-100 active:scale-[0.99] duration-100"
-                >
-                    Finalizar Pedido
-                </button>
-            )}
+            <button 
+                onClick={handleFinalizar}
+                className="w-full bg-red-600 text-white font-bold py-3.5 rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-100 active:scale-[0.99] duration-100"
+            >
+                Finalizar Pedido
+            </button>
         </div>
       </div>
     </div>

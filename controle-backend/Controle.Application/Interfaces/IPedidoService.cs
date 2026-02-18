@@ -15,5 +15,6 @@ namespace Controle.Application.Interfaces
         Task<Pedido> CancelarPedidoClienteAsync(int pedidoId, string motivo, int clienteId);
         Task<Pedido> AtualizarObservacaoAsync(int pedidoId, string novaObservacao);
         Task<Pedido> AdicionarItensAsync(int pedidoId, List<ItemPedidoDTO> itens);
+        Task<Pedido> AtualizarStatusItemAsync(int itemId, string novoStatus);
     }
 }

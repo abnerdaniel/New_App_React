@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { listarProdutosLoja, type ProdutoLojaItem } from '../../api/mesas.api';
 import { api } from '../../api/axios';
-import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote,  User, CheckCircle, Package } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote,  User, CheckCircle, Package, ArrowLeft } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface CartItem {
   produtoId: number; // ProdutoLojaId
@@ -10,10 +11,18 @@ interface CartItem {
   preco: number;
   quantidade: number;
   observacao?: string;
+  imagemUrl?: string;
 }
 
 export function PDVPage() {
   const { activeLoja } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Mesa State from Navigation
+  const mesaState = location.state as { mesaId: number; numeroMesa: number } | null;
+  const isMesaOrder = !!mesaState;
+
   const [produtos, setProdutos] = useState<ProdutoLojaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,74 +32,89 @@ export function PDVPage() {
   
   // Checkout State
   const [metodoPagamento, setMetodoPagamento] = useState('Dinheiro');
-  const [nomeCliente, setNomeCliente] = useState(''); // Opcional
+  const [nomeCliente, setNomeCliente] = useState(''); 
   const [observacaoPedido, setObservacaoPedido] = useState('');
   const [trocoPara, setTrocoPara] = useState('');
-  const [enviarParaCozinha, setEnviarParaCozinha] = useState(false); // Default false for PDV
+  const [enviarParaCozinha, setEnviarParaCozinha] = useState(true); 
+  const [enviarParaEntrega, setEnviarParaEntrega] = useState(false); 
   const [submitting, setSubmitting] = useState(false);
+  const [isDesktopCartOpen, setIsDesktopCartOpen] = useState(true);
 
   useEffect(() => {
     if (activeLoja?.id) {
-      loadProdutos();
+        loadProdutos();
     }
-  }, [activeLoja?.id]);
+  }, [activeLoja]);
+
+  useEffect(() => {
+    if (isMesaOrder) {
+        setEnviarParaCozinha(true);
+    }
+  }, [isMesaOrder]);
 
   const loadProdutos = async () => {
-    if (!activeLoja?.id) return;
-    try {
-      setLoading(true);
-      const data = await listarProdutosLoja(activeLoja.id);
-      setProdutos(data); 
-    } catch (error) {
-      console.error('Erro ao carregar produtos', error);
-      alert('Erro ao carregar produtos');
-    } finally {
-      setLoading(false);
-    }
+      try {
+          setLoading(true);
+          if (activeLoja?.id) {
+            const data = await listarProdutosLoja(activeLoja.id);
+            setProdutos(data);
+          }
+      } catch (error) {
+          console.error('Erro ao carregar produtos', error);
+      } finally {
+          setLoading(false);
+      }
   };
 
   const filteredProdutos = useMemo(() => {
-    return produtos.filter(p => 
-      p.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      p.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+      if (!searchTerm) return produtos;
+      const lower = searchTerm.toLowerCase();
+      return produtos.filter(p => 
+          p.nome.toLowerCase().includes(lower) || 
+          p.descricao?.toLowerCase().includes(lower) ||
+          p.categoriaNome?.toLowerCase().includes(lower)
+      );
   }, [produtos, searchTerm]);
 
   const addToCart = (produto: ProdutoLojaItem) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.produtoId === produto.id);
-      if (existing) {
-        return prev.map(item => 
-          item.produtoId === produto.id 
-            ? { ...item, quantidade: item.quantidade + 1 }
-            : item
-        );
+      setCart(prev => {
+          const existing = prev.find(item => item.produtoId === produto.id);
+          if (existing) {
+              return prev.map(item => item.produtoId === produto.id 
+                  ? { ...item, quantidade: item.quantidade + 1 } 
+                  : item
+              );
+          }
+          return [...prev, {
+              produtoId: produto.id,
+              nome: produto.nome,
+              preco: produto.preco || 0,
+              quantidade: 1,
+              imagemUrl: produto.imagemUrl
+          }];
+      });
+      if (window.innerWidth < 768) {
+        setIsCartOpen(true);
       }
-      return [...prev, {
-        produtoId: produto.id,
-        nome: produto.nome,
-        preco: produto.preco,
-        quantidade: 1
-      }];
-    });
-  };
-
-  const updateQuantity = (produtoId: number, delta: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.produtoId === produtoId) {
-        const newQtd = item.quantidade + delta;
-        return newQtd > 0 ? { ...item, quantidade: newQtd } : item;
-      }
-      return item;
-    }));
   };
 
   const removeFromCart = (produtoId: number) => {
-    setCart(prev => prev.filter(item => item.produtoId !== produtoId));
+      setCart(prev => prev.filter(item => item.produtoId !== produtoId));
+  };
+
+  const updateQuantity = (produtoId: number, delta: number) => {
+      setCart(prev => prev.map(item => {
+          if (item.produtoId === produtoId) {
+              return { ...item, quantidade: Math.max(1, item.quantidade + delta) };
+          }
+          return item;
+      }));
   };
 
   const cartTotal = cart.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
-  
+
+  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
   const handleFinalizar = async () => {
     if (cart.length === 0) return;
     if (!activeLoja?.id) return;
@@ -102,27 +126,29 @@ export function PDVPage() {
             lojaId: activeLoja.id,
             clienteId: null,
             enderecoEntregaId: null,
-            isRetirada: true,
-            metodoPagamento: metodoPagamento,
+            isRetirada: !enviarParaEntrega,
+            metodoPagamento: isMesaOrder ? 'Dinheiro' : metodoPagamento, 
             trocoPara: trocoPara ? parseFloat(trocoPara.replace(',', '.')) : null,
             observacao: `[PDV] ${observacaoPedido} ${nomeCliente ? `- Cliente: ${nomeCliente}` : ''}`,
-            enviarParaCozinha: enviarParaCozinha, // New Flag
+            NomeCliente: nomeCliente,
+            enviarParaCozinha: enviarParaCozinha, 
+            numeroMesa: mesaState?.numeroMesa || null,
             itens: cart.map(item => ({
                 idProduto: item.produtoId,
                 qtd: item.quantidade,
                 adicionaisIds: [] 
             }))
         };
-
-        await api.post('/api/pedidos', payload); // Converted to 'pedidos' plural to match Controller? 
-        // Wait, Controller is 'PedidosController' mapped to 'api/pedidos' (plural).
-        // Previous code had '/api/pedido' (singular). 
-        // User complained "venda nao finaliza". 
-        // If endpoint was wrong (404), that explains it!
-        // CHECK PedidosController.cs again. It says [Route("api/pedidos")].
-        // I WILL FIX THE ENDPOINT URL TO PLURAL HERE TOO.
         
-        alert('Venda realizada com sucesso!');
+        await api.post('/api/pedidos', payload); 
+        
+        alert(isMesaOrder ? 'Pedido enviado para a mesa!' : 'Venda realizada com sucesso!');
+        
+        if (isMesaOrder) {
+            navigate('/garcom'); 
+            return;
+        }
+
         setCart([]);
         setIsCheckoutOpen(false);
         setMetodoPagamento('Dinheiro');
@@ -130,10 +156,10 @@ export function PDVPage() {
         setObservacaoPedido('');
         setTrocoPara('');
         setEnviarParaCozinha(false);
+        setEnviarParaEntrega(false);
 
     } catch (error: any) {
         console.error('Erro ao finalizar venda', error);
-        // Better error message
         const msg = error.response?.data?.message || error.message || 'Erro ao finalizar venda.';
         alert(`Erro: ${msg}`);
     } finally {
@@ -141,21 +167,19 @@ export function PDVPage() {
     }
   };
 
-
-
-  const [isDesktopCartOpen, setIsDesktopCartOpen] = useState(true);
-
-  // ... (keep existing handleFinalizar and helper functions)
-
-  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val/100);
-
   return (
     <div className="flex flex-col md:flex-row bg-gray-50 overflow-hidden relative rounded-xl border border-gray-200 shadow-sm w-full h-[calc(100vh-6rem)] md:h-[calc(100vh-8rem)]">
       
       {/* Esquerda: Catálogo de Produtos */}
       <div className="flex-1 flex flex-col min-h-0 min-w-0">
-         {/* Barra de Busca */}
+         {/* Barra de Busca e Header */}
          <div className="bg-white p-3 border-b flex items-center gap-2 shrink-0 z-20">
+            {isMesaOrder && (
+                <button onClick={() => navigate('/garcom')} className="mr-2 p-2 hover:bg-gray-100 rounded-full text-gray-600">
+                    <ArrowLeft size={20} />
+                </button>
+            )}
+            
             <Search className="text-gray-400" size={20} />
             <input 
               type="text"
@@ -165,6 +189,11 @@ export function PDVPage() {
               onChange={e => setSearchTerm(e.target.value)}
               autoFocus
             />
+            {isMesaOrder && (
+                <div className="hidden md:flex bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold items-center gap-1">
+                    <User size={14} /> Mesa {mesaState.numeroMesa}
+                </div>
+            )}
             {/* Desktop Cart Toggle (When Closed) */}
             {!isDesktopCartOpen && (
                 <button 
@@ -218,7 +247,7 @@ export function PDVPage() {
                                             </div>
                                             
                                             <div className="mt-auto pt-2 flex justify-between items-center w-full">
-                                                <span className="font-bold text-brand-primary">{formatCurrency(produto.preco)}</span>
+                                                <span className="font-bold text-brand-primary">{formatCurrency(produto.preco || 0)}</span>
                                                 <div className="bg-blue-50 text-blue-600 p-1 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                                     <Plus size={16} />
                                                 </div>
@@ -285,6 +314,12 @@ export function PDVPage() {
                 </button>
               </div>
           </div>
+          
+          {isMesaOrder && (
+               <div className="bg-green-100 p-2 text-center text-green-800 text-xs font-bold border-b border-green-200">
+                   Adicionando à Mesa {mesaState.numeroMesa}
+               </div>
+          )}
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white min-h-0 custom-scrollbar">
               {cart.length === 0 ? (
@@ -343,42 +378,63 @@ export function PDVPage() {
                 className="w-full py-3 bg-brand-primary text-white font-bold rounded-lg hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center justify-center gap-2"
               >
                   <Banknote size={20} />
-                  Finalizar Venda
+                  {isMesaOrder ? 'Enviar para Mesa' : 'Finalizar Venda'}
               </button>
           </div>
       </div>
 
-      {/* Modal Checkout (Mantido igual) */}
+      {/* Modal Checkout */}
       {isCheckoutOpen && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-               {/* ... (Existing Checkout Modal Code) ... */}
               <div className="bg-white w-full max-w-md rounded-xl shadow-2xl p-6 animate-fade-in-down h-full md:h-auto overflow-y-auto">
                   <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                       <CreditCard size={24} className="text-blue-600" />
-                      Pagamento
+                      {isMesaOrder ? 'Confirmar Pedido' : 'Pagamento'}
                   </h3>
                   
                   <div className="space-y-4">
-                      <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Forma de Pagamento</label>
-                          <div className="grid grid-cols-3 gap-2">
-                              {['Dinheiro', 'Cartão', 'Pix'].map(method => (
-                                  <button
-                                      key={method}
-                                      onClick={() => setMetodoPagamento(method)}
-                                      className={`py-2 rounded border text-sm font-medium transition-colors ${
-                                          metodoPagamento === method 
-                                          ? 'bg-blue-600 text-white border-blue-600' 
-                                          : 'bg-white text-gray-600 hover:bg-gray-50'
-                                      }`}
-                                  >
-                                      {method}
-                                  </button>
-                              ))}
+                      {!isMesaOrder && (
+                          <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Pedido</label>
+                              <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+                                <button 
+                                    onClick={() => setEnviarParaEntrega(false)} 
+                                    className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${!enviarParaEntrega ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    Retirada / Balcão
+                                </button>
+                                <button 
+                                    onClick={() => setEnviarParaEntrega(true)} 
+                                    className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${enviarParaEntrega ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    Entrega
+                                </button>
+                              </div>
                           </div>
-                      </div>
+                      )}
 
-                      {metodoPagamento === 'Dinheiro' && (
+                      {!isMesaOrder && (
+                          <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Forma de Pagamento</label>
+                              <div className="grid grid-cols-3 gap-2">
+                                  {['Dinheiro', 'Cartão', 'Pix'].map(method => (
+                                      <button
+                                          key={method}
+                                          onClick={() => setMetodoPagamento(method)}
+                                          className={`py-2 rounded border text-sm font-medium transition-colors ${
+                                              metodoPagamento === method 
+                                              ? 'bg-blue-600 text-white border-blue-600' 
+                                              : 'bg-white text-gray-600 hover:bg-gray-50'
+                                          }`}
+                                      >
+                                          {method}
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
+                      )}
+
+                      {(!isMesaOrder && metodoPagamento === 'Dinheiro') && (
                           <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Troco para (R$)</label>
                               <input 
@@ -391,19 +447,21 @@ export function PDVPage() {
                           </div>
                       )}
 
-                      <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Cliente (Opcional)</label>
-                          <div className="relative">
-                            <User size={16} className="absolute left-3 top-3 text-gray-400" />
-                            <input 
-                                type="text"
-                                value={nomeCliente}
-                                onChange={e => setNomeCliente(e.target.value)}
-                                placeholder="Nome para o pedido"
-                                className="w-full border p-2 pl-9 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                            />
-                          </div>
-                      </div>
+                      {!isMesaOrder && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Cliente (Opcional)</label>
+                            <div className="relative">
+                                <User size={16} className="absolute left-3 top-3 text-gray-400" />
+                                <input 
+                                    type="text"
+                                    value={nomeCliente}
+                                    onChange={e => setNomeCliente(e.target.value)}
+                                    placeholder="Nome para o pedido"
+                                    className="w-full border p-2 pl-9 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                        </div>
+                      )}
 
                       <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Observação</label>
@@ -421,8 +479,9 @@ export function PDVPage() {
                             type="checkbox" 
                             id="enviarCozinha" 
                             checked={enviarParaCozinha} 
+                            disabled={isMesaOrder} // Locked for Mesa
                             onChange={e => setEnviarParaCozinha(e.target.checked)}
-                            className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300"
+                            className="w-4 h-4 text-brand-primary rounded focus:ring-brand-primary border-gray-300 disabled:opacity-50"
                           />
                           <label htmlFor="enviarCozinha" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
                               Enviar pedido para a cozinha/bar?

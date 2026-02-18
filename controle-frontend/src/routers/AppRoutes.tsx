@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { CategoriasPage } from '../pages/Categorias/CategoriasPage'
 import { LoginPage } from '../pages/Auth/LoginPage'
+import { EmployeeLoginPage } from '../pages/Auth/EmployeeLoginPage'
 
 import { SetupCompany } from '../pages/Setup/SetupCompany'
 import { SetupEmployee } from '../pages/Setup/SetupEmployee'
@@ -17,11 +18,22 @@ import { CardapioDetalhes } from '../pages/Cardapio/CardapioDetalhes'
 import { EstoquePage } from '../pages/Estoque/EstoquePage'
 import { FinanceiroPage } from '../pages/Financeiro/FinanceiroPage'
 import { VitrinePage } from '../pages/Vitrine/VitrinePage'
+import { MonitorPedidos } from '../pages/Pedidos/MonitorPedidos'
+import { GarcomPage } from '../pages/Garcom/GarcomPage'
+import { WaiterOrderPage } from '../pages/Garcom/WaiterOrderPage'
+import { CozinhaPage } from '../pages/Cozinha/CozinhaPage'
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/login-funcionario" element={<EmployeeLoginPage />} />
+      
+      {/* Standalone Employee Apps */}
+      <Route path="/garcom" element={<GarcomPage />} />
+      <Route path="/garcom/pedido" element={<WaiterOrderPage />} />
+      <Route path="/cozinha" element={<CozinhaPage />} />
+
       <Route path="/" element={<Navigate to="/dashboard" />} />
       
       <Route path="/" element={<Navigate to="/dashboard" />} />
@@ -40,6 +52,7 @@ export function AppRoutes() {
       <Route path="/cardapio" element={<PrivateRoute><CardapioPage /></PrivateRoute>} />
       <Route path="/cardapio/:id/detalhes" element={<PrivateRoute><CardapioDetalhes /></PrivateRoute>} />
       <Route path="/estoque" element={<PrivateRoute><EstoquePage /></PrivateRoute>} />
+      <Route path="/monitor-pedidos" element={<PrivateRoute><MonitorPedidos /></PrivateRoute>} />
       <Route path="/financeiro" element={<PrivateRoute><FinanceiroPage /></PrivateRoute>} />
       <Route path="/financeiro" element={<PrivateRoute><FinanceiroPage /></PrivateRoute>} />
       

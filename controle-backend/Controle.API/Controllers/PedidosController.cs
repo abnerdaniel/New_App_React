@@ -32,6 +32,13 @@ namespace Controle.API.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> RealizarPedido([FromBody] RealizarPedidoDTO dto)
         {
+            // Tentar identificar funcionário logado
+            var funcionarioIdClaim = User.Claims.FirstOrDefault(c => c.Type == "FuncionarioId");
+            if (funcionarioIdClaim != null && int.TryParse(funcionarioIdClaim.Value, out int funcId))
+            {
+                dto.FuncionarioId = funcId;
+            }
+
             var pedido = await _pedidoService.RealizarPedidoAsync(dto);
             // Retorna 201 Created. O header Location aponta para a fila de pedidos da loja por enquanto, 
             // já que não temos um endpoint GetPedidoById específico exposto ainda (embora pudesse ser criado).
@@ -149,6 +156,26 @@ namespace Controle.API.Controllers
         {
             var pedido = await _pedidoService.AdicionarItensAsync(id, itens);
             return Ok(pedido);
+        }
+
+        /// <summary>
+        /// Atualiza o status de um ITEM do pedido.
+        /// </summary>
+        [HttpPatch("itens/{itemId}/status")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AtualizarStatusItem(int itemId, [FromBody] string novoStatus)
+        {
+            try 
+            {
+                var pedido = await _pedidoService.AtualizarStatusItemAsync(itemId, novoStatus);
+                return Ok(pedido);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

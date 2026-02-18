@@ -237,8 +237,11 @@ public class MesaService : IMesaService
     {
         var pedido = await _context.Pedidos.FindAsync(pedidoId);
         if (pedido == null) throw new DomainException("Pedido não encontrado.");
-        if (pedido.Status != "Aberto")
-            throw new DomainException("Pedido já fechado.");
+        
+        // Allow adding items if status is NOT final (Concluido/Cancelado)
+        // For Mesa, even "Entregue" is not final until payment/close.
+        if (pedido.Status == "Cancelado" || pedido.Status == "Concluido")
+            throw new DomainException("Pedido já fechado ou cancelado.");
 
         var produtoLoja = await _context.Set<ProdutoLoja>()
             .Include(pl => pl.Produto)
@@ -251,14 +254,40 @@ public class MesaService : IMesaService
             ProdutoLojaId = produtoLojaId,
             NomeProduto = produtoLoja.Produto?.Nome ?? produtoLoja.Descricao,
             PrecoVenda = produtoLoja.Preco,
-            Quantidade = quantidade
+            Quantidade = quantidade,
+            Status = "Pendente" // New items start as Pendente
         };
 
         _context.Set<PedidoItem>().Add(item);
+        
+        // If order was in a state that implies "Done" for previous items, adding a "Pendente" item 
+        // should probably revert it to "Em Preparo" or "Pendente" so it shows up in Kitchen.
+        // Actually, RecalcularStatusPedidoAsync will handle this if we call it.
+        // But here we are in MesaService.
+        // Let's manually trigger a recalc or set status? 
+        // Better to let RecalcularStatusPedidoAsync handle it.
+        // But we don't have access to PedidoService here (circular dependency if we inject it).
+        // However, MesaService HAS RecalcularStatusMesaAsync, but that updates MESA status.
+        // We need to update PEDIDO status.
+        
+        // Quick fix: Set Pedido to "Em Preparo" or "Pendente" if it was "Entregue" or "Pronto".
+        if (pedido.Status == "Entregue" || pedido.Status == "Pronto")
+        {
+            pedido.Status = "Em Preparo"; // Or "Pendente"? 
+            _context.Pedidos.Update(pedido);
+            // This ensures Kitchen sees it.
+        }
+
         await _context.SaveChangesAsync();
+        
+        // Trigger Mesa Recalc (e.g. to set to "Esperando")
+        if (pedido.NumeroMesa.HasValue)
+        {
+             await RecalcularStatusMesaAsync(pedido.NumeroMesa.Value);
+        }
     }
 
-    public async Task AtualizarStatusItemPedidoAsync(int pedidoItemId, string status)
+    public async Task<Pedido> AtualizarStatusItemPedidoAsync(int pedidoItemId, string status)
     {
         var item = await _context.Set<PedidoItem>().FindAsync(pedidoItemId);
         if (item == null) throw new DomainException("Item não encontrado.");
@@ -266,5 +295,56 @@ public class MesaService : IMesaService
         item.Status = status;
         _context.Set<PedidoItem>().Update(item);
         await _context.SaveChangesAsync();
+        
+        // Recalculate Mesa status
+        var pedido = await _context.Pedidos.FindAsync(item.PedidoId);
+        if (pedido != null && pedido.NumeroMesa.HasValue)
+        {
+             await RecalcularStatusMesaAsync(pedido.NumeroMesa.Value);
+        }
+
+        return pedido;
     }
-}
+        public async Task RecalcularStatusMesaAsync(int mesaId)
+        {
+            var mesa = await _context.Mesas
+                .Include(m => m.PedidoAtual)
+                .ThenInclude(p => p.Sacola)
+                .FirstOrDefaultAsync(m => m.Id == mesaId);
+
+            if (mesa == null) return;
+            if (mesa.PedidoAtual == null || mesa.PedidoAtual.Status == "Cancelado" || mesa.PedidoAtual.Status == "Concluido")
+            {
+                if (mesa.Status != "Livre")
+                {
+                    mesa.Status = "Livre";
+                    _context.Mesas.Update(mesa);
+                    await _context.SaveChangesAsync();
+                }
+                return;
+            }
+
+            // Lógica de Status da Mesa baseada nos Itens
+            var itens = mesa.PedidoAtual.Sacola;
+            string novoStatus = "Ocupada"; // Default if items exist
+
+            // Se tem algum item não entregue (Pendente, Em Preparo, Pronto) -> Esperando
+            if (itens.Any(i => i.Status != "Entregue" && i.Status != "Cancelado"))
+            {
+                novoStatus = "Esperando";
+            }
+            else 
+            {
+                // Todos entregues ou cancelados -> Ocupada (Comendo)
+                novoStatus = "Ocupada";
+            }
+
+            if (mesa.Status != novoStatus && mesa.Status != "Chamado" && mesa.Status != "Pagamento") 
+            {
+                mesa.Status = novoStatus;
+                _context.Mesas.Update(mesa);
+                await _context.SaveChangesAsync();
+            }
+        }
+    }
+

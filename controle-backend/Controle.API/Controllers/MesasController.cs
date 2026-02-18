@@ -16,11 +16,13 @@ namespace Controle.API.Controllers
     public class MesasController : ControllerBase
     {
         private readonly IMesaService _mesaService;
+        private readonly IPedidoService _pedidoService;
         private readonly AppDbContext _context;
 
-        public MesasController(IMesaService mesaService, AppDbContext context)
+        public MesasController(IMesaService mesaService, IPedidoService pedidoService, AppDbContext context)
         {
             _mesaService = mesaService;
+            _pedidoService = pedidoService;
             _context = context;
         }
 
@@ -107,7 +109,7 @@ namespace Controle.API.Controllers
         [HttpPatch("pedido-item/{itemId}/status")]
         public async Task<IActionResult> AtualizarStatusItem(int itemId, [FromBody] string status)
         {
-            await _mesaService.AtualizarStatusItemPedidoAsync(itemId, status);
+            await _pedidoService.AtualizarStatusItemAsync(itemId, status);
             return Ok();
         }
     }

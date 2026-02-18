@@ -15,11 +15,16 @@ namespace Controle.Application.Services
     {
         private readonly AppDbContext _context;
         private readonly ILojaService _lojaService;
+        private readonly IMesaService _mesaService;
 
-        public PedidoService(AppDbContext context, ILojaService lojaService)
+        public PedidoService(
+            AppDbContext context,
+            ILojaService lojaService,
+            IMesaService mesaService)
         {
             _context = context;
             _lojaService = lojaService;
+            _mesaService = mesaService;
         }
 
         public async Task<Pedido> RealizarPedidoAsync(RealizarPedidoDTO pedidoDto)
@@ -41,10 +46,13 @@ namespace Controle.Application.Services
                 }
 
                 // Validação de Endereço para Entrega
+                // REFATORADO: Permitir entrega sem endereço cadastrado (ex: Pedido Balcão/Telefone com endereço na OBS)
+                /*
                 if (!pedidoDto.IsRetirada && !pedidoDto.EnderecoEntregaId.HasValue)
                 {
                     throw new DomainException("Endereço de entrega é obrigatório para entregas.");
                 }
+                */
 
                 // Ensure Loja is tracked by the current context to avoid FK issues
                 if (_context.Entry(loja).State == EntityState.Detached)
@@ -52,20 +60,25 @@ namespace Controle.Application.Services
                     _context.Lojas.Attach(loja);
                 }
 
+                var isMesa = pedidoDto.NumeroMesa.HasValue && pedidoDto.NumeroMesa.Value > 0;
+
                 var pedido = new Pedido
                 {
-                    Loja = loja, // Set navigation property explicitly
+                    Loja = loja, 
                     LojaId = loja.Id,
                     ClienteId = pedidoDto.ClienteId,
-                    EnderecoDeEntregaId = pedidoDto.IsRetirada ? null : pedidoDto.EnderecoEntregaId,
+                    FuncionarioId = pedidoDto.FuncionarioId,
+                    EnderecoDeEntregaId = (pedidoDto.IsRetirada || isMesa) ? null : pedidoDto.EnderecoEntregaId,
                     DataVenda = DateTime.UtcNow,
-                    Status = DetermineStatus(loja, pedidoDto), // New Logic
+                    Status = DetermineStatus(loja, pedidoDto), 
                     Sacola = new List<PedidoItem>(),
-                    Descricao = pedidoDto.IsRetirada ? "Retirada em Loja" : "Pedido via App",
+                    // Use NomeCliente se informado, senão usa padrão
+                    Descricao = pedidoDto.NomeCliente ?? ((pedidoDto.IsRetirada || isMesa) ? (isMesa ? $"Mesa {pedidoDto.NumeroMesa}" : "Retirada em Loja") : "Pedido via App"),
                     MetodoPagamento = pedidoDto.MetodoPagamento,
                     TrocoPara = pedidoDto.TrocoPara,
                     Observacao = pedidoDto.Observacao,
-                    IsRetirada = pedidoDto.IsRetirada
+                    IsRetirada = pedidoDto.IsRetirada || isMesa, // Force Retirada if Mesa
+                    NumeroMesa = pedidoDto.NumeroMesa
                 };
 
                 // Taxa de entrega da loja ou padrão 5.00 (Se retirada = 0)
@@ -195,7 +208,7 @@ namespace Controle.Application.Services
                         var pedidoItem = new PedidoItem
                         {
                             ProdutoLojaId = produtoLoja.Id,
-                            NomeProduto = produtoLoja.Descricao,
+                            NomeProduto = produtoLoja.Produto?.Nome ?? produtoLoja.Descricao ?? "Produto sem nome",
                             PrecoVenda = produtoLoja.Preco,
                             Quantidade = itemDto.Qtd,
                             Adicionais = new List<PedidoItemAdicional>()
@@ -279,6 +292,14 @@ namespace Controle.Application.Services
                 .Include(p => p.Loja)
                 .Include(p => p.Sacola)
                     .ThenInclude(s => s.Adicionais)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.ProdutoLoja)
+                        .ThenInclude(pl => pl.Produto)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.Combo)
+                        .ThenInclude(c => c.Itens)
+                            .ThenInclude(ci => ci.ProdutoLoja)
+                                .ThenInclude(pl => pl.Produto)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
@@ -289,6 +310,15 @@ namespace Controle.Application.Services
                 .Where(p => p.ClienteId == clienteId)
                 .Include(p => p.Loja)
                 .Include(p => p.Sacola)
+                    .ThenInclude(s => s.Adicionais)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.ProdutoLoja)
+                        .ThenInclude(pl => pl.Produto)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.Combo)
+                        .ThenInclude(c => c.Itens)
+                            .ThenInclude(ci => ci.ProdutoLoja)
+                                .ThenInclude(pl => pl.Produto)
                 .OrderByDescending(p => p.DataVenda)
                 .AsNoTracking()
                 .ToListAsync();
@@ -301,11 +331,17 @@ namespace Controle.Application.Services
             return await _context.Pedidos
                 .Where(p => p.LojaId == lojaId && statusVisiveis.Contains(p.Status))
                 .Where(p => p.Status != "Aberto" || p.Sacola.Any()) // Só mostrar 'Aberto' se tiver itens
+                .Include(p => p.Funcionario) // Include Waiter/Cashier info
                 .Include(p => p.Cliente)
                 .Include(p => p.EnderecoDeEntrega)
                 .Include(p => p.Sacola)
                     .ThenInclude(s => s.ProdutoLoja)
                         .ThenInclude(pl => pl.Produto)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.Combo)
+                        .ThenInclude(c => c.Itens)
+                            .ThenInclude(ci => ci.ProdutoLoja)
+                                .ThenInclude(pl => pl.Produto)
                 .OrderBy(p => p.DataVenda)
                 .ToListAsync();
         }
@@ -313,7 +349,8 @@ namespace Controle.Application.Services
         public async Task<Pedido> AtualizarStatusPedidoAsync(int pedidoId, string novoStatus)
         {
             var pedido = await _context.Pedidos
-                .Include(p => p.Loja) // Need Loja config
+                .Include(p => p.Loja)
+                .Include(p => p.Sacola) // Required for syncing item status
                 .FirstOrDefaultAsync(p => p.Id == pedidoId);
 
             if (pedido == null) throw new DomainException("Pedido não encontrado.");
@@ -323,14 +360,23 @@ namespace Controle.Application.Services
             // Auto-Dispatch Logic
             if (novoStatus == "Pronto" && (pedido.Loja?.DespachoAutomatico == true))
             {
-                // Verifica se é entrega (não retirada) para mudar para "Saiu para Entrega"
-                // Se for Retirada, "Pronto" é o estado final antes de "Entregue/Concluido"? 
-                // Geralmente Retirada: Pronto -> Entregue.
-                // Entrega: Pronto -> Saiu para Entrega -> Entregue.
-                
                 if (!pedido.IsRetirada)
                 {
                     pedido.Status = "Saiu para Entrega";
+                }
+            }
+            
+            // Sync Items Status if Order is Finalized/Delivered
+            if (novoStatus == "Entregue" || novoStatus == "Concluido" || novoStatus == "Cancelado")
+            {
+                foreach(var item in pedido.Sacola)
+                {
+                    // Only update if not already in a final state (or force update)
+                    if (item.Status != novoStatus)
+                    {
+                        item.Status = novoStatus;
+                         // _context.Entry(item).State = EntityState.Modified; // Ensure tracking
+                    }
                 }
             }
 
@@ -576,10 +622,26 @@ namespace Controle.Application.Services
                     .Include(p => p.Loja)
                     .Include(p => p.Sacola)
                     .FirstOrDefaultAsync(p => p.Id == pedidoId);
-
+                
                 if (pedido == null) throw new DomainException("Pedido não encontrado.");
-                if (pedido.Status != "Aberto" && pedido.Status != "Pendente" && pedido.Status != "Em Preparo") 
-                    throw new DomainException($"Não é possível adicionar itens a um pedido com status {pedido.Status}.");
+
+                // RELAXED VALIDATION: Allow adding items to "Entregue" only if it is a Mesa/Local order
+                bool isMesa = (pedido.NumeroMesa.HasValue && pedido.NumeroMesa > 0);
+                var statusRestritivos = new[] { "Cancelado", "Concluido" }; // Concluido might be final-final?
+                
+                // If it's NOT a Mesa, keep strict validation (or maybe allow Delivery too? usually not).
+                // Let's allow "Entregue" for Mesa.
+                if (statusRestritivos.Contains(pedido.Status))
+                {
+                     throw new DomainException($"Não é possível adicionar itens a um pedido com status {pedido.Status}.");
+                }
+
+                // If Delivery/Balcão (Not Mesa) and status is "Entregue" or "Saiu para Entrega", prevent adding?
+                // User complaint was specific to Mesa. Let's be permissive for Mesa.
+                if (!isMesa && (pedido.Status == "Entregue" || pedido.Status == "Saiu para Entrega"))
+                {
+                     throw new DomainException($"Não é possível adicionar itens a um pedido de Delivery/Balcão já entregue.");
+                }
 
                 var loja = pedido.Loja;
                 if (loja == null) throw new DomainException("Loja não encontrada.");
@@ -600,8 +662,15 @@ namespace Controle.Application.Services
 
                         foreach (var comboItem in combo.Itens)
                         {
+                           // Smart Lookup for Combo Item
+                           var globalProductId = comboItem.ProdutoLoja?.ProdutoId 
+                                                 ?? (await _context.ProdutosLojas.AsNoTracking()
+                                                    .Where(pl => pl.Id == comboItem.ProdutoLojaId)
+                                                    .Select(pl => pl.ProdutoId)
+                                                    .FirstOrDefaultAsync());
+
                            var produtoLojaAtivo = await _context.ProdutosLojas
-                                .Where(pl => pl.LojaId == loja.Id && pl.ProdutoId == (comboItem.ProdutoLoja.ProdutoId))
+                                .Where(pl => pl.LojaId == loja.Id && pl.ProdutoId == globalProductId)
                                 .OrderByDescending(pl => pl.Estoque ?? 0)
                                 .FirstOrDefaultAsync();
 
@@ -622,7 +691,8 @@ namespace Controle.Application.Services
                             ComboId = combo.Id,
                             NomeProduto = combo.Nome,
                             PrecoVenda = combo.Preco,
-                            Quantidade = itemDto.Qtd
+                            Quantidade = itemDto.Qtd,
+                            Status = (loja.AceiteAutomatico ? "Em Preparo" : "Aguardando Aceitação") // Set initial status
                         };
                         pedido.Sacola.Add(pedidoItem);
                         valorAdicional += (decimal)pedidoItem.PrecoVenda * pedidoItem.Quantidade;
@@ -642,10 +712,11 @@ namespace Controle.Application.Services
                         var pedidoItem = new PedidoItem
                         {
                             ProdutoLojaId = produtoLoja.Id,
-                            NomeProduto = produtoLoja.Descricao,
+                            NomeProduto = produtoLoja.Produto?.Nome ?? produtoLoja.Descricao ?? "Produto sem nome",
                             PrecoVenda = produtoLoja.Preco,
                             Quantidade = itemDto.Qtd,
-                            Adicionais = new List<PedidoItemAdicional>()
+                            Adicionais = new List<PedidoItemAdicional>(),
+                            Status = (loja.AceiteAutomatico ? "Em Preparo" : "Aguardando Aceitação") // Set initial status
                         };
 
                         // Adicionais
@@ -690,6 +761,12 @@ namespace Controle.Application.Services
                 pedido.ValorTotal = (pedido.ValorTotal ?? 0) + (int)valorAdicional;
                 pedido.Quantidade += quantidadeAdicional;
 
+                // UPDATE ORDER STATUS to ensure Kitchen sees the new items
+                if (pedido.Status == "Entregue" || pedido.Status == "Pronto" || pedido.Status == "Saiu para Entrega")
+                {
+                     pedido.Status = loja.AceiteAutomatico ? "Em Preparo" : "Aguardando Aceitação";
+                }
+
                 _context.Pedidos.Update(pedido);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -701,6 +778,90 @@ namespace Controle.Application.Services
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+        public async Task<Pedido> AtualizarStatusItemAsync(int itemId, string novoStatus)
+        {
+            var item = await _context.Set<PedidoItem>()
+                .Include(i => i.ProdutoLoja)
+                .FirstOrDefaultAsync(i => i.Id == itemId);
+
+            if (item == null) throw new DomainException("Item não encontrado.");
+
+            item.Status = novoStatus;
+            _context.Set<PedidoItem>().Update(item);
+            await _context.SaveChangesAsync();
+
+            // Recalcular status do Pedido
+            return await RecalcularStatusPedidoAsync(item.PedidoId);
+        }
+
+        private async Task<Pedido> RecalcularStatusPedidoAsync(int pedidoId)
+        {
+            var pedido = await _context.Pedidos
+                .Include(p => p.Sacola)
+                .Include(p => p.Loja) // Include Loja for AceiteAutomatico check
+                .FirstOrDefaultAsync(p => p.Id == pedidoId);
+            
+            if (pedido == null) throw new DomainException("Pedido não encontrado.");
+
+            var itens = pedido.Sacola;
+            string novoStatusPedido = pedido.Status;
+
+            // Logica Pedido
+            if (itens.All(i => i.Status == "Cancelado"))
+            {
+                novoStatusPedido = "Cancelado";
+            }
+            else if (itens.All(i => i.Status == "Pronto" || i.Status == "Entregue" || i.Status == "Cancelado" || i.Status == "Concluido"))
+            {
+                // Se tudo pronto/entregue, qual o status final?
+                // Se tem algo Entregue, vamos assumir que o pedido todo está caminhando para Entregue?
+                // Se TODOS sao "Entregue", entao "Entregue".
+                if (itens.All(i => i.Status == "Entregue" || i.Status == "Cancelado")) 
+                    novoStatusPedido = "Entregue";
+                else if (itens.All(i => i.Status == "Pronto" || i.Status == "Entregue" || i.Status == "Cancelado"))
+                    novoStatusPedido = "Pronto";
+            }
+            else if (itens.Any(i => i.Status == "Em Preparo"))
+            {
+                novoStatusPedido = "Em Preparo";
+            }
+            else if (itens.Any(i => string.IsNullOrEmpty(i.Status) || i.Status == "Pendente" || i.Status == "Aguardando Aceitação"))
+            {
+                // Se sobrou item pendente (ex: adicionado depois), o status volta a ser Pendente/Em Preparo
+                novoStatusPedido = (pedido.Loja != null && pedido.Loja.AceiteAutomatico) ? "Em Preparo" : "Aguardando Aceitação";
+            }
+            
+            // Logica Especial para Mesa vs Delivery (Overrides)
+            /*
+            if (pedido.IsRetirada || (pedido.NumeroMesa.HasValue && pedido.NumeroMesa > 0))
+            {
+                // Local
+                 if (itens.All(i => i.Status == "Entregue" || i.Status == "Cancelado"))
+                {
+                    novoStatusPedido = "Entregue";
+                }
+            }
+            */
+            // A lógica genérica acima já cobre bem: Se ALL Entregue -> Entregue.
+
+            if (pedido.Status != novoStatusPedido) 
+            {
+                pedido.Status = novoStatusPedido;
+                _context.Pedidos.Update(pedido);
+                await _context.SaveChangesAsync();
+            }
+
+            // Trigger Mesa Status Update
+            if (pedido.NumeroMesa.HasValue && pedido.NumeroMesa > 0)
+            {
+                await _mesaService.RecalcularStatusMesaAsync(pedido.NumeroMesa.Value);
+            }
+            {
+                await _mesaService.RecalcularStatusMesaAsync(pedido.NumeroMesa.Value);
+            }
+
+            return pedido;
         }
     }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { listarMesas, configurarMesas, atualizarApelido, abrirMesa, liberarMesa, removerItemPedido, aplicarDesconto, listarProdutosLoja, adicionarItemPedido, atualizarStatusItem, atualizarStatusMesa, type Mesa, type ProdutoLojaItem } from '../../api/mesas.api';
-import { Settings, User, CheckCircle, XCircle, Clock, ChefHat, Eye, Unlock, Trash2, Percent, Plus, Search } from 'lucide-react';
+import { Settings, User, CheckCircle, XCircle, Clock, ChefHat, Eye, Unlock, Trash2, Percent, Plus, Search, UtensilsCrossed } from 'lucide-react';
 
 export function MesasPage() {
   const { activeLoja } = useAuth();
@@ -529,9 +529,14 @@ export function MesasPage() {
                                   {/* Status Toggle */}
                                   <button 
                                     onClick={async () => {
-                                        const nextStatus = item.status === 'Pendente' ? 'Preparando' 
-                                            : item.status === 'Preparando' ? 'Entregue' 
-                                            : 'Pendente';
+                                        // Cycle: Pendente -> Em Preparo -> Pronto -> Entregue -> Pendente
+                                        const current = item.status || 'Pendente';
+                                        let nextStatus = 'Pendente';
+                                        
+                                        if (current === 'Pendente') nextStatus = 'Em Preparo';
+                                        else if (current === 'Em Preparo') nextStatus = 'Pronto';
+                                        else if (current === 'Pronto') nextStatus = 'Entregue';
+                                        else if (current === 'Entregue') nextStatus = 'Pendente'; // Loop back or stay?
                                         
                                         try {
                                             await atualizarStatusItem(item.id, nextStatus);
@@ -547,13 +552,16 @@ export function MesasPage() {
                                     className={`
                                         inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase mr-2 border transition-colors
                                         ${!item.status || item.status === 'Pendente' ? 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' : ''}
-                                        ${item.status === 'Preparando' ? 'bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-200' : ''}
-                                        ${item.status === 'Entregue' ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' : ''}
+                                        ${item.status === 'Em Preparo' ? 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200' : ''}
+                                        ${item.status === 'Pronto' ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' : ''}
+                                        ${item.status === 'Entregue' ? 'bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200' : ''}
                                     `}
                                     title="Clique para alterar status"
                                   >
-                                      {!item.status || item.status === 'Pendente' ? <Clock size={10} /> : 
-                                       item.status === 'Preparando' ? <ChefHat size={10} /> : <CheckCircle size={10} />}
+                                      {(!item.status || item.status === 'Pendente') && <Clock size={10} />}
+                                      {item.status === 'Em Preparo' && <ChefHat size={10} />}
+                                      {item.status === 'Pronto' && <CheckCircle size={10} />}
+                                      {item.status === 'Entregue' && <UtensilsCrossed size={10} />}
                                       {item.status || 'Pendente'}
                                   </button>
 
