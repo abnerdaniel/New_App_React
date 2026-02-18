@@ -10,5 +10,6 @@ namespace Controle.Application.DTOs
         public string Descricao { get; set; } = string.Empty;
         public string? ImagemUrl { get; set; }
         public string CategoriaNome { get; set; } = "Outros";
+        public bool IsCombo { get; set; }
     }
 }

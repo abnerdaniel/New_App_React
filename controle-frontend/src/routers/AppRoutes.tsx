@@ -22,6 +22,7 @@ import { MonitorPedidos } from '../pages/Pedidos/MonitorPedidos'
 import { GarcomPage } from '../pages/Garcom/GarcomPage'
 import { WaiterOrderPage } from '../pages/Garcom/WaiterOrderPage'
 import { CozinhaPage } from '../pages/Cozinha/CozinhaPage'
+import { MinhasEntregasPage } from '../pages/Motoboy/MinhasEntregasPage'
 
 export function AppRoutes() {
   return (
@@ -55,7 +56,8 @@ export function AppRoutes() {
       <Route path="/monitor-pedidos" element={<PrivateRoute><MonitorPedidos /></PrivateRoute>} />
       <Route path="/financeiro" element={<PrivateRoute><FinanceiroPage /></PrivateRoute>} />
       <Route path="/financeiro" element={<PrivateRoute><FinanceiroPage /></PrivateRoute>} />
-      
+      <Route path="/minhas-entregas" element={<MinhasEntregasPage />} />
+
       {/* Legacy/Specific */}
       <Route path="/categorias" element={<PrivateRoute><CategoriasPage /></PrivateRoute>} />
     </Routes>

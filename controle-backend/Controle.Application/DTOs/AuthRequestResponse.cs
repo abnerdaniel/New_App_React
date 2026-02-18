@@ -53,6 +53,8 @@ namespace Controle.Application.DTOs
         public Guid? LojaId { get; set; }
         public string Cargo { get; set; } = string.Empty;
         public bool Ativo { get; set; }
+        public bool AcessoSistemaCompleto { get; set; }
+        public string? Telefone { get; set; }
     }
 
     public class UsuarioResponse

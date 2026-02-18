@@ -177,5 +177,36 @@ namespace Controle.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+        [HttpPost("{pedidoId}/despachar")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> DespacharPedido(int pedidoId, [FromBody] int entregadorId)
+        {
+             try
+             {
+                var pedido = await _pedidoService.DespacharPedidoAsync(pedidoId, entregadorId);
+                return Ok(pedido);
+             }
+             catch(Exception ex)
+             {
+                 return BadRequest(new { message = ex.Message });
+             }
+        }
+
+        [HttpGet("entregador/meus-pedidos")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> MinhasEntregas()
+        {
+            var funcionarioIdClaim = User.Claims.FirstOrDefault(c => c.Type == "FuncionarioId");
+            if (funcionarioIdClaim == null || !int.TryParse(funcionarioIdClaim.Value, out int entregadorId))
+            {
+                return Unauthorized(new { message = "Funcionário não identificado." });
+            }
+            
+            var pedidos = await _pedidoService.ListarEntregasPorMotoboyAsync(entregadorId);
+            return Ok(pedidos);
+        }
     }
 }

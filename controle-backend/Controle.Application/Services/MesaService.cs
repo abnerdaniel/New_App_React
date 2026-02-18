@@ -7,16 +7,19 @@ using Controle.Domain.Entities;
 using Controle.Domain.Exceptions;
 using Controle.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Controle.Application.Services;
 
 public class MesaService : IMesaService
 {
     private readonly AppDbContext _context;
+    private readonly IServiceProvider _serviceProvider;
 
-    public MesaService(AppDbContext context)
+    public MesaService(AppDbContext context, IServiceProvider serviceProvider)
     {
         _context = context;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task<IEnumerable<Mesa>> ListarMesasAsync(Guid lojaId)
@@ -201,6 +204,13 @@ public class MesaService : IMesaService
 
         _context.Set<PedidoItem>().Remove(item);
         await _context.SaveChangesAsync();
+
+        // Recalcular Valor Total do Pedido
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var pedidoService = scope.ServiceProvider.GetRequiredService<IPedidoService>();
+            await pedidoService.RecalcularValorTotalAsync(item.PedidoId);
+        }
     }
 
     public async Task AplicarDescontoAsync(int pedidoId, int desconto)
@@ -213,12 +223,19 @@ public class MesaService : IMesaService
         pedido.Desconto = desconto;
         _context.Pedidos.Update(pedido);
         await _context.SaveChangesAsync();
+
+        // Recalcular Valor Total do Pedido
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var pedidoService = scope.ServiceProvider.GetRequiredService<IPedidoService>();
+            await pedidoService.RecalcularValorTotalAsync(pedidoId);
+        }
     }
 
     public async Task<IEnumerable<Controle.Application.DTOs.ProdutoLojaDto>> ListarProdutosLojaAsync(Guid lojaId)
     {
-        return await _context.Set<ProdutoLoja>()
-            .Where(pl => pl.LojaId == lojaId) // Removed Disponivel check for debugging
+        var produtos = await _context.Set<ProdutoLoja>()
+            .Where(pl => pl.LojaId == lojaId)
             .Include(pl => pl.Produto)
             .Include(pl => pl.Categoria)
             .Select(pl => new Controle.Application.DTOs.ProdutoLojaDto {
@@ -227,61 +244,54 @@ public class MesaService : IMesaService
                 Preco = pl.Preco,
                 Descricao = pl.Descricao,
                 ImagemUrl = pl.ImagemUrl ?? (pl.Produto != null ? pl.Produto.URL_Imagem : null),
-                CategoriaNome = pl.Categoria != null ? pl.Categoria.Nome : (pl.Produto != null ? pl.Produto.Tipo : "Outros")
+                CategoriaNome = pl.Categoria != null ? pl.Categoria.Nome : (pl.Produto != null ? pl.Produto.Tipo : "Outros"),
+                IsCombo = false
             })
-            .OrderBy(p => p.Nome)
             .ToListAsync();
+
+        var combos = await _context.Combos
+            .Where(c => c.LojaId == lojaId && c.Ativo)
+            .Select(c => new Controle.Application.DTOs.ProdutoLojaDto {
+                Id = c.Id,
+                Nome = c.Nome,
+                Preco = c.Preco,
+                Descricao = c.Descricao ?? "Combo",
+                ImagemUrl = c.ImagemUrl,
+                CategoriaNome = "Combos",
+                IsCombo = true
+            })
+            .ToListAsync();
+
+        return produtos.Concat(combos).OrderBy(p => p.Nome);
     }
 
-    public async Task AdicionarItemPedidoAsync(int pedidoId, int produtoLojaId, int quantidade)
+    public async Task AdicionarItemPedidoAsync(int pedidoId, int? produtoLojaId, int? comboId, int quantidade)
     {
-        var pedido = await _context.Pedidos.FindAsync(pedidoId);
-        if (pedido == null) throw new DomainException("Pedido não encontrado.");
-        
-        // Allow adding items if status is NOT final (Concluido/Cancelado)
-        // For Mesa, even "Entregue" is not final until payment/close.
-        if (pedido.Status == "Cancelado" || pedido.Status == "Concluido")
-            throw new DomainException("Pedido já fechado ou cancelado.");
-
-        var produtoLoja = await _context.Set<ProdutoLoja>()
-            .Include(pl => pl.Produto)
-            .FirstOrDefaultAsync(pl => pl.Id == produtoLojaId);
-        if (produtoLoja == null) throw new DomainException("Produto não encontrado.");
-
-        var item = new PedidoItem
+        // Delegate to PedidoService to ensure consistent validation, stock calculation, and price updating.
+        using (var scope = _serviceProvider.CreateScope())
         {
-            PedidoId = pedidoId,
-            ProdutoLojaId = produtoLojaId,
-            NomeProduto = produtoLoja.Produto?.Nome ?? produtoLoja.Descricao,
-            PrecoVenda = produtoLoja.Preco,
-            Quantidade = quantidade,
-            Status = "Pendente" // New items start as Pendente
-        };
+            var pedidoService = scope.ServiceProvider.GetRequiredService<IPedidoService>();
+            var itens = new List<Controle.Application.DTOs.ItemPedidoDTO>();
 
-        _context.Set<PedidoItem>().Add(item);
-        
-        // If order was in a state that implies "Done" for previous items, adding a "Pendente" item 
-        // should probably revert it to "Em Preparo" or "Pendente" so it shows up in Kitchen.
-        // Actually, RecalcularStatusPedidoAsync will handle this if we call it.
-        // But here we are in MesaService.
-        // Let's manually trigger a recalc or set status? 
-        // Better to let RecalcularStatusPedidoAsync handle it.
-        // But we don't have access to PedidoService here (circular dependency if we inject it).
-        // However, MesaService HAS RecalcularStatusMesaAsync, but that updates MESA status.
-        // We need to update PEDIDO status.
-        
-        // Quick fix: Set Pedido to "Em Preparo" or "Pendente" if it was "Entregue" or "Pronto".
-        if (pedido.Status == "Entregue" || pedido.Status == "Pronto")
-        {
-            pedido.Status = "Em Preparo"; // Or "Pendente"? 
-            _context.Pedidos.Update(pedido);
-            // This ensures Kitchen sees it.
+            if (comboId.HasValue)
+            {
+                itens.Add(new Controle.Application.DTOs.ItemPedidoDTO { IdCombo = comboId.Value, Qtd = quantidade });
+            }
+            else if (produtoLojaId.HasValue)
+            {
+                itens.Add(new Controle.Application.DTOs.ItemPedidoDTO { IdProduto = produtoLojaId.Value, Qtd = quantidade });
+            }
+            else
+            {
+                throw new DomainException("Produto ou Combo deve ser informado.");
+            }
+
+            await pedidoService.AdicionarItensAsync(pedidoId, itens);
         }
 
-        await _context.SaveChangesAsync();
-        
-        // Trigger Mesa Recalc (e.g. to set to "Esperando")
-        if (pedido.NumeroMesa.HasValue)
+        // Trigger Mesa Recalc
+        var pedido = await _context.Pedidos.AsNoTracking().FirstOrDefaultAsync(p => p.Id == pedidoId);
+        if (pedido != null && pedido.NumeroMesa.HasValue)
         {
              await RecalcularStatusMesaAsync(pedido.NumeroMesa.Value);
         }

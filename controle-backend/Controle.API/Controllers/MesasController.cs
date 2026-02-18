@@ -102,7 +102,7 @@ namespace Controle.API.Controllers
         [HttpPost("pedido/{pedidoId}/item")]
         public async Task<IActionResult> AdicionarItem(int pedidoId, [FromBody] AdicionarItemRequest request)
         {
-            await _mesaService.AdicionarItemPedidoAsync(pedidoId, request.ProdutoLojaId, request.Quantidade);
+            await _mesaService.AdicionarItemPedidoAsync(pedidoId, request.ProdutoLojaId, request.ComboId, request.Quantidade);
             return Ok();
         }
 
@@ -132,7 +132,8 @@ namespace Controle.API.Controllers
 
     public class AdicionarItemRequest
     {
-        public int ProdutoLojaId { get; set; }
+        public int? ProdutoLojaId { get; set; }
+        public int? ComboId { get; set; }
         public int Quantidade { get; set; } = 1;
     }
 }

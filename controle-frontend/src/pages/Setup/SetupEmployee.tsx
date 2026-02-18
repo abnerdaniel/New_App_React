@@ -34,8 +34,8 @@ interface ApiError {
 }
 
 export function SetupEmployee() {
-  const { user } = useAuth();
-  // const navigate = useNavigate();
+  // Data State
+  const { user, activeLoja } = useAuth();
   
   // View State
   const [viewMode, setViewMode] = useState<'list' | 'create' | 'edit'>('list');
@@ -43,12 +43,10 @@ export function SetupEmployee() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState("");
-  
-  // Data State
+
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [lojas, setLojas] = useState<Loja[]>([]);
   const [employees, setEmployees] = useState<FuncionarioDTO[]>([]);
-  const [selectedLojaId, setSelectedLojaId] = useState<string>("");
 
   // Form State
   const [error, setError] = useState("");
@@ -67,31 +65,17 @@ export function SetupEmployee() {
 
     const loadInitialData = async () => {
       setLoading(true);
-      // console.log('Fetching initial data...');
       try {
         const [cargosRes, lojasRes] = await Promise.all([
           api.get('/api/cargos'),
           api.get(`/api/loja/usuario/${user?.id}`)
         ]);
 
-        // console.log('Cargos loaded:', cargosRes.data);
-        // console.log('Lojas loaded:', lojasRes.data);
-
         setCargos(cargosRes.data);
         setLojas(lojasRes.data);
-
-        if (lojasRes.data.length > 0) {
-          const firstLojaId = lojasRes.data[0].id;
-          // console.log('Selected Loja ID:', firstLojaId);
-          setSelectedLojaId(firstLojaId);
-          await loadEmployees(firstLojaId);
-        } else {
-            // console.warn('Nenhuma loja encontrada para o usuário.');
-        }
       } catch (error: unknown) {
         const err = error as ApiError;
         console.error("Erro detalhado:", err.response?.data);
-        // toast.error('Erro ao carregar dados. Verifique a conexão.'); // Assuming toast is available
       } finally {
         setLoading(false);
       }
@@ -102,14 +86,14 @@ export function SetupEmployee() {
     }
   }, [user]);
 
-  // 2. Load Employees when Store Filter Changes
+  // 2. Load Employees when Global Store (activeLoja) Changes
   useEffect(() => {
-    if (selectedLojaId) {
-        loadEmployees(selectedLojaId);
+    if (activeLoja?.id) {
+        loadEmployees(activeLoja.id);
     } else {
         setEmployees([]);
     }
-  }, [selectedLojaId, viewMode]); // Reload when view changes back to list
+  }, [activeLoja, viewMode]); // Reload when view changes back to list
 
   const loadEmployees = async (lojaId: string) => {
     setLoading(true);
@@ -168,7 +152,7 @@ export function SetupEmployee() {
               await api.put(`/api/funcionarios/${id}/desbloquear`);
               alert("Funcionário desbloqueado com sucesso.");
           }
-          loadEmployees(selectedLojaId); // Refresh list
+          if (activeLoja?.id) loadEmployees(activeLoja.id); // Refresh list using activeLoja
       } catch (error) {
           console.error(`Erro ao ${action}:`, error);
           alert(`Erro ao ${action} funcionário.`);
@@ -195,7 +179,7 @@ export function SetupEmployee() {
       try {
           await api.delete(`/api/funcionarios/${id}`);
           alert("Funcionário excluído com sucesso.");
-          loadEmployees(selectedLojaId);
+          if (activeLoja?.id) loadEmployees(activeLoja.id);
       } catch (error) {
           console.error("Erro ao excluir:", error);
           alert("Erro ao excluir funcionário.");
@@ -277,7 +261,7 @@ export function SetupEmployee() {
       setTimeout(() => {
           setViewMode('list');
           setSuccess("");
-          if (selectedLojaId) loadEmployees(selectedLojaId);
+          if (activeLoja?.id) loadEmployees(activeLoja.id);
       }, 1500);
 
     } catch (error: unknown) {
@@ -313,7 +297,7 @@ export function SetupEmployee() {
             {viewMode === 'list' && (
                 <button 
                     onClick={() => {
-                        setFormData({ nome: "", email: "", login: "", password: "", cargo: "", lojaId: selectedLojaId });
+                        setFormData({ nome: "", email: "", login: "", password: "", cargo: "", lojaId: activeLoja?.id || "" });
                         setViewMode('create');
                     }}
                     className="bg-brand-primary text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-brand-hover transition-all flex items-center gap-2"
@@ -336,20 +320,7 @@ export function SetupEmployee() {
         {viewMode === 'list' && (
             <div className="space-y-6">
                 
-                {/* Store Filter */}
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-                    <label className="font-semibold text-gray-700">Filtrar por Loja:</label>
-                    <select 
-                        value={selectedLojaId}
-                        onChange={(e) => setSelectedLojaId(e.target.value)}
-                        className="h-10 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                    >
-                        <option value="">Selecione uma loja...</option>
-                        {lojas.map(loja => (
-                            <option key={loja.id} value={loja.id}>{loja.nome}</option>
-                        ))}
-                    </select>
-                </div>
+
 
                 {/* Table */}
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">

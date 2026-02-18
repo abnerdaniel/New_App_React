@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getPedidosFila, updateObservacao, updateStatus } from '../../api/pedidos.api';
 import { api } from '../../api/axios';
 import type { Pedido } from '../../types/Pedido';
-import { Smile, Meh, Frown, Power, Truck, ShoppingBag, MapPin } from 'lucide-react';
+import { Smile, Meh, Frown, Power, Truck, ShoppingBag, MapPin, Bike } from 'lucide-react';
 
 export function DeliveryPage() {
   const { activeLoja } = useAuth();
@@ -12,6 +12,12 @@ export function DeliveryPage() {
   const [now, setNow] = useState(new Date());
   const [aceitandoPedidos, setAceitandoPedidos] = useState(true);
   const [togglingDelivery, setTogglingDelivery] = useState(false);
+
+  // Dispatch States
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
+  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+  const [motoboys, setMotoboys] = useState<{id: number, nome: string, telefone?: string}[]>([]);
+  const [loadingMotoboys, setLoadingMotoboys] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
@@ -50,6 +56,44 @@ export function DeliveryPage() {
     const interval = setInterval(fetchPedidos, 30000);
     return () => clearInterval(interval);
   }, [fetchPedidos, fetchLojaStatus]);
+
+  const fetchMotoboys = async () => {
+    if (!activeLoja?.id) return;
+    setLoadingMotoboys(true);
+    try {
+        const response = await api.get(`/api/funcionarios/loja/${activeLoja.id}`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const drivers = response.data.filter((f: any) => f.cargo?.toLowerCase().includes('entregador') && f.ativo);
+        setMotoboys(drivers);
+    } catch (error) {
+        console.error("Erro ao buscar entregadores", error);
+        alert("Erro ao carregar lista de entregadores.");
+    } finally {
+        setLoadingMotoboys(false);
+    }
+  };
+
+  const handleOpenDispatchModal = (pedido: Pedido) => {
+      setSelectedPedido(pedido);
+      setShowDispatchModal(true);
+      fetchMotoboys();
+  };
+
+  const handleDispatch = async (entregadorId: number) => {
+      if(!selectedPedido) return;
+      try {
+          await api.post(`/api/pedidos/${selectedPedido.id}/despachar`, entregadorId, {
+            headers: { 'Content-Type': 'application/json' }
+          });
+          setShowDispatchModal(false);
+          setSelectedPedido(null);
+          fetchPedidos();
+          // alert("Pedido despachado com sucesso!"); // Optional feedback
+      } catch (error) {
+          console.error("Erro ao despachar", error);
+          alert("Erro ao despachar pedido.");
+      }
+  };
 
   const handleToggleDelivery = async () => {
     if (!activeLoja?.id) return;
@@ -127,6 +171,7 @@ export function DeliveryPage() {
 
   if (loading && pedidos.length === 0) return <div className="p-6">Carregando...</div>;
 
+  // Rewrite return to include modal
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -226,17 +271,28 @@ export function DeliveryPage() {
                 <p className="font-semibold text-sm truncate">
                   {pedido.cliente?.nome ? `${pedido.cliente.nome}` : `Cliente #${pedido.clienteId}`}
                 </p>
-                <p className="text-xs opacity-80 truncate flex items-center gap-1 mt-0.5">
-                  {pedido.isRetirada ? (
-                    <><ShoppingBag size={12} /> Retirada na Loja</>
+                <div className="text-xs opacity-80 truncate flex flex-col gap-1 mt-0.5">
+                   {pedido.isRetirada ? (
+                    <span className="flex items-center gap-1"><ShoppingBag size={12} /> Retirada na Loja</span>
                   ) : pedido.enderecoDeEntrega ? (
-                    <><MapPin size={12} /> {pedido.enderecoDeEntrega.bairro}, {pedido.enderecoDeEntrega.logradouro}, {pedido.enderecoDeEntrega.numero}</>
+                    <span className="flex items-center gap-1"><MapPin size={12} /> {pedido.enderecoDeEntrega.bairro}, {pedido.enderecoDeEntrega.logradouro}</span>
                   ) : (
-                    <><MapPin size={12} /> Entrega (Endereço não disponível)</>
+                    <span className="flex items-center gap-1"><MapPin size={12} /> Entrega (Endereço não disponível)</span>
                   )}
-                </p>
-                {pedido.metodoPagamento && (
-                  <p className="text-xs opacity-60 mt-0.5">💳 {pedido.metodoPagamento.replace('_', ' ')}</p>
+                  
+                  {(pedido.cliente?.telefone) && (
+                      <span className="flex items-center gap-1 text-blue-800 font-semibold cursor-pointer" onClick={() => window.open(`tel:${pedido.cliente?.telefone}`)}>
+                          📞 {pedido.cliente.telefone}
+                      </span>
+                  )}
+                </div>
+
+                {/* Assigned Motoboy Info */}
+                {pedido.entregador && (
+                    <div className="mt-2 bg-white/50 p-1.5 rounded text-xs border border-purple-200">
+                        <p className="font-bold text-purple-800 flex items-center gap-1"><Bike size={12}/> {pedido.entregador.nome}</p>
+                        {pedido.entregador.telefone && <p className="text-purple-600 ml-4">{pedido.entregador.telefone}</p>}
+                    </div>
                 )}
               </div>
 
@@ -267,17 +323,25 @@ export function DeliveryPage() {
 
               {/* Actions */}
               <div className="mt-auto pt-2 flex flex-col gap-2">
-                <div className="flex justify-between items-center bg-white/60 p-2 rounded">
+                <div className="flex justify-between items-center bg-white/60 p-2 rounded flex-wrap gap-2">
                   <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${getStatusBadge(pedido.status)}`}>
                     {pedido.status}
                   </span>
-                  {pedido.status !== 'Entregue' && (
-                    <button 
-                      onClick={() => adiantarEtapa(pedido)}
-                      className="text-xs bg-black/10 hover:bg-black/20 px-3 py-1.5 rounded font-medium transition"
-                    >
-                      Avançar ▸
-                    </button>
+                  
+                  {/* Status Actions */}
+                  {pedido.status === 'Aguardando Aceitação' && (
+                       <button onClick={() => adiantarEtapa(pedido)} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded font-medium hover:bg-blue-700">Aceitar</button>
+                  )}
+                  {pedido.status === 'Em Preparo' && (
+                       <button onClick={() => adiantarEtapa(pedido)} className="text-xs bg-green-600 text-white px-3 py-1.5 rounded font-medium hover:bg-green-700">Pronto</button>
+                  )}
+                  {pedido.status === 'Pronto' && !pedido.entregadorId && (
+                      <button onClick={() => handleOpenDispatchModal(pedido)} className="text-xs bg-gray-800 text-white px-3 py-1.5 rounded font-medium hover:bg-black flex items-center gap-1">
+                          <Bike size={12}/> Despachar
+                      </button>
+                  )}
+                  {pedido.status === 'Saiu para Entrega' && (
+                       <button onClick={() => adiantarEtapa(pedido)} className="text-xs bg-green-700 text-white px-3 py-1.5 rounded font-medium hover:bg-green-800">Concluir</button>
                   )}
                 </div>
               </div>
@@ -285,6 +349,55 @@ export function DeliveryPage() {
           );
         })}
       </div>
+
+      {/* Dispatch Modal */}
+      {showDispatchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+                    <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <Bike className="text-brand-primary" />
+                        Selecionar Entregador
+                    </h2>
+                    <button onClick={() => setShowDispatchModal(false)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+                </div>
+                
+                <div className="p-6">
+                    <p className="text-sm text-gray-500 mb-4">
+                        Escolha um motoboy disponível para o pedido <strong>#{selectedPedido?.id}</strong>.
+                    </p>
+                    
+                    {loadingMotoboys ? (
+                        <div className="text-center py-8 text-gray-400">Carregando entregadores...</div>
+                    ) : motoboys.length === 0 ? (
+                        <div className="text-center py-6 text-red-500 bg-red-50 rounded-lg border border-red-100">
+                            Nenhum entregador "Entregador" ativo encontrado.
+                        </div>
+                    ) : (
+                        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                            {motoboys.map(motoboy => (
+                                <button
+                                    key={motoboy.id}
+                                    onClick={() => handleDispatch(motoboy.id)}
+                                    className="w-full flex items-center justify-between p-3 rounded-lg border hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-left group"
+                                >
+                                    <div>
+                                        <p className="font-bold text-gray-800">{motoboy.nome}</p>
+                                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                                            {motoboy.telefone || 'Sem telefone'}
+                                        </p>
+                                    </div>
+                                    <div className="opacity-0 group-hover:opacity-100 text-brand-primary font-bold">
+                                        Selecionar
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

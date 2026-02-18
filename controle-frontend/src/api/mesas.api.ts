@@ -104,6 +104,7 @@ export interface ProdutoLojaItem {
   descricao: string;
   categoriaNome: string; // Added from backend
   imagemUrl?: string; // Added from backend DTO
+  isCombo?: boolean;
 }
 
 export const listarProdutosLoja = async (lojaId: string): Promise<ProdutoLojaItem[]> => {
@@ -111,6 +112,11 @@ export const listarProdutosLoja = async (lojaId: string): Promise<ProdutoLojaIte
   return response.data;
 };
 
-export const adicionarItemPedido = async (pedidoId: number, produtoLojaId: number, quantidade: number = 1): Promise<void> => {
-  await api.post(`/api/mesas/pedido/${pedidoId}/item`, { produtoLojaId, quantidade });
+export const adicionarItemPedido = async (pedidoId: number, itemId: number, isCombo: boolean, quantidade: number = 1): Promise<void> => {
+  const payload = {
+    produtoLojaId: !isCombo ? itemId : null,
+    comboId: isCombo ? itemId : null,
+    quantidade
+  };
+  await api.post(`/api/mesas/pedido/${pedidoId}/item`, payload);
 };

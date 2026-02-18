@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWaiter } from '../../contexts/WaiterContext';
-import { ChefHat, User, Lock, ArrowRight } from 'lucide-react';
+import { ChefHat, User, Lock, ArrowRight, Bike as BikeIcon } from 'lucide-react';
 
 export function EmployeeLoginPage() {
     const navigate = useNavigate();
@@ -19,7 +19,7 @@ export function EmployeeLoginPage() {
 
         try {
             await login(email, password);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
             setError('Login falhou. Verifique suas credenciais.');
         } finally {
@@ -28,33 +28,70 @@ export function EmployeeLoginPage() {
     };
 
     if (waiterUser) {
+        const cargo = waiterUser.cargo?.toLowerCase() || '';
+        const isFullAccess = waiterUser.acessoSistemaCompleto;
+        
+        // Define visibility based on role or full access
+        const showGarcom = isFullAccess || ['garçom', 'garcom', 'atendente', 'gerente', 'admin', 'Proprietário / Sócio'].some(r => cargo.includes(r));
+        const showCozinha = isFullAccess || ['cozinha', 'cozinheiro', 'chef', 'bar', 'gerente', 'admin', 'Proprietário / Sócio'].some(r => cargo.includes(r));
+        // Show Entregas if specifically Motoboy/Entregador OR if Full Access (so Admins can see/test it)
+        const showEntregas = isFullAccess || ['entregador', 'motoboy', 'delivery', 'gerente', 'admin', 'Proprietário / Sócio'].some(r => cargo.includes(r));
+
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
                 <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md md:max-w-2xl text-center transition-all duration-300">
                     <h2 className="text-2xl font-bold text-gray-800 mb-2">Bem-vindo, {waiterUser.nome}!</h2>
                     <p className="text-gray-500 mb-8">Selecione seu perfil de acesso:</p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <button 
-                            onClick={() => navigate('/garcom')}
-                            className="flex flex-col items-center justify-center p-8 border-2 border-blue-100 bg-blue-50 rounded-xl hover:bg-blue-100 hover:border-blue-300 transition-all group aspect-square md:aspect-auto md:h-64"
-                        >
-                            <div className="bg-white p-6 rounded-full shadow-sm mb-4 group-hover:scale-110 transition-transform">
-                                <User size={48} className="text-blue-600" />
-                            </div>
-                            <span className="font-bold text-blue-800 text-lg">Garçom / Salão</span>
-                        </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-center">
+                        {showGarcom && (
+                            <button 
+                                onClick={() => navigate('/garcom')}
+                                className="flex flex-col items-center justify-center p-8 border-2 border-blue-100 bg-blue-50 rounded-xl hover:bg-blue-100 hover:border-blue-300 transition-all group aspect-square md:aspect-auto md:h-64"
+                            >
+                                <div className="bg-white p-6 rounded-full shadow-sm mb-4 group-hover:scale-110 transition-transform">
+                                    <User size={48} className="text-blue-600" />
+                                </div>
+                                <span className="font-bold text-blue-800 text-lg">Garçom / Salão</span>
+                            </button>
+                        )}
 
-                        <button 
-                            onClick={() => navigate('/cozinha')}
-                            className="flex flex-col items-center justify-center p-8 border-2 border-red-100 bg-red-50 rounded-xl hover:bg-red-100 hover:border-red-300 transition-all group aspect-square md:aspect-auto md:h-64"
-                        >
-                            <div className="bg-white p-6 rounded-full shadow-sm mb-4 group-hover:scale-110 transition-transform">
-                                <ChefHat size={48} className="text-red-600" />
-                            </div>
-                            <span className="font-bold text-red-800 text-lg">Cozinha / Bar</span>
-                        </button>
+                        {showCozinha && (
+                            <button 
+                                onClick={() => navigate('/cozinha')}
+                                className="flex flex-col items-center justify-center p-8 border-2 border-red-100 bg-red-50 rounded-xl hover:bg-red-100 hover:border-red-300 transition-all group aspect-square md:aspect-auto md:h-64"
+                            >
+                                <div className="bg-white p-6 rounded-full shadow-sm mb-4 group-hover:scale-110 transition-transform">
+                                    <ChefHat size={48} className="text-red-600" />
+                                </div>
+                                <span className="font-bold text-red-800 text-lg">Cozinha / Bar</span>
+                            </button>
+                        )}
+
+                        {showEntregas && (
+                            <button 
+                                onClick={() => navigate('/minhas-entregas')}
+                                className="flex flex-col items-center justify-center p-8 border-2 border-green-100 bg-green-50 rounded-xl hover:bg-green-100 hover:border-green-300 transition-all group aspect-square md:aspect-auto md:h-64"
+                            >
+                                <div className="bg-white p-6 rounded-full shadow-sm mb-4 group-hover:scale-110 transition-transform">
+                                    <BikeIcon size={48} className="text-green-600" />
+                                </div>
+                                <span className="font-bold text-green-800 text-lg">Entregas</span>
+                            </button>
+                        )}
                     </div>
+                    
+                    {(isFullAccess || ['admin', 'gerente', 'caixa'].some(r => cargo.includes(r))) && (
+                        <div className="mt-8 text-center bg-gray-50 p-4 rounded-lg border border-gray-100">
+                            <p className="text-sm text-gray-600 mb-2">Acesso Administrativo / Completo:</p>
+                            <button 
+                                onClick={() => navigate('/dashboard')}
+                                className="text-blue-600 hover:text-blue-800 font-medium text-sm underline"
+                            >
+                                Ir para Dashboard Principal
+                            </button>
+                        </div>
+                    )}
 
                     <div className="mt-8 pt-6 border-t">
                         <button onClick={logout} className="text-gray-400 hover:text-gray-600 text-sm flex items-center justify-center gap-2 mx-auto">

@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -22,7 +23,15 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   const location = useLocation();
 
-  const menuItems = [
+  const { activeFuncionario } = useAuth();
+  
+  // Logic: Entregador without Full Access sees ONLY "Minhas Entregas"
+  // Cargo might be "Motoboy / Entregador (Delivery)" or just "Entregador"
+  const isMotoboyRestricted = activeFuncionario?.cargo?.toLowerCase().includes("entregador") && !activeFuncionario?.acessoSistemaCompleto;
+
+  const menuItems = isMotoboyRestricted ? [
+      { icon: Bike, label: "Minhas Entregas", path: "/minhas-entregas" }
+  ] : [
     { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
     { icon: HandPlatter, label: "Controle de Mesas", path: "/mesas" },
     { icon: Store, label: "PDV / Balcão", path: "/pdv" },
@@ -108,6 +117,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                     </Link>
                 ))}
 
+                {!isMotoboyRestricted && (
                 <div className="pt-6 mt-6 border-t border-gray-100">
                     <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Configurações</p>
                     <Link
@@ -135,6 +145,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                         Minhas Lojas
                     </Link>
                 </div>
+                )}
             </div>
         </div>
       </aside>

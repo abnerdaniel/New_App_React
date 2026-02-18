@@ -98,7 +98,8 @@ namespace Controle.Application.Services
                     Cargo = cargo?.Nome ?? "Desconhecido",
                     LojaId = func.LojaId,
                     Ativo = func.Ativo, // Status do funcionário na loja
-                    DataCriacao = func.DataCriacao
+                    DataCriacao = func.DataCriacao,
+                    Telefone = func.Telefone
                 });
             }
 

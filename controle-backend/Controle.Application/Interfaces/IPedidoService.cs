@@ -16,5 +16,8 @@ namespace Controle.Application.Interfaces
         Task<Pedido> AtualizarObservacaoAsync(int pedidoId, string novaObservacao);
         Task<Pedido> AdicionarItensAsync(int pedidoId, List<ItemPedidoDTO> itens);
         Task<Pedido> AtualizarStatusItemAsync(int itemId, string novoStatus);
+        Task<Pedido> DespacharPedidoAsync(int pedidoId, int entregadorId);
+        Task<IEnumerable<Pedido>> ListarEntregasPorMotoboyAsync(int entregadorId);
+        Task RecalcularValorTotalAsync(int pedidoId);
     }
 }

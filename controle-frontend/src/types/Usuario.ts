@@ -17,6 +17,8 @@ export interface FuncionarioResumo {
   lojaId?: string;
   cargo: string;
   ativo: boolean;
+  acessoSistemaCompleto?: boolean;
+  telefone?: string;
 }
 
 export interface Usuario {

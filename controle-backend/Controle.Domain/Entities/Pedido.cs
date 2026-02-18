@@ -29,5 +29,7 @@ public class Pedido
     public string? Observacao { get; set; } = string.Empty;
     public bool IsRetirada { get; set; } // Retirada em loja
     public string? MotivoCancelamento { get; set; }
+    public int? EntregadorId { get; set; }
+    public virtual Funcionario? Entregador { get; set; }
 }
    

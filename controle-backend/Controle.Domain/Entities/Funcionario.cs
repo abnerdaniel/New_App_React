@@ -13,4 +13,6 @@ public class Funcionario
     public Guid UsuarioId { get; set; }
     public bool Ativo { get; set; } = false;// Usuario que cadastra
     public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
+    public bool AcessoSistemaCompleto { get; set; } = false;
+    public string? Telefone { get; set; }
 }

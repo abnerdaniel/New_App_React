@@ -72,9 +72,9 @@ export function MesasPage() {
     if (detailMesa?.id && activeLoja?.id) {
         const loadProdutos = async () => {
              try {
-              console.log('Buscando produtos para loja:', activeLoja.id);
+              //console.log('Buscando produtos para loja:', activeLoja.id);
               const produtos = await listarProdutosLoja(activeLoja.id);
-              console.log('Produtos retornados:', produtos);
+              //console.log('Produtos retornados:', produtos);
               setProdutosLoja(produtos);
             } catch (error) {
               console.error('Erro ao carregar produtos', error);
@@ -656,15 +656,18 @@ export function MesasPage() {
                               .map(produto => (
                                 <div key={produto.id} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 text-sm">
                                   <div className="flex-1 min-w-0">
-                                    <span className="font-medium text-gray-800 truncate">{produto.nome}</span>
-                                    <span className="text-gray-500 ml-2 text-xs">{formatCurrency(produto.preco)}</span>
+                                    <div className="flex items-center gap-2">
+                                        {produto.isCombo && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold">Combo</span>}
+                                        <span className="font-medium text-gray-800 truncate">{produto.nome}</span>
+                                    </div>
+                                    <span className="text-gray-500 text-xs">{formatCurrency(produto.preco)}</span>
                                   </div>
                                   <button
                                     onClick={async () => {
                                       if (!detailMesa.pedidoAtual) return;
                                       try {
                                         setEditLoading(true);
-                                        await adicionarItemPedido(detailMesa.pedidoAtual.id, produto.id);
+                                        await adicionarItemPedido(detailMesa.pedidoAtual.id, produto.id, !!produto.isCombo);
                                         await fetchMesas();
                                         const updatedMesas = await listarMesas(activeLoja!.id);
                                         const updated = updatedMesas.find(m => m.id === detailMesa.id);

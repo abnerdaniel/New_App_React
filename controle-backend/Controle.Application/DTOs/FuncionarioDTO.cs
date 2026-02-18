@@ -12,5 +12,6 @@ namespace Controle.Application.DTOs
         public Guid? LojaId { get; set; }
         public bool Ativo { get; set; }
         public DateTime DataCriacao { get; set; }
+        public string? Telefone { get; set; }
     }
 }

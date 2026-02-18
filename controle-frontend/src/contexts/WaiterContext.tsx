@@ -19,6 +19,8 @@ export interface Mesa {
 
 interface WaiterUser {
   nome: string;
+  cargo?: string;
+  acessoSistemaCompleto?: boolean;
 }
 
 interface WaiterContextData {
@@ -59,7 +61,7 @@ export function WaiterProvider({ children }: { children: ReactNode }) {
          const response = await axios.post(`${API_URL}/api/auth/login`, { login: email, password });
          const data = response.data;
          
-         console.log('Login Response:', data);
+         //console.log('Login Response:', data);
 
          const token = data.token || data.Token;
 
@@ -68,13 +70,15 @@ export function WaiterProvider({ children }: { children: ReactNode }) {
             
             // Determine Loja (Case insensitive check)
             let selectedLojaId = '';
+            let selectedFunc: any = null;
             
             const funcionarios = data.funcionarios || data.Funcionarios || [];
             const lojas = data.lojas || data.Lojas || [];
 
             if (funcionarios.length > 0) {
-                const func = funcionarios[0];
-                selectedLojaId = func.lojaId || func.LojaId || func.loja_id || '';
+                // For now, take the first one. ideally ask user if multiple.
+                selectedFunc = funcionarios[0];
+                selectedLojaId = selectedFunc.lojaId || selectedFunc.LojaId || selectedFunc.loja_id || '';
             } else if (lojas.length > 0) {
                  selectedLojaId = lojas[0].id || lojas[0].Id;
             }
@@ -84,7 +88,17 @@ export function WaiterProvider({ children }: { children: ReactNode }) {
                 setWaiterLojaId(selectedLojaId);
                 
                 const nome = data.nome || data.Nome;
-                const userObj = { nome };
+                
+                // Extract role info
+                const cargo = selectedFunc?.cargo || selectedFunc?.Cargo || '';
+                const acesso = selectedFunc?.acessoSistemaCompleto || selectedFunc?.AcessoSistemaCompleto || false;
+
+                const userObj: WaiterUser = { 
+                    nome,
+                    cargo,
+                    acessoSistemaCompleto: acesso
+                };
+                
                 localStorage.setItem('waiterUser', JSON.stringify(userObj));
                 setWaiterUser(userObj);
                 

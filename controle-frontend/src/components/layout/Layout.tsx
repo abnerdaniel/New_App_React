@@ -14,7 +14,8 @@ export function Layout({ children }: Props) {
   const isEmployeeLogin = location.pathname === '/login-funcionario';
   const isGarcom = location.pathname.startsWith('/garcom');
   const isCozinha = location.pathname === '/cozinha';
-  const isStandalone = isLoginPage || isEmployeeLogin || isGarcom || isCozinha;
+  const isEntregas = location.pathname === '/minhas-entregas';
+
 
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
 
@@ -22,7 +23,7 @@ export function Layout({ children }: Props) {
     return <main className="page-content-full">{children}</main>;
   }
 
-  if (isEmployeeLogin || isGarcom || isCozinha) {
+  if (isEmployeeLogin || isGarcom || isCozinha || isEntregas) {
      return <main className="w-full min-h-screen bg-gray-50">{children}</main>;
   }
 

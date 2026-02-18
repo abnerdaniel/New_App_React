@@ -11,6 +11,7 @@ interface CartItem {
   preco: number;
   quantidade: number;
   imagemUrl?: string;
+  isCombo?: boolean;
 }
 
 export function WaiterOrderPage() {
@@ -45,7 +46,7 @@ export function WaiterOrderPage() {
       loadMesaDetalhes();
   }, [activeLoja, mesaState?.mesaId, navigate]);
 
-  if (!mesaState) return null; // Conditional return AFTER hooks
+
 
   const loadProdutos = async () => {
       try {
@@ -62,10 +63,16 @@ export function WaiterOrderPage() {
   };
 
   const loadMesaDetalhes = async () => {
+      if (!mesaState) return;
       try {
           const response = await api.get(`/api/mesas/${activeLoja?.id}`);
           const mesas = response.data;
+          //console.log('Mesas API Response:', mesas);
           const currentMesa = mesas.find((m: any) => m.id === mesaState.mesaId);
+          //console.log('Current Mesa Found:', currentMesa);
+          //if (currentMesa?.pedidoAtual) {
+          //     console.log('Pedido Atual Sacola:', currentMesa.pedidoAtual.sacola);
+          //}
           setMesaConta(currentMesa);
       } catch (error) {
           console.error('Erro ao carregar detalhes da mesa', error);
@@ -96,7 +103,8 @@ export function WaiterOrderPage() {
               nome: produto.nome,
               preco: produto.preco || 0,
               quantidade: 1,
-              imagemUrl: produto.imagemUrl
+              imagemUrl: produto.imagemUrl,
+              isCombo: produto.isCombo
           }];
       });
   };
@@ -128,6 +136,7 @@ export function WaiterOrderPage() {
   const handleEnviarPedido = async () => {
     if (cart.length === 0) return;
     if (!activeLoja?.id) return;
+    if (!mesaState) return;
 
     try {
         setSubmitting(true);
@@ -144,7 +153,8 @@ export function WaiterOrderPage() {
             enviarParaCozinha: true, 
             numeroMesa: mesaState.numeroMesa,
             itens: cart.map(item => ({
-                idProduto: item.produtoId,
+                idProduto: !item.isCombo ? item.produtoId : null,
+                idCombo: item.isCombo ? item.produtoId : null,
                 qtd: item.quantidade,
                 adicionaisIds: [] 
             }))
@@ -165,6 +175,7 @@ export function WaiterOrderPage() {
   };
 
   const handleFecharConta = async () => {
+      if (!mesaState) return;
       if(!confirm(`Deseja fechar a conta da Mesa ${mesaState.numeroMesa}? Total: ${formatCurrency(existingTotal)}`)) return;
       
       try {
@@ -194,6 +205,8 @@ export function WaiterOrderPage() {
           setSubmitting(false);
       }
   };
+
+  if (!mesaState) return null;
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">

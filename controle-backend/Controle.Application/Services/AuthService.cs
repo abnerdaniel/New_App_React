@@ -62,20 +62,10 @@ namespace Controle.Application.Services
             usuario.UltimoAcesso = DateTime.UtcNow;
             await _usuarioRepository.UpdateAsync(usuario);
 
-            var token = GenerateJwtToken(usuario);
-
-            // Buscar Lojas vinculadas (Dono)
-            var lojas = await _lojaRepository.GetByUsuarioIdAsync(usuario.Id);
-            var lojasDto = lojas.Select(l => new LojaResumoDTO
-            {
-                Id = l.Id,
-                Nome = l.Nome,
-                ImagemUrl = l.LogoUrl
-            }).ToList();
-
-            // Buscar Funcionários vinculados (Equipe)
+            // Buscar Funcionários vinculados (Equipe) - FETCH BEFORE TOKEN
             var funcionarios = await _funcionarioRepository.GetByUsuarioIdAsync(usuario.Id);
             var funcionariosDto = new List<FuncionarioResumoDTO>();
+            int? primaryFuncionarioId = null;
 
             foreach (var f in funcionarios)
             {
@@ -85,9 +75,26 @@ namespace Controle.Application.Services
                     Id = f.Id,
                     LojaId = f.LojaId,
                     Cargo = cargo?.Nome ?? "Desconhecido",
-                    Ativo = f.Ativo
+                    Ativo = f.Ativo,
+                    AcessoSistemaCompleto = f.AcessoSistemaCompleto,
+                    Telefone = f.Telefone
                 });
+                
+                // Picking the first active one as primary for the token
+                if (primaryFuncionarioId == null && f.Ativo) 
+                    primaryFuncionarioId = f.Id;
             }
+
+            var token = GenerateJwtToken(usuario, primaryFuncionarioId);
+
+            // Buscar Lojas vinculadas (Dono)
+            var lojas = await _lojaRepository.GetByUsuarioIdAsync(usuario.Id);
+            var lojasDto = lojas.Select(l => new LojaResumoDTO
+            {
+                Id = l.Id,
+                Nome = l.Nome,
+                ImagemUrl = l.LogoUrl
+            }).ToList();
 
             var response = new AuthResponse
             {
@@ -263,20 +270,10 @@ namespace Controle.Application.Services
                 usuario.UltimoAcesso = DateTime.UtcNow;
                 await _usuarioRepository.UpdateAsync(usuario);
 
-                // Gera nosso JWT interno
-                var appToken = GenerateJwtToken(usuario);
-
-                // Buscar Lojas e Funcionários para retornar no DTO (igual ao Login padrão)
-                var lojas = await _lojaRepository.GetByUsuarioIdAsync(usuario.Id);
-                var lojasDto = lojas.Select(l => new LojaResumoDTO
-                {
-                    Id = l.Id,
-                    Nome = l.Nome,
-                    ImagemUrl = l.LogoUrl
-                }).ToList();
-
+                // Buscar Funcionários vinculados (Equipe) - FETCH BEFORE TOKEN
                 var funcionarios = await _funcionarioRepository.GetByUsuarioIdAsync(usuario.Id);
                 var funcionariosDto = new List<FuncionarioResumoDTO>();
+                int? primaryFuncionarioId = null;
 
                 foreach (var f in funcionarios)
                 {
@@ -286,9 +283,25 @@ namespace Controle.Application.Services
                         Id = f.Id,
                         LojaId = f.LojaId,
                         Cargo = cargo?.Nome ?? "Desconhecido",
-                        Ativo = f.Ativo
+                        Ativo = f.Ativo,
+                        AcessoSistemaCompleto = f.AcessoSistemaCompleto,
+                        Telefone = f.Telefone
                     });
+                     if (primaryFuncionarioId == null && f.Ativo) 
+                        primaryFuncionarioId = f.Id;
                 }
+
+                // Gera nosso JWT interno
+                var appToken = GenerateJwtToken(usuario, primaryFuncionarioId);
+
+                // Buscar Lojas e Funcionários para retornar no DTO (igual ao Login padrão)
+                var lojas = await _lojaRepository.GetByUsuarioIdAsync(usuario.Id);
+                var lojasDto = lojas.Select(l => new LojaResumoDTO
+                {
+                    Id = l.Id,
+                    Nome = l.Nome,
+                    ImagemUrl = l.LogoUrl
+                }).ToList();
 
                 var response = new AuthResponse
                 {
@@ -315,6 +328,8 @@ namespace Controle.Application.Services
                 return Result<AuthResponse>.Fail($"Erro ao processar login com Google: {ex.Message}");
             }
         }
+
+
 
         public async Task<UsuarioResponse?> GetUsuarioByIdAsync(Guid id)
         {
@@ -413,18 +428,23 @@ namespace Controle.Application.Services
              return Result.Ok();
         }
 
-        private string GenerateJwtToken(Usuario usuario)
+        private string GenerateJwtToken(Usuario usuario, int? funcionarioId = null)
         {
             var secretKey = _configuration["Jwt:Key"] ?? "MinhaSuperChaveSecretaParaJWT1234567890";
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
                 new Claim(ClaimTypes.Email, usuario.Email),
                 new Claim(ClaimTypes.Name, usuario.Nome)
             };
+
+            if (funcionarioId.HasValue)
+            {
+                claims.Add(new Claim("FuncionarioId", funcionarioId.Value.ToString()));
+            }
 
             var token = new JwtSecurityToken(
                 claims: claims,

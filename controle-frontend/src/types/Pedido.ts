@@ -28,6 +28,13 @@ export interface Pedido {
   cliente?: {
     id: number;
     nome: string;
+    telefone?: string;
+  };
+  entregadorId?: number;
+  entregador?: {
+    id: number;
+    nome: string;
+    telefone?: string;
   };
   descricao?: string;
   enderecoDeEntregaId?: number;
