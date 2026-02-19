@@ -146,6 +146,31 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                     </Link>
                 </div>
                 )}
+
+                <div className="mt-auto pt-6 pb-4 px-4 border-t border-gray-100">
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                        <p className="text-xs text-gray-500 font-medium mb-2">Desenvolvido por <span className="text-brand-primary font-bold">Help me Here</span></p>
+                        <div className="flex flex-col gap-2">
+                            <a 
+                                href="https://wa.me/5521991680708" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 text-xs text-brand-primary hover:text-brand-hover font-medium bg-white border border-brand-primary/20 rounded py-1.5 transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                                Suporte WhatsApp
+                            </a>
+                            <a 
+                                href="http://www.helpmehere.com.br" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                www.helpmehere.com.br
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
       </aside>

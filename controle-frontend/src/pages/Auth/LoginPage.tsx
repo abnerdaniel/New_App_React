@@ -123,6 +123,20 @@ export function LoginPage() {
             )}
         </div>
       </div>
+      
+      <div className="mt-8 text-center text-sm text-gray-400">
+        <p>Desenvolvido por <span className="font-bold text-gray-500">Help me Here</span></p>
+        <div className="flex justify-center gap-4 mt-2">
+            <a href="https://wa.me/5521991680708" target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+                Suporte (21) 99168-0708
+            </a>
+            <span className="text-gray-300">|</span>
+            <a href="http://www.helpmehere.com.br" target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors">
+                www.helpmehere.com.br
+            </a>
+        </div>
+      </div>
     </div>
   );
 }
