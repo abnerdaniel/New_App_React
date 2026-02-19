@@ -51,5 +51,26 @@ namespace Controle.API.Controllers
             var ranking = await _dashboardService.GetProdutosMaisVendidosAsync(lojaId);
             return Ok(ranking);
         }
+        /// <summary>
+        /// Obtém o resumo financeiro por período.
+        /// </summary>
+        [HttpGet("loja/{lojaId}/financeiro")]
+        [ProducesResponseType(typeof(FinanceiroResumoDTO), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetFinanceiroResumo(Guid lojaId, [FromQuery] DateTime inicio, [FromQuery] DateTime fim)
+        {
+            var resumo = await _dashboardService.GetFinanceiroResumoAsync(lojaId, inicio, fim);
+            return Ok(resumo);
+        }
+
+        /// <summary>
+        /// Obtém a lista de transações por período.
+        /// </summary>
+        [HttpGet("loja/{lojaId}/transacoes")]
+        [ProducesResponseType(typeof(IEnumerable<TransacaoDTO>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTransacoes(Guid lojaId, [FromQuery] DateTime inicio, [FromQuery] DateTime fim)
+        {
+            var transacoes = await _dashboardService.GetTransacoesAsync(lojaId, inicio, fim);
+            return Ok(transacoes);
+        }
     }
 }

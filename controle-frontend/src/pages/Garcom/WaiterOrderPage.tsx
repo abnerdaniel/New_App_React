@@ -24,7 +24,7 @@ export function WaiterOrderPage() {
 
   const [activeTab, setActiveTab] = useState<'CARDAPIO' | 'CONTA'>('CARDAPIO');
   const [produtos, setProdutos] = useState<ProdutoLojaItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false); // Unused
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   
@@ -50,7 +50,7 @@ export function WaiterOrderPage() {
 
   const loadProdutos = async () => {
       try {
-          setLoading(true);
+          // setLoading(true);
           if (activeLoja?.id) {
             const data = await listarProdutosLoja(activeLoja.id);
             setProdutos(data);
@@ -58,7 +58,7 @@ export function WaiterOrderPage() {
       } catch (error) {
           console.error('Erro ao carregar produtos', error);
       } finally {
-          setLoading(false);
+          // setLoading(false);
       }
   };
 

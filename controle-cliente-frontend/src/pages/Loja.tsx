@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom'; // Import Link
+import { useParams, Link } from 'react-router-dom'; // Import Link
 import { ArrowLeft, Star, Clock, MapPin, User, LogOut, Search } from 'lucide-react';
 import type { Loja, Categoria, Combo } from '../types';
 import { lojaService } from '../services/loja.service';
@@ -21,7 +21,7 @@ import { MiniCartWidget } from '../components/MiniCartWidget';
 
 export function LojaPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [loja, setLoja] = useState<Loja | null>(null);
   const [cardapio, setCardapio] = useState<Categoria[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null); // New State

@@ -1,11 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { ArrowLeft, Trash2, Minus, Plus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useClientAuth } from '../context/ClientAuthContext';
 
 export function CartPage() {
-  const { items, removeItem, updateQuantity, total, count, clearCart } = useCart();
+  const { items, removeItem, updateQuantity, total, count } = useCart();
   const { isAuthenticated } = useClientAuth();
   const navigate = useNavigate();
 
@@ -18,7 +17,7 @@ export function CartPage() {
   };
 
   /* API URL setup */
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5024'; 
+  // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5024'; 
   // Should ideally be in a config file
 
   if (items.length === 0) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Phone, User, Check } from 'lucide-react';
+import { Phone, User, Check } from 'lucide-react';
 import { useClientAuth } from '../context/ClientAuthContext';
 
 interface PhoneModalProps {

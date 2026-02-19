@@ -56,6 +56,7 @@ export function CheckoutPage() {
   }, [cliente]);
 
   const loadEnderecos = async (selectNewest = false) => {
+    if (!cliente) return;
     try {
       const response = await api.get(`/clientes/${cliente.id}/enderecos`);
       setEnderecos(response.data);
@@ -113,6 +114,7 @@ export function CheckoutPage() {
 
   const handleSalvarEndereco = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!cliente) return;
     try {
       setLoading(true);
       if (editingAddressId) {
@@ -153,6 +155,7 @@ export function CheckoutPage() {
 
   const handleDeleteAddress = async (enderecoId: number) => {
       if (!confirm("Tem certeza que deseja remover este endereço?")) return;
+      if (!cliente) return;
       try {
           await api.delete(`/clientes/${cliente.id}/enderecos/${enderecoId}`);
           loadEnderecos();
