@@ -75,7 +75,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
       {/* Mobile Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-[90] md:hidden"
+          className="fixed inset-0 bg-black/50 z-90 md:hidden"
           onClick={onClose} 
         />
       )}
@@ -83,7 +83,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
       {/* Sidebar Content */}
       <aside 
         className={`
-          fixed md:relative inset-y-0 left-0 z-[100] bg-white border-r border-gray-200 
+          fixed md:relative inset-y-0 left-0 z-100 bg-white border-r border-gray-200 
           transform transition-transform duration-300 ease-in-out md:transition-all
           ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64 md:translate-x-0 md:w-0 md:border-none"}
           flex flex-col

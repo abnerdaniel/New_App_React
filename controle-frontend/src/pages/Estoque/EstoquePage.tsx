@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "../../api/axios";
+import { AxiosError } from "axios";
 import { cloudinaryService } from "../../services/cloudinary.service";
 import { useAuth } from "../../contexts/AuthContext";
 import { Plus, Search, Edit2, Trash2, X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
@@ -37,6 +38,23 @@ interface ProdutoCatalogoDTO {
     imagemUrl?: string;
     lojaId?: string;
     isAdicional?: boolean;
+}
+
+interface CreateProdutoLojaPayload {
+  lojaId: number;
+  preco: number;
+  estoque: number;
+  categoriaId: number | null;
+  disponivel: boolean;
+  produtoId?: number;
+  novoProduto?: {
+    nome: string;
+    descricao: string;
+    tipo: string;
+    imagemUrl: string;
+    isAdicional: boolean;
+    adicionaisIds: number[];
+  };
 }
 
 
@@ -147,28 +165,7 @@ export function EstoquePage() {
   });
 
   // Load data when activeLoja changes
-  useEffect(() => {
-    if (activeLoja?.id) {
-      loadEstoque();
-      loadCatalogo();
-      loadCardapios();
-    } else {
-        setProdutos([]);
-        setCatalogo([]);
-        setCardapios([]);
-    }
-  }, [activeLoja]);
-
-  // Load Categories when Cardapio changes
-  useEffect(() => {
-    if (formData.cardapioId) {
-        loadCategorias(Number(formData.cardapioId));
-    } else {
-        setCategorias([]);
-    }
-  }, [formData.cardapioId]);
-
-  const loadEstoque = async () => {
+  const loadEstoque = useCallback(async () => {
     if (!activeLoja?.id) return;
     setLoading(true);
     try {
@@ -179,9 +176,9 @@ export function EstoquePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeLoja?.id]);
 
-  const loadCatalogo = async () => {
+  const loadCatalogo = useCallback(async () => {
       if (!activeLoja?.id) return;
       try {
           const res = await api.get(`/api/produtos?lojaId=${activeLoja.id}`);
@@ -189,9 +186,9 @@ export function EstoquePage() {
       } catch (error) {
           console.error("Erro ao carregar catálogo", error);
       }
-  }
+  }, [activeLoja?.id]);
 
-  const loadCardapios = async () => {
+  const loadCardapios = useCallback(async () => {
       if (!activeLoja?.id) return;
       try {
           const res = await api.get(`/api/cardapios/loja/${activeLoja.id}`);
@@ -199,16 +196,39 @@ export function EstoquePage() {
       } catch (error) {
           console.error("Erro ao carregar cardápios", error);
       }
-  }
+  }, [activeLoja?.id]);
 
-  const loadCategorias = async (cardapioId: number) => {
+  const loadCategorias = useCallback(async (cardapioId: number) => {
       try {
           const res = await api.get(`/api/categorias/cardapio/${cardapioId}`);
           setCategorias(res.data);
       } catch (error) {
           console.error("Erro ao carregar categorias", error);
       }
-  }
+  }, []);
+
+  useEffect(() => {
+    if (activeLoja?.id) {
+      loadEstoque();
+      loadCatalogo();
+      loadCardapios();
+    } else {
+        setProdutos([]);
+        setCatalogo([]);
+        setCardapios([]);
+    }
+  }, [activeLoja, loadEstoque, loadCatalogo, loadCardapios]);
+
+  // Load Categories when Cardapio changes
+  useEffect(() => {
+    if (formData.cardapioId) {
+        loadCategorias(Number(formData.cardapioId));
+    } else {
+        setCategorias([]);
+    }
+  }, [formData.cardapioId, loadCategorias]);
+
+
 
   const formatCurrencyInput = (value: string) => {
       const digits = value.replace(/\D/g, "");
@@ -244,8 +264,8 @@ export function EstoquePage() {
         alert("Produto atualizado!");
       } else {
         // Create Logic
-        const payload: any = {
-          lojaId: activeLoja.id,
+        const payload: CreateProdutoLojaPayload = {
+          lojaId: Number(activeLoja.id),
           preco: precoCentavos,
           estoque: Number(formData.estoque),
           categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
@@ -273,8 +293,10 @@ export function EstoquePage() {
       
       closeModal();
       loadEstoque();
+      loadEstoque();
       loadCatalogo(); // Recarregar catálogo pois pode ter novo produto
-    } catch (error: any) {
+    } catch (err) {
+        const error = err as AxiosError<{ message: string }>;
         console.error(error);
         alert(error.response?.data?.message || "Erro ao salvar produto.");
     }
@@ -473,7 +495,7 @@ export function EstoquePage() {
         {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center flex-shrink-0">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
                     <h3 className="text-xl font-bold text-gray-800">
                         {editingProduto ? 'Editar Produto' : 'Adicionar Produto'}
                     </h3>
@@ -620,7 +642,7 @@ export function EstoquePage() {
                                                             try {
                                                                 const url = await cloudinaryService.uploadImage(file);
                                                                 setFormData(prev => ({ ...prev, imagemUrl: url }));
-                                                            } catch (error) {
+                                                            } catch {
                                                                 alert("Erro ao fazer upload da imagem.");
                                                             } finally {
                                                                 setUploading(false);
