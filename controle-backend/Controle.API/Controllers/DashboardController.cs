@@ -72,5 +72,27 @@ namespace Controle.API.Controllers
             var transacoes = await _dashboardService.GetTransacoesAsync(lojaId, inicio, fim);
             return Ok(transacoes);
         }
+
+        /// <summary>
+        /// Obtém o funil de pedidos em tempo real.
+        /// </summary>
+        [HttpGet("loja/{lojaId}/funil")]
+        [ProducesResponseType(typeof(DashboardFunilDTO), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetFunil(Guid lojaId)
+        {
+            var funil = await _dashboardService.GetFunilPedidosAsync(lojaId);
+            return Ok(funil);
+        }
+
+        /// <summary>
+        /// Obtém alertas críticos (estoque baixo, atrasos).
+        /// </summary>
+        [HttpGet("loja/{lojaId}/alertas")]
+        [ProducesResponseType(typeof(IEnumerable<DashboardAlertaDTO>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAlertas(Guid lojaId)
+        {
+            var alertas = await _dashboardService.GetAlertasAsync(lojaId);
+            return Ok(alertas);
+        }
     }
 }

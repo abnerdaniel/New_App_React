@@ -14,11 +14,13 @@ namespace Controle.Application.Services
     {
         private readonly IPedidoRepository _pedidoRepository;
         private readonly IPedidoItemRepository _pedidoItemRepository;
+        private readonly IProdutoLojaRepository _produtoLojaRepository;
 
-        public DashboardService(IPedidoRepository pedidoRepository, IPedidoItemRepository pedidoItemRepository)
+        public DashboardService(IPedidoRepository pedidoRepository, IPedidoItemRepository pedidoItemRepository, IProdutoLojaRepository produtoLojaRepository)
         {
             _pedidoRepository = pedidoRepository;
             _pedidoItemRepository = pedidoItemRepository;
+            _produtoLojaRepository = produtoLojaRepository;
         }
 
         public async Task<DashboardResumoDTO> GetResumoDoDiaAsync(Guid lojaId)
@@ -58,7 +60,11 @@ namespace Controle.Application.Services
         public async Task<IEnumerable<ProdutoRankingDTO>> GetProdutosMaisVendidosAsync(Guid lojaId)
         {
             var pedidos = await _pedidoRepository.GetAllAsync();
-            var pedidosLoja = pedidos.Where(p => p.LojaId == lojaId && p.Status != "Cancelado").ToList();
+            // Filter by Today to match "Ranking do Dia" requirement
+            var hoje = DateTime.UtcNow.Date;
+            var pedidosLoja = pedidos
+                .Where(p => p.LojaId == lojaId && p.Status != "Cancelado" && p.DataVenda.Date == hoje)
+                .ToList();
             
             var pedidoIds = pedidosLoja.Select(p => p.Id).ToList();
 
@@ -74,10 +80,81 @@ namespace Controle.Application.Services
                     ValorTotalVendido = g.Sum(i => i.PrecoVenda * i.Quantidade)
                 })
                 .OrderByDescending(r => r.QuantidadeVendida)
-                .Take(10) // Top 10
+                .Take(5) // Top 5 as requested
                 .ToList();
 
             return ranking;
+        }
+
+        public async Task<DashboardFunilDTO> GetFunilPedidosAsync(Guid lojaId)
+        {
+             var pedidos = await _pedidoRepository.GetAllAsync();
+             var hoje = DateTime.UtcNow.Date;
+             
+             // Consideramos apenas pedidos do dia para o funil operacional imediato? 
+             // Ou todos os ativos? Geralmente o funil é o "agora".
+             // Vamos pegar pedidos abertos ou do dia.
+             var pedidosAtivos = pedidos.Where(p => p.LojaId == lojaId && 
+                (p.Status != "Concluido" && p.Status != "Cancelado" && p.Status != "Entregue") || (p.DataVenda.Date == hoje)).ToList();
+
+             // Refinando lógica: O funil deve mostrar o estado ATUAL.
+             // Novos: Pendente
+             // Cozinha: Aceito, Em Preparo
+             // Prontos: Pronto
+             // Em Rota: Saiu para Entrega, Em Entrega
+
+             return new DashboardFunilDTO
+             {
+                 Novos = pedidosAtivos.Count(p => p.Status == "Pendente" || p.Status == "Recebido" || p.Status == "Aguardando"),
+                 NaCozinha = pedidosAtivos.Count(p => p.Status == "Aceito" || p.Status == "Em Preparo"),
+                 Prontos = pedidosAtivos.Count(p => p.Status == "Pronto" || p.Status == "Aguardando Entregador"),
+                 EmRota = pedidosAtivos.Count(p => p.Status == "Saiu para Entrega" || p.Status == "Em Entrega")
+             };
+        }
+
+        public async Task<IEnumerable<DashboardAlertaDTO>> GetAlertasAsync(Guid lojaId)
+        {
+            var alertas = new List<DashboardAlertaDTO>();
+
+            // 1. Estoque Baixo
+            var produtos = await _produtoLojaRepository.GetByLojaIdAsync(lojaId);
+            var produtosBaixoEstoque = produtos.Where(p => p.Estoque <= 5 && p.Disponivel).ToList();
+
+            foreach(var p in produtosBaixoEstoque)
+            {
+               alertas.Add(new DashboardAlertaDTO 
+               {
+                   Tipo = "Estoque",
+                   Mensagem = $"O produto {p.Produto?.Nome ?? "Item"} tem apenas {p.Estoque} unidades.",
+                   Nivel = p.Estoque == 0 ? "Crítico" : "Aviso",
+                   EntidadeId = p.Id // ProdutoLojaId
+               });
+            }
+
+            // 2. Pedidos Atrasados (> 45 min na cozinha)
+            var pedidos = await _pedidoRepository.GetAllAsync();
+            var limiteAtraso = DateTime.UtcNow.AddMinutes(-45);
+            
+            // Status de cozinha
+            var pedidosAtrasados = pedidos
+                .Where(p => p.LojaId == lojaId && 
+                            (p.Status == "Em Preparo" || p.Status == "Aceito") && 
+                            p.DataVenda < limiteAtraso)
+                .ToList();
+
+             foreach(var p in pedidosAtrasados)
+            {
+               var tempo = (int)(DateTime.UtcNow - p.DataVenda).TotalMinutes;
+               alertas.Add(new DashboardAlertaDTO 
+               {
+                   Tipo = "Atraso",
+                   Mensagem = $"Pedido #{p.Id} está na cozinha há {tempo} min.",
+                   Nivel = "Crítico",
+                   EntidadeId = p.Id
+               });
+            }
+
+            return alertas;
         }
 
         public async Task<FinanceiroResumoDTO> GetFinanceiroResumoAsync(Guid lojaId, DateTime inicio, DateTime fim)
