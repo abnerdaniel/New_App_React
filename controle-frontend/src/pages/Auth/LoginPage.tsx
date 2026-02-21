@@ -5,6 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { LoginForm } from "./LoginForm";
 import { RegisterForm } from "./RegisterForm";
 import { GoogleLoginButton } from "../../components/GoogleLoginButton";
+import { LayoutDashboard, UserPlus, MessageCircle, Globe } from "lucide-react";
 
 export function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,24 +17,16 @@ export function LoginPage() {
   async function handleLogin(loginData: string, password: string) {
     setLoading(true);
     setError("");
-    
     try {
       const response = await authApi.login({ login: loginData, password });
       login(response);
-      
-      // Verifica se precisa de setup
-      // Verifica se precisa de setup (não tem lojas E não é funcionário de nenhuma loja)
       const isEmployee = response.funcionarios && response.funcionarios.length > 0;
       const hasStores = response.lojas.length > 0 && response.lojas[0].nome !== "Nova Loja";
-
-      if (!hasStores && !isEmployee) {
-        navigate("/setup");
-      } else {
-        navigate("/dashboard");
-      }
-    } catch (err: any) {
-      console.error("Erro ao fazer login:", err);
-      setError(err.response?.data?.message || "Erro ao fazer login. Verifique suas credenciais.");
+      if (!hasStores && !isEmployee) navigate("/setup");
+      else navigate("/dashboard");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || "Credenciais inválidas. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -42,99 +35,145 @@ export function LoginPage() {
   async function handleRegister(nome: string, email: string, password: string) {
     setLoading(true);
     setError("");
-    
     try {
       const response = await authApi.register({ nome, email, password });
       login(response);
       navigate("/pessoas");
-    } catch (err: any) {
-      console.error("Erro ao fazer registro:", err);
-      setError(err.response?.data?.message || "Erro ao criar conta. Tente novamente.");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || "Erro ao criar conta. Tente novamente.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-        <div className="bg-brand-primary p-6 text-center">
-             <h1 className="text-2xl font-bold text-white tracking-tight">
-               LanchoneteUI
-             </h1>
-             <p className="text-white/80 text-sm mt-1">Sistema de Controle</p>
+    /* auth-page class + inline style: dual guarantee against global CSS overrides */
+    <div
+      className="auth-page min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{ backgroundColor: '#0a0f1e' }}
+    >
+      {/* Atmospheric glow blobs */}
+      <div style={{
+        position: 'absolute', top: '-120px', left: '-80px',
+        width: '500px', height: '500px',
+        background: 'radial-gradient(circle, rgba(59,130,246,0.22) 0%, transparent 70%)',
+        pointerEvents: 'none'
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '-150px', right: '-60px',
+        width: '450px', height: '450px',
+        background: 'radial-gradient(circle, rgba(99,102,241,0.20) 0%, transparent 70%)',
+        pointerEvents: 'none'
+      }} />
+
+      <div className="relative w-full max-w-md z-10">
+        {/* Brand */}
+        <div className="text-center mb-8">
+          <div
+            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4"
+            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', boxShadow: '0 8px 32px rgba(59,130,246,0.4)' }}
+          >
+            <LayoutDashboard size={26} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Controle Admin</h1>
+          <p style={{ color: '#94a3b8' }} className="text-sm mt-1">Sistema de Gestão de Restaurante</p>
         </div>
-        
-        <div className="p-8">
-            <div className="flex bg-gray-100 p-1 rounded-lg mb-8">
+
+        {/* Card — inline style is the guarantee */}
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{
+            backgroundColor: '#111827',
+            border: '1px solid #1f2937',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.6)'
+          }}
+        >
+          {/* Tabs */}
+          <div style={{ borderBottom: '1px solid #1f2937', display: 'flex' }}>
             <button
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                isLogin 
-                    ? "bg-white text-brand-primary shadow-sm" 
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-                onClick={() => {
-                setIsLogin(true);
-                setError("");
-                }}
+              onClick={() => { setIsLogin(true); setError(""); }}
+              style={{
+                flex: 1, padding: '1rem',
+                fontSize: '0.875rem', fontWeight: 600,
+                cursor: 'pointer', transition: 'all 0.2s',
+                backgroundColor: isLogin ? 'rgba(59,130,246,0.1)' : 'transparent',
+                color: isLogin ? '#fff' : '#64748b',
+                borderBottom: isLogin ? '2px solid #3b82f6' : '2px solid transparent',
+              }}
             >
-                Entrar
+              Entrar
             </button>
             <button
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                !isLogin 
-                    ? "bg-white text-brand-primary shadow-sm" 
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-                onClick={() => {
-                setIsLogin(false);
-                setError("");
-                }}
+              onClick={() => { setIsLogin(false); setError(""); }}
+              style={{
+                flex: 1, padding: '1rem',
+                fontSize: '0.875rem', fontWeight: 600,
+                cursor: 'pointer', transition: 'all 0.2s',
+                backgroundColor: !isLogin ? 'rgba(99,102,241,0.1)' : 'transparent',
+                color: !isLogin ? '#fff' : '#64748b',
+                borderBottom: !isLogin ? '2px solid #818cf8' : '2px solid transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+              }}
             >
-                Conta
+              <UserPlus size={14} /> Criar Conta
             </button>
-            </div>
-            
-            <div className="mb-6">
-                <GoogleLoginButton />
-            </div>
-            
-            <div className="relative mb-8 pt-2">
-                <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center">
-                <span className="bg-white px-4 text-xs font-semibold text-gray-400 uppercase">
-                    ou email
-                </span>
-                </div>
+          </div>
+
+          <div style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Google */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <GoogleLoginButton />
             </div>
 
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#1f2937' }} />
+              <span style={{ fontSize: '0.7rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
+                ou continue com email
+              </span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#1f2937' }} />
+            </div>
+
+            {/* Error */}
             {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center border border-red-100 mb-6">
+              <div style={{
+                backgroundColor: 'rgba(127,29,29,0.4)', border: '1px solid rgba(239,68,68,0.3)',
+                color: '#fca5a5', padding: '0.75rem', borderRadius: '0.75rem',
+                fontSize: '0.875rem', textAlign: 'center'
+              }}>
                 {error}
-            </div>
+              </div>
             )}
 
-            {isLogin ? (
-            <LoginForm onSubmit={handleLogin} loading={loading} />
-            ) : (
-            <RegisterForm onSubmit={handleRegister} loading={loading} />
-            )}
+            {/* Form */}
+            {isLogin
+              ? <LoginForm onSubmit={handleLogin} loading={loading} />
+              : <RegisterForm onSubmit={handleRegister} loading={loading} />
+            }
+          </div>
         </div>
-      </div>
-      
-      <div className="mt-8 text-center text-sm text-gray-400">
-        <p>Desenvolvido por <span className="font-bold text-gray-500">Help me Here</span></p>
-        <div className="flex justify-center gap-4 mt-2">
-            <a href="https://wa.me/5521991680708" target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
-                Suporte (21) 99168-0708
+
+        {/* Footer */}
+        <div className="mt-7 text-center" style={{ fontSize: '0.75rem', color: '#374151' }}>
+          <p>Desenvolvido por <span style={{ color: '#6b7280', fontWeight: 600 }}>Help me Here</span></p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '8px' }}>
+            <a href="https://wa.me/5521991680708" target="_blank" rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#4b5563', textDecoration: 'none' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
+            >
+              <MessageCircle size={12} /> (21) 99168-0708
             </a>
-            <span className="text-gray-300">|</span>
-            <a href="http://www.helpmehere.com.br" target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors">
-                www.helpmehere.com.br
+            <span style={{ color: '#1f2937' }}>|</span>
+            <a href="http://www.helpmehere.com.br" target="_blank" rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#4b5563', textDecoration: 'none' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
+            >
+              <Globe size={12} /> helpmehere.com.br
             </a>
+          </div>
         </div>
       </div>
     </div>

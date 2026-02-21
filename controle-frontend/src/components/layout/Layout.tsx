@@ -20,11 +20,11 @@ export function Layout({ children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
 
   if (isLoginPage) {
-    return <main className="page-content-full">{children}</main>;
+    return <main style={{ minHeight: '100vh', width: '100%', display: 'block', margin: 0, padding: 0 }}>{children}</main>;
   }
 
   if (isEmployeeLogin || isGarcom || isCozinha || isEntregas) {
-     return <main className="w-full min-h-screen bg-gray-50">{children}</main>;
+     return <main style={{ minHeight: '100vh', width: '100%', display: 'block', margin: 0, padding: 0 }}>{children}</main>;
   }
 
   return (

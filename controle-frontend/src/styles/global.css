@@ -28,6 +28,26 @@ body {
   width: 100%;
 }
 
+/* Auth pages override — neutralizes global body bg */
+body:has(.auth-page) {
+  background-color: transparent;
+}
+
+.auth-page {
+  background-color: #0a0f1e;
+}
+
+/* Override global form white rule for auth forms */
+.auth-page form {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+}
+
 /* Remove all legacy button/input/login styles - let Tailwind handle it */
 button {
   cursor: pointer;

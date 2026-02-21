@@ -41,7 +41,7 @@ interface ProdutoCatalogoDTO {
 }
 
 interface CreateProdutoLojaPayload {
-  lojaId: number;
+  lojaId: string;
   preco: number;
   estoque: number;
   categoriaId: number | null;
@@ -265,7 +265,7 @@ export function EstoquePage() {
       } else {
         // Create Logic
         const payload: CreateProdutoLojaPayload = {
-          lojaId: Number(activeLoja.id),
+          lojaId: activeLoja.id,
           preco: precoCentavos,
           estoque: Number(formData.estoque),
           categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
