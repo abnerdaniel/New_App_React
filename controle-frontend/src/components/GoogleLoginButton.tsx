@@ -19,7 +19,7 @@ export function GoogleLoginButton() {
         if (response.lojas.length === 0 || (response.lojas.length > 0 && response.lojas[0].nome === "Nova Loja")) {
           navigate("/setup");
         } else {
-          navigate("/pessoas");
+          navigate("/dashboard");
         }
       }
     } catch (error: any) {
