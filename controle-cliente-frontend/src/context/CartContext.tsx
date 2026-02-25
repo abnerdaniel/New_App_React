@@ -74,17 +74,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const updateQuantity = (produtoId: string, quantidade: number) => { 
-     // Same issue. Updating quantity by Product ID affects ALL variants?
-     // This needs refactoring to handle variants.
-     // I'll stick to the existing signature for now to avoid breaking `Carrinho.tsx` drastically, 
-     // but realize this limits the feature.
-     // Pro-fix: Assuming the user clicked on a specific line item in the cart, passing product ID is ambitious.
-     // I should probably wait to refactor `Carrinho.tsx` later.
-     // For now: Update FIRST matching item? Or All?
-     // Let's update ALL for safety (fallback) or rethink.
-     
-     // Correct implementation: `updateQuantity` should probably receive the exact item reference or composite ID.
-     // Since I can't easily change `Carrinho` call sites without reading it, I will keep signature but logic is best effort.
+     if (quantidade < 1) return;
      setItems(current => 
       current.map(item => 
         item.produto.id === produtoId ? { ...item, quantidade } : item

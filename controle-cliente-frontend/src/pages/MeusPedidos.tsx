@@ -145,7 +145,7 @@ export function MeusPedidos() {
                                     {(pedido.valorTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                 </span>
                                 <button 
-                                    onClick={() => navigate(`/loja/${pedido.loja?.id}`)} // Reorder goes to store
+                                    onClick={() => navigate(`/${pedido.loja?.id}`)} // Reorder goes to store
                                     className="text-red-600 font-bold hover:underline"
                                 >
                                     Ver Loja

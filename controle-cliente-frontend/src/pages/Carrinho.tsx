@@ -83,8 +83,17 @@ export function CartPage() {
                     <div className="flex items-center justify-between mt-2">
                          <div className="flex items-center border border-gray-200 rounded-lg">
                             <button 
-                                onClick={() => updateQuantity(item.produto.id, item.quantidade - 1)}
-                                className="p-1 px-3 text-red-600 hover:bg-red-50 rounded-l-lg transition-colors"
+                                onClick={() => {
+                                    if (item.quantidade > 1) {
+                                        updateQuantity(item.produto.id, item.quantidade - 1);
+                                    }
+                                }}
+                                disabled={item.quantidade <= 1}
+                                className={`p-1 px-3 rounded-l-lg transition-colors ${
+                                    item.quantidade <= 1 
+                                        ? 'text-gray-300 cursor-not-allowed bg-gray-50' 
+                                        : 'text-red-600 hover:bg-red-50'
+                                }`}
                             >
                                 <Minus className="w-3 h-3" />
                             </button>

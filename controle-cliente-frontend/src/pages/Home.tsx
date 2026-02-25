@@ -69,7 +69,7 @@ export function Home() {
                             loja={loja} 
                             onClick={() => {
                                 const slug = loja.nome.toLowerCase().replace(/ /g, '-');
-                                navigate(`/loja/${slug}`);
+                                navigate(`/${slug}`);
                             }} 
                         />
                     ))}

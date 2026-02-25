@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom'; // Import Link
-import { ArrowLeft, Star, Clock, MapPin, User, LogOut, Search } from 'lucide-react';
+import { Star, Clock, MapPin, User, LogOut, Search } from 'lucide-react';
 import type { Loja, Categoria, Combo } from '../types';
 import { lojaService } from '../services/loja.service';
 
@@ -151,11 +151,7 @@ export function LojaPage() {
           className={`w-full h-full object-cover ${isLojaFechada ? 'grayscale' : ''}`}
         />
         
-        <div className="absolute top-4 left-4">
-          <Link to="/" className="bg-white/90 p-2 rounded-full shadow-lg hover:bg-white transition-colors flex items-center justify-center">
-             <ArrowLeft className="w-6 h-6 text-gray-700" />
-          </Link>
-        </div>
+
 
         <div className="absolute top-4 right-4 z-20">
             {!isAuthenticated ? (
@@ -165,7 +161,7 @@ export function LojaPage() {
                 </Link> 
             ) : (
                 <div className="flex items-center gap-2">
-                     <Link to="/meus-pedidos" className="bg-white/90 p-2 px-3 rounded-full shadow-lg flex items-center gap-2 text-gray-800 font-medium text-sm hover:bg-gray-50 transition-colors">
+                     <Link to="/perfil" className="bg-white/90 p-2 px-3 rounded-full shadow-lg flex items-center gap-2 text-gray-800 font-medium text-sm hover:bg-gray-50 transition-colors">
                         <User className="w-5 h-5 text-red-600" />
                         <span>Olá, {cliente?.nome.split(' ')[0]}</span>
                     </Link>

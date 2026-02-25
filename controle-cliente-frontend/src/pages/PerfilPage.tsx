@@ -50,7 +50,7 @@ export function PerfilPage() {
           await updateProfile({ nome, telefone });
           setSuccessMsg('Perfil atualizado com sucesso!');
           setTimeout(() => setSuccessMsg(''), 3000);
-      } catch (error) {
+      } catch {
           alert('Erro ao atualizar perfil.');
       } finally {
           setLoading(false);
@@ -144,9 +144,14 @@ export function PerfilPage() {
             </button>
             <h1 className="text-lg font-bold">Meu Perfil</h1>
         </div>
-        <button onClick={logout} className="text-red-500 font-medium text-sm hover:underline">
-            Sair
-        </button>
+        <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/meus-pedidos')} className="text-brand-primary font-medium text-sm hover:underline mr-2">
+                Meus Pedidos
+            </button>
+            <button onClick={logout} className="text-red-500 font-medium text-sm hover:underline">
+                Sair
+            </button>
+        </div>
       </div>
 
       <div className="max-w-lg mx-auto p-4 space-y-6">
@@ -163,7 +168,7 @@ export function PerfilPage() {
                     <input 
                         type="text" 
                         value={nome}
-                        onChange={(e) => setNome(e.target.value)}
+                        onChange={(e) => setNome(e.target.value.replace(/[^a-zA-ZáàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ\s]/g, ''))}
                         className="w-full p-2 border rounded-lg focus:ring-brand-primary focus:border-brand-primary"
                     />
                 </div>
@@ -174,9 +179,9 @@ export function PerfilPage() {
                         <input 
                             type="tel" 
                             value={telefone}
-                            onChange={(e) => setTelefone(e.target.value)}
+                            onChange={(e) => setTelefone(e.target.value.replace(/\D/g, ''))}
                             className="w-full pl-10 p-2 border rounded-lg focus:ring-brand-primary focus:border-brand-primary"
-                            placeholder="(99) 99999-9999"
+                            placeholder="Apenas números"
                         />
                     </div>
                 </div>
@@ -216,30 +221,30 @@ export function PerfilPage() {
                        placeholder="Apelido (ex: Casa, Trabalho)" 
                        className="w-full p-2 border rounded bg-white" 
                        value={novoEndereco.apelido} 
-                       onChange={e => setNovoEndereco({...novoEndereco, apelido: e.target.value})}
+                       onChange={e => setNovoEndereco({...novoEndereco, apelido: e.target.value.replace(/[^a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ\s]/g, '')})}
                      />
                      <input 
                        placeholder="Nome de quem vai receber" 
                        className="w-full p-2 border rounded bg-white" 
                        value={novoEndereco.destinatario} 
-                       onChange={e => setNovoEndereco({...novoEndereco, destinatario: e.target.value})}
+                       onChange={e => setNovoEndereco({...novoEndereco, destinatario: e.target.value.replace(/[^a-zA-ZáàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ\s]/g, '')})}
                      />
                      <input 
                        placeholder="CEP" 
                        className="w-full p-2 border rounded bg-white" 
                        value={novoEndereco.cep} 
-                       onChange={e => handleCepChange(e.target.value)}
+                       onChange={e => handleCepChange(e.target.value.replace(/\D/g, ''))}
                        maxLength={8}
                      />
                      <div className="grid grid-cols-3 gap-2">
-                        <input placeholder="Rua" className="col-span-2 w-full p-2 border rounded bg-white" value={novoEndereco.logradouro} onChange={e => setNovoEndereco({...novoEndereco, logradouro: e.target.value})} />
-                         <input placeholder="Numero" className="w-full p-2 border rounded bg-white" value={novoEndereco.numero} onChange={e => setNovoEndereco({...novoEndereco, numero: e.target.value})} />
+                        <input placeholder="Rua" className="col-span-2 w-full p-2 border rounded bg-white" value={novoEndereco.logradouro} onChange={e => setNovoEndereco({...novoEndereco, logradouro: e.target.value.replace(/[^a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ\s,.-]/g, '')})} />
+                         <input placeholder="Numero" className="w-full p-2 border rounded bg-white" value={novoEndereco.numero} onChange={e => setNovoEndereco({...novoEndereco, numero: e.target.value.replace(/[^0-9a-zA-Z-]/g, '')})} />
                      </div>
-                     <input placeholder="Complemento" className="w-full p-2 border rounded bg-white" value={novoEndereco.complemento} onChange={e => setNovoEndereco({...novoEndereco, complemento: e.target.value})} />
-                     <input placeholder="Bairro" className="w-full p-2 border rounded bg-white" value={novoEndereco.bairro} onChange={e => setNovoEndereco({...novoEndereco, bairro: e.target.value})} />
+                     <input placeholder="Complemento" className="w-full p-2 border rounded bg-white" value={novoEndereco.complemento} onChange={e => setNovoEndereco({...novoEndereco, complemento: e.target.value.replace(/[^a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ\s,.-]/g, '')})} />
+                     <input placeholder="Bairro" className="w-full p-2 border rounded bg-white" value={novoEndereco.bairro} onChange={e => setNovoEndereco({...novoEndereco, bairro: e.target.value.replace(/[^a-zA-Z0-9áàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ\s]/g, '')})} />
                      <div className="grid grid-cols-3 gap-2">
-                        <input placeholder="Cidade" className="col-span-2 w-full p-2 border rounded bg-white" value={novoEndereco.cidade} onChange={e => setNovoEndereco({...novoEndereco, cidade: e.target.value})} />
-                         <input placeholder="UF" className="w-full p-2 border rounded bg-white" value={novoEndereco.estado} onChange={e => setNovoEndereco({...novoEndereco, estado: e.target.value})} />
+                        <input placeholder="Cidade" className="col-span-2 w-full p-2 border rounded bg-white" value={novoEndereco.cidade} onChange={e => setNovoEndereco({...novoEndereco, cidade: e.target.value.replace(/[^a-zA-ZáàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ\s]/g, '')})} />
+                         <input placeholder="UF" className="w-full p-2 border rounded bg-white" value={novoEndereco.estado} onChange={e => setNovoEndereco({...novoEndereco, estado: e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase()})} maxLength={2} />
                      </div>
                      <div className="flex gap-2 pt-2">
                         <button type="button" onClick={() => { setShowNovoEndereco(false); setEditingAddressId(null); }} className="flex-1 px-4 py-2 text-gray-600 bg-white border rounded hover:bg-gray-50">Cancelar</button>
