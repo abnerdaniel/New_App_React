@@ -3,8 +3,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getPedidosFila, updateObservacao, updateStatus } from '../../api/pedidos.api';
 import { api } from '../../api/axios';
 import type { Pedido } from '../../types/Pedido';
-import { Smile, Meh, Frown, Power, Truck, ShoppingBag, MapPin, Bike, Phone, MessageCircle } from 'lucide-react';
+import { Smile, Meh, Frown, Power, Truck, ShoppingBag, MapPin, Bike, Phone, MessageCircle, Printer } from 'lucide-react';
 import { formatPhoneForWhatsapp } from '../../utils/formatters';
+import { printReceipt } from '../../utils/printReceipt';
 
 export function DeliveryPage() {
   const { activeLoja } = useAuth();
@@ -261,7 +262,14 @@ export function DeliveryPage() {
                   {pedido.numeroFila && <span className="text-xs bg-white/60 px-1.5 py-0.5 rounded font-mono">Fila #{pedido.numeroFila}</span>}
                   <span className="text-xs font-mono opacity-75">{new Date(pedido.dataVenda).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col items-end gap-1">
+                  <button 
+                      onClick={() => printReceipt(pedido, activeLoja)}
+                      title="Imprimir Cupom"
+                      className="p-1 hover:bg-black/10 rounded transition-colors"
+                  >
+                      <Printer size={16} />
+                  </button>
                   {icon}
                   <span className="text-xs font-bold mt-1">{minutos} min</span>
                 </div>

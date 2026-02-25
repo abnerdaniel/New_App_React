@@ -33,8 +33,10 @@ export function PDVPage() {
   // Checkout State
   const [metodoPagamento, setMetodoPagamento] = useState('Dinheiro');
   const [nomeCliente, setNomeCliente] = useState(''); 
+  const [cpfCliente, setCpfCliente] = useState('');
   const [observacaoPedido, setObservacaoPedido] = useState('');
-  const [trocoPara, setTrocoPara] = useState('');
+  const [valorRecebido, setValorRecebido] = useState('');
+  const [desconto, setDesconto] = useState('');
   const [enviarParaCozinha, setEnviarParaCozinha] = useState(true); 
   const [enviarParaEntrega, setEnviarParaEntrega] = useState(false); 
   const [submitting, setSubmitting] = useState(false);
@@ -111,9 +113,18 @@ export function PDVPage() {
       }));
   };
 
-  const cartTotal = cart.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
+  const cartSubtotal = cart.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
+  const valorDesconto = parseFloat(desconto.replace(',', '.')) || 0;
+  const cartTotal = Math.max(0, cartSubtotal - (valorDesconto * 100)); // Preco in cents
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((val || 0) / 100);
+
+  const valorRecebidoNum = parseFloat(valorRecebido.replace(',', '.')) || 0;
+  const trocoCalculado = Math.max(0, valorRecebidoNum - (cartTotal / 100));
+
+  const applyQuickMoney = (amount: number) => {
+    setValorRecebido(amount.toFixed(2).replace('.', ','));
+  };
 
   const handleFinalizar = async () => {
     if (cart.length === 0) return;
@@ -128,8 +139,8 @@ export function PDVPage() {
             enderecoEntregaId: null,
             isRetirada: !enviarParaEntrega,
             metodoPagamento: isMesaOrder ? 'Dinheiro' : metodoPagamento, 
-            trocoPara: trocoPara ? parseFloat(trocoPara.replace(',', '.')) : null,
-            observacao: `[PDV] ${observacaoPedido} ${nomeCliente ? `- Cliente: ${nomeCliente}` : ''}`,
+            trocoPara: valorRecebidoNum > 0 ? valorRecebidoNum : null,
+            observacao: `[PDV] ${observacaoPedido} ${nomeCliente ? `- Cliente: ${nomeCliente}` : ''} ${cpfCliente ? `- CPF: ${cpfCliente}` : ''}`,
             NomeCliente: nomeCliente,
             enviarParaCozinha: enviarParaCozinha, 
             numeroMesa: mesaState?.numeroMesa || null,
@@ -153,8 +164,10 @@ export function PDVPage() {
         setIsCheckoutOpen(false);
         setMetodoPagamento('Dinheiro');
         setNomeCliente('');
+        setCpfCliente('');
         setObservacaoPedido('');
-        setTrocoPara('');
+        setValorRecebido('');
+        setDesconto('');
         setEnviarParaCozinha(false);
         setEnviarParaEntrega(false);
 
@@ -367,7 +380,17 @@ export function PDVPage() {
           </div>
 
           <div className="p-4 bg-gray-50 border-t space-y-3 shrink-0 pb-safe md:pb-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-10">
-              <div className="flex justify-between text-lg font-bold text-gray-800">
+              <div className="flex justify-between font-medium text-gray-500 text-sm">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(cartSubtotal)}</span>
+              </div>
+              {valorDesconto > 0 && (
+                <div className="flex justify-between font-medium text-red-500 text-sm">
+                    <span>Desconto</span>
+                    <span>- {formatCurrency(valorDesconto * 100)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-lg font-bold text-gray-800 border-t pt-2">
                   <span>Total</span>
                   <span>{formatCurrency(cartTotal)}</span>
               </div>
@@ -435,28 +458,65 @@ export function PDVPage() {
                       )}
 
                       {(!isMesaOrder && metodoPagamento === 'Dinheiro') && (
-                          <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Troco para (R$)</label>
-                              <input 
-                                  type="text"
-                                  value={trocoPara}
-                                  onChange={e => setTrocoPara(e.target.value.replace(/[^0-9,]/g, ''))}
-                                  placeholder="Ex: 50,00"
-                                  className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                              />
+                          <div className="bg-green-50 p-3 rounded-lg border border-green-100">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Valor Recebido (R$)</label>
+                              <div className="flex gap-2 mb-2">
+                                  <input 
+                                      type="text"
+                                      value={valorRecebido}
+                                      onChange={e => setValorRecebido(e.target.value.replace(/[^0-9,]/g, ''))}
+                                      placeholder="Ex: 50,00"
+                                      className="flex-1 border p-2 rounded focus:ring-2 focus:ring-green-500 outline-none text-right font-medium"
+                                  />
+                              </div>
+                              <div className="grid grid-cols-4 gap-2 mb-2">
+                                  <button onClick={() => applyQuickMoney(cartTotal / 100)} className="bg-white border text-xs py-1 rounded hover:bg-gray-50 text-gray-700 font-medium">Exato</button>
+                                  <button onClick={() => applyQuickMoney(10)} className="bg-white border text-xs py-1 rounded hover:bg-gray-50 text-gray-700 font-medium">R$ 10</button>
+                                  <button onClick={() => applyQuickMoney(50)} className="bg-white border text-xs py-1 rounded hover:bg-gray-50 text-gray-700 font-medium">R$ 50</button>
+                                  <button onClick={() => applyQuickMoney(100)} className="bg-white border text-xs py-1 rounded hover:bg-gray-50 text-gray-700 font-medium">R$ 100</button>
+                              </div>
+                              <div className="flex justify-between items-center text-sm font-bold pt-2 border-t border-green-200 text-green-800">
+                                  <span>Troco:</span>
+                                  <span>{trocoCalculado > 0 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(trocoCalculado) : 'R$ 0,00'}</span>
+                              </div>
                           </div>
                       )}
 
                       {!isMesaOrder && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Desconto (R$)</label>
+                                <input 
+                                    type="text"
+                                    value={desconto}
+                                    onChange={e => setDesconto(e.target.value.replace(/[^0-9,]/g, ''))}
+                                    placeholder="0,00"
+                                    className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none text-right text-red-500 font-medium"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">CPF (Nota)</label>
+                                <input 
+                                    type="text"
+                                    value={cpfCliente}
+                                    onChange={e => setCpfCliente(e.target.value.replace(/[^0-9.-]/g, ''))}
+                                    placeholder="000.000.000-00"
+                                    className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                        </div>
+                      )}
+
+                      {!isMesaOrder && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Cliente (Opcional)</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Cliente</label>
                             <div className="relative">
                                 <User size={16} className="absolute left-3 top-3 text-gray-400" />
                                 <input 
                                     type="text"
                                     value={nomeCliente}
                                     onChange={e => setNomeCliente(e.target.value)}
-                                    placeholder="Nome para o pedido"
+                                    placeholder="Identificação do pedido (opcional)"
                                     className="w-full border p-2 pl-9 rounded focus:ring-2 focus:ring-blue-500 outline-none"
                                 />
                             </div>

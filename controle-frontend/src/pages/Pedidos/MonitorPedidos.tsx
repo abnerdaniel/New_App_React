@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../api/axios';
-import { Clock, User, CheckCircle, Truck, UtensilsCrossed, AlertCircle, ChefHat, MapPin, Bike, Phone, X, MessageCircle } from 'lucide-react';
+import { Clock, User, CheckCircle, Truck, UtensilsCrossed, AlertCircle, ChefHat, MapPin, Bike, Phone, X, MessageCircle, Printer } from 'lucide-react';
 import { formatPhoneForWhatsapp } from '../../utils/formatters';
+import { printReceipt } from '../../utils/printReceipt';
 
 interface PedidoMonitor {
   id: number;
@@ -246,13 +247,22 @@ export function MonitorPedidos() {
                                      )}
                                  </div>
                              </div>
-                             <div className="text-right">
-                                 <div className="flex items-center gap-1 text-xs font-bold opacity-80">
-                                     <Clock size={12} />
-                                     {getTempoDecorrido(pedido.dataVenda)}
-                                 </div>
-                                 <div className="text-xs opacity-70 mt-0.5">
-                                     {new Date(pedido.dataVenda).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                             <div className="text-right flex items-start gap-2">
+                                 <button 
+                                     onClick={() => printReceipt(pedido, activeLoja)}
+                                     title="Imprimir Cupom"
+                                     className="p-1 hover:bg-white/40 rounded transition-colors"
+                                 >
+                                     <Printer size={16} />
+                                 </button>
+                                 <div>
+                                     <div className="flex items-center justify-end gap-1 text-xs font-bold opacity-80">
+                                         <Clock size={12} />
+                                         {getTempoDecorrido(pedido.dataVenda)}
+                                     </div>
+                                     <div className="text-xs opacity-70 mt-0.5">
+                                         {new Date(pedido.dataVenda).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                     </div>
                                  </div>
                              </div>
                          </div>

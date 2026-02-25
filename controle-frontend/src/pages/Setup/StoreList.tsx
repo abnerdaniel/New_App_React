@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/axios";
 import { useAuth } from "../../contexts/AuthContext";
-import { Edit2, Plus, MapPin, Trash2, AlertTriangle } from "lucide-react";
+import { Edit2, Plus, MapPin, Trash2, AlertTriangle, Printer } from "lucide-react";
+import { PrintSettingsModal } from "../../components/setup/PrintSettingsModal";
 
 export function StoreList() {
   const { user, selectLoja } = useAuth();
@@ -14,6 +15,8 @@ export function StoreList() {
   const [storeToDelete, setStoreToDelete] = useState<any | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [storeToConfigurePrint, setStoreToConfigurePrint] = useState<{id: string, nome: string} | null>(null);
 
   const loadLojas = useCallback(async () => {
     try {
@@ -110,10 +113,18 @@ export function StoreList() {
                 <div className="flex gap-2">
                     <button 
                         onClick={() => handleEdit(loja)} 
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors border border-blue-100"
+                        title="Editar"
+                        className="flex-1 flex items-center justify-center gap-2 py-2 p-1 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors border border-blue-100"
                     >
-                        <Edit2 size={18} />
-                        Editar / Gerenciar
+                        <Edit2 size={16} />
+                        Editar
+                    </button>
+                    <button 
+                        onClick={() => setStoreToConfigurePrint({id: loja.id, nome: loja.nome})}
+                        title="Configurar Impressora"
+                        className="p-2.5 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200"
+                    >
+                        <Printer size={18} />
                     </button>
                     <button 
                         onClick={() => { setStoreToDelete(loja); setConfirmText(""); }}
@@ -180,6 +191,15 @@ export function StoreList() {
                   </div>
               </div>
           </div>
+      )}
+
+      {/* Modal de Configuração de Impressão */}
+      {storeToConfigurePrint && (
+          <PrintSettingsModal 
+              lojaId={storeToConfigurePrint.id}
+              lojaNome={storeToConfigurePrint.nome}
+              onClose={() => setStoreToConfigurePrint(null)}
+          />
       )}
     </div>
   );
