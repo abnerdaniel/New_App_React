@@ -87,8 +87,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const novoFuncionario = user.funcionarios?.find(f => f.lojaId === lojaId) || null;
       setActiveFuncionario(novoFuncionario);
 
-      localStorage.setItem('@App:activeLoja', JSON.stringify(novaLoja));
-      localStorage.setItem('@App:activeFuncionario', JSON.stringify(novoFuncionario || ""));
+      
+      // Async fetch to get the actual open/close status from the backend
+      // Using a global or non-component fetch to avoid "export function" issues in Vite fast-refresh if any
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/loja/${lojaId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+          if (data && data.abertaManualmente !== undefined) {
+              const isAberta = data.abertaManualmente !== false;
+              updateActiveLoja({ aberta: isAberta });
+          }
+      })
+      .catch(err => console.error("Error fetching latest store status on switch", err));
     }
   };
 
@@ -141,6 +153,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
 

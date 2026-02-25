@@ -189,10 +189,10 @@ export function PerfilPage() {
                 <button 
                     type="submit" 
                     disabled={loading}
-                    className="flex items-center gap-2 bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-secondary transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white font-bold px-4 py-3 rounded-xl hover:bg-gray-800 active:scale-[0.98] transition-all shadow-md disabled:opacity-50 disabled:active:scale-100 disabled:cursor-not-allowed mt-4"
                 >
-                    <Save size={18} />
-                    Salvar Alterações
+                    <Save size={20} />
+                    {loading ? 'Salvando...' : 'Salvar Alterações'}
                 </button>
             </form>
         </section>

@@ -349,8 +349,17 @@ export function DeliveryPage() {
                        <button onClick={() => adiantarEtapa(pedido)} className="text-xs bg-green-600 text-white px-3 py-1.5 rounded font-medium hover:bg-green-700">Pronto</button>
                   )}
                   {pedido.status === 'Pronto' && !pedido.entregadorId && (
-                      <button onClick={() => handleOpenDispatchModal(pedido)} className="text-xs bg-gray-800 text-white px-3 py-1.5 rounded font-medium hover:bg-black flex items-center gap-1">
-                          <Bike size={12}/> Despachar
+                      <button 
+                          onClick={() => {
+                              if (pedido.isRetirada) {
+                                  handleStatusChange(pedido.id, 'Entregue');
+                              } else {
+                                  handleOpenDispatchModal(pedido);
+                              }
+                          }} 
+                          className="text-xs bg-gray-800 text-white px-3 py-1.5 rounded font-medium hover:bg-black flex items-center gap-1"
+                      >
+                          {pedido.isRetirada ? 'Entregue' : <><Bike size={12}/> Despachar</>}
                       </button>
                   )}
                   {pedido.status === 'Saiu para Entrega' && (

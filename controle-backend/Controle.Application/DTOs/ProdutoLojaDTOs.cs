@@ -28,6 +28,7 @@ namespace Controle.Application.DTOs
         public bool IsAdicional { get; set; }
         public List<int> AdicionaisIds { get; set; } = new();
         public bool Disponivel { get; set; }
+        public string? Descricao { get; set; }
     }
 
     public class UpdateProdutoLojaRequest

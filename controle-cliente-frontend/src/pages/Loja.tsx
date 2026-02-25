@@ -335,11 +335,7 @@ function CategorySection({
     onComboClick: (c: Combo) => void
 }) {
     const [expanded, setExpanded] = useState(false);
-    const INITIAL_LIMIT = 6;
-    
-    // Combine items to count total for "Show More" logic? 
-    // Usually "Show More" applies to the main product list. Combos are often few.
-    // Let's apply it to products.
+    const INITIAL_LIMIT = 8; // Increased for grid
     
     const hasMore = products.length > INITIAL_LIMIT;
     const visibleProducts = expanded ? products : products.slice(0, INITIAL_LIMIT);
@@ -348,7 +344,7 @@ function CategorySection({
         <div id={`cat-${categoria.id}`} className="mb-8 scroll-mt-32">
             <h2 className="text-xl font-bold text-gray-800 mb-4">{categoria.nome}</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
                 {visibleProducts.map(produto => (
                     <ProductCard key={`prod-${produto.id}`} produto={produto} onClick={onProductClick} />
                 ))}
@@ -365,9 +361,9 @@ function CategorySection({
 
             {/* Combos */}
             {combos && combos.length > 0 && (
-                <div className="mt-6">
-                    <h3 className="text-md font-semibold text-gray-600 mb-2">Combos</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mt-8">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">Combos</h3>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                         {combos.map(combo => (
                             <ComboCard key={`combo-${combo.id}`} combo={combo} onClick={onComboClick} />
                         ))}
@@ -383,25 +379,26 @@ function ProductCard({ produto, onClick }: { produto: Produto, onClick: (p: Prod
     const indisponivel = produto.disponivel === false;
     return (
         <div 
-            className={`bg-white border border-gray-100 rounded-lg p-3 flex gap-4 transition-colors shadow-sm duration-100 relative
-                ${indisponivel ? 'opacity-60 grayscale cursor-not-allowed bg-gray-50' : 'hover:border-gray-200 cursor-pointer active:scale-[0.99]'}
+            className={`relative rounded-xl overflow-hidden shadow-sm aspect-square transition-all duration-200 
+                ${indisponivel ? 'opacity-70 grayscale cursor-not-allowed' : 'hover:shadow-md cursor-pointer hover:scale-[1.02] active:scale-[0.98]'}
             `}
             onClick={() => !indisponivel && onClick(produto)}
         >
-            <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">{produto.nome}</h3>
-                <p className="text-sm text-gray-500 line-clamp-2 mt-1 mb-2">{produto.descricao}</p>
-                <span className="text-green-700 font-medium">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(produto.preco)}
-                </span>
-                {indisponivel && <span className="text-xs font-bold text-red-500 ml-2 border border-red-200 bg-red-50 px-1 rounded">Indisponível</span>}
-            </div>
             <ProductImage 
                 src={produto.imagemUrl} 
                 alt={produto.nome} 
-                className="w-24 h-24 object-cover rounded-md bg-gray-100"
+                className="absolute inset-0 w-full h-full object-cover bg-gray-200"
                 productType={produto.tipo}
             />
+            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-3">
+                <h3 className="font-bold text-white leading-tight line-clamp-2">{produto.nome}</h3>
+                <div className="flex items-center justify-between mt-1">
+                    <span className="text-white font-semibold">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(produto.preco)}
+                    </span>
+                    {indisponivel && <span className="text-[10px] font-bold text-black border-white bg-white/90 px-1.5 py-0.5 rounded uppercase">Esgotado</span>}
+                </div>
+            </div>
         </div>
     );
 }
@@ -410,39 +407,37 @@ function ComboCard({ combo, onClick }: { combo: Combo, onClick: (c: Combo) => vo
     const indisponivel = combo.ativo === false;
     return (
         <div 
-            className={`bg-orange-50 border border-orange-100 rounded-lg p-3 flex gap-4 transition-colors shadow-sm duration-100 relative
-                ${indisponivel ? 'opacity-60 grayscale cursor-not-allowed bg-gray-50 border-gray-200' : 'hover:border-orange-200 cursor-pointer active:scale-[0.99]'}
+            className={`relative rounded-xl overflow-hidden shadow-sm aspect-square transition-all duration-200 border-2 border-orange-400
+                ${indisponivel ? 'opacity-70 grayscale cursor-not-allowed' : 'hover:shadow-md cursor-pointer hover:scale-[1.02] active:scale-[0.98]'}
             `}
             onClick={() => !indisponivel && onClick(combo)}
         >
-            <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-900">{combo.nome}</h3>
-                    {indisponivel && <span className="text-xs font-bold text-red-500 border border-red-200 bg-red-50 px-1 rounded">Indisponível</span>}
-                </div>
-                <p className="text-sm text-gray-500 line-clamp-2 mt-1 mb-2">{combo.descricao}</p>
-                
-                {combo.itens && combo.itens.length > 0 && (
-                    <ul className="mb-2 space-y-1">
-                        {combo.itens.map((item) => (
-                            <li key={item.id} className="text-xs text-gray-600 flex items-center gap-1">
-                                <span className="font-medium text-gray-800">{item.quantidade}x</span>
-                                <span>{item.nomeProduto}</span>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-
-                <span className="text-green-700 font-medium">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(combo.preco)}
-                </span>
-            </div>
             <ProductImage 
                 src={combo.imagemUrl} 
                 alt={combo.nome} 
-                className="w-24 h-24 object-cover rounded-md bg-gray-100"
+                className="absolute inset-0 w-full h-full object-cover bg-orange-100"
                 isCombo={true}
             />
+            <div className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-10">
+                Combo
+            </div>
+            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-3">
+                <h3 className="font-bold text-white leading-tight line-clamp-2">{combo.nome}</h3>
+                
+                {combo.itens && combo.itens.length > 0 && (
+                    <p className="text-[10px] text-gray-300 line-clamp-1 mt-0.5">
+                        {combo.itens.map(i => `${i.quantidade}x ${i.nomeProduto}`).join(', ')}
+                    </p>
+                )}
+
+                <div className="flex items-center justify-between mt-1.5">
+                    <span className="text-orange-400 font-bold text-sm">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(combo.preco)}
+                    </span>
+                    {indisponivel && <span className="text-[10px] font-bold text-black border-white bg-white/90 px-1.5 py-0.5 rounded uppercase">Esgotado</span>}
+                </div>
+            </div>
         </div>
     );
 }
+

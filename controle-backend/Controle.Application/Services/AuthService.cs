@@ -93,7 +93,8 @@ namespace Controle.Application.Services
             {
                 Id = l.Id,
                 Nome = l.Nome,
-                ImagemUrl = l.LogoUrl
+                ImagemUrl = l.LogoUrl,
+                Aberta = l.AbertaManualmente != false // true if true or null
             }).ToList();
 
             var response = new AuthResponse
@@ -300,7 +301,8 @@ namespace Controle.Application.Services
                 {
                     Id = l.Id,
                     Nome = l.Nome,
-                    ImagemUrl = l.LogoUrl
+                    ImagemUrl = l.LogoUrl,
+                    Aberta = l.AbertaManualmente != false
                 }).ToList();
 
                 var response = new AuthResponse

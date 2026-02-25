@@ -225,7 +225,8 @@ namespace Controle.Application.Services
                 CategoriaIds = pl.ProdutoCategorias.Select(pc => pc.CategoriaId).ToList(),
                 IsAdicional = pl.Produto?.IsAdicional ?? false,
                 AdicionaisIds = pl.Produto?.Adicionais.Select(pa => pa.ProdutoFilhoId).ToList() ?? new List<int>(),
-                Disponivel = pl.Disponivel
+                Disponivel = pl.Disponivel,
+                Descricao = string.IsNullOrEmpty(pl.Descricao) ? pl.Produto?.Descricao : pl.Descricao
             }).ToList();
         }
 

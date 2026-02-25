@@ -113,7 +113,7 @@ export function PDVPage() {
 
   const cartTotal = cart.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
 
-  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((val || 0) / 100);
 
   const handleFinalizar = async () => {
     if (cart.length === 0) return;

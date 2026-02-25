@@ -206,5 +206,14 @@ namespace Controle.Application.Services
             _context.Lojas.Update(loja);
             await _context.SaveChangesAsync();
         }
+
+        public async Task ExcluirLojaAsync(Guid lojaId)
+        {
+            var loja = await _context.Lojas.FindAsync(lojaId);
+            if (loja == null) throw new DomainException("Loja não encontrada.");
+
+            _context.Lojas.Remove(loja);
+            await _context.SaveChangesAsync();
+        }
     }
 }

@@ -68,11 +68,11 @@ export function ComboModal({ isOpen, onClose, combo, onAddToCart, isStoreClosed 
         <div className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl flex flex-col max-h-[90vh]">
             
             {/* Header */}
-            <div className="relative h-48 bg-orange-100 shrink-0">
+            <div className="relative h-48 bg-orange-50 shrink-0 border-b border-orange-100 flex items-center justify-center p-2">
                <ProductImage 
                   src={combo.imagemUrl} 
                   alt={combo.nome} 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain mix-blend-multiply"
                   isCombo={true}
                 />
               <button

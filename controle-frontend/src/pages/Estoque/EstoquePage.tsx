@@ -17,6 +17,7 @@ interface ProdutoEstoqueDTO {
   adicionaisIds?: number[];
   categoriaId?: number;
   disponivel?: boolean;
+  descricao?: string;
 }
 
 
@@ -258,8 +259,8 @@ export function EstoquePage() {
           adicionaisIds: formData.adicionaisIds,
           categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
           disponivel: formData.disponivel,
-          imagemUrl: formData.imagemUrl
-          // descricao: formData.descricao 
+          imagemUrl: formData.imagemUrl,
+          descricao: formData.descricao 
         });
         alert("Produto atualizado!");
       } else {
@@ -306,7 +307,7 @@ export function EstoquePage() {
     setEditingProduto(prod);
     setFormData({
       nome: prod.nome,
-      descricao: "", 
+      descricao: prod.descricao || "", 
       tipo: prod.tipo,
       preco: (prod.preco / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 }), // Formata para 0,00
       estoque: prod.estoque.toString(),

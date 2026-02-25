@@ -56,12 +56,12 @@ export function ProductModal({ produto, isOpen, onClose, onAddToCart, isStoreClo
       <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
         
         {/* Header Imagem ou Titulo */}
-        <div className="relative">
-          <div className="h-48 md:h-56 w-full">
+        <div className="relative bg-gray-50 border-b border-gray-100">
+          <div className="h-48 md:h-56 w-full flex items-center justify-center p-2">
             <ProductImage 
               src={produto.imagemUrl} 
               alt={produto.nome} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               productType={produto.tipo}
             />
           </div>

@@ -19,7 +19,7 @@ export function PedidoSucesso() {
           Seu pedido <span className="font-bold">#{id}</span> foi recebido com sucesso e logo será preparado.
         </p>
 
-        <div className="space-y-3">
+        <div className="space-y-3 flex flex-col-reverse relative">
           <button 
             onClick={() => {
                 const lojaId = localStorage.getItem('lojaId'); 
@@ -30,15 +30,15 @@ export function PedidoSucesso() {
                 else if (lojaId) navigate(`/${lojaId}`);
                 else navigate('/');
             }}
-            className="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 mt-3"
           >
             <Home size={20} />
-            Voltar para o Início
+            Voltar para a Loja
           </button>
           
           <button 
             onClick={() => navigate(`/pedido/${id}`)}
-            className="w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+            className="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-colors"
           >
             Acompanhar Pedido
           </button>

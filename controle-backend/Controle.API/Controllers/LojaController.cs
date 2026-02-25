@@ -146,5 +146,20 @@ namespace Controle.API.Controllers
             await _lojaService.AtualizarLojaDirectAsync(loja);
             return Ok(loja);
         }
+
+        /// <summary>
+        /// Exclui uma loja e todos os seus vínculos.
+        /// </summary>
+        [HttpDelete("{lojaId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ExcluirLoja(Guid lojaId)
+        {
+            var loja = await _lojaService.GetLojaByIdAsync(lojaId);
+            if (loja == null) return NotFound();
+
+            await _lojaService.ExcluirLojaAsync(lojaId);
+            return NoContent();
+        }
     }
 }
