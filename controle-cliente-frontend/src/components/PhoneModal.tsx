@@ -77,7 +77,17 @@ export function PhoneModal({ isOpen, onClose, onSuccess }: PhoneModalProps) {
                     type="tel"
                     required
                     value={telefone}
-                    onChange={(e) => setTelefone(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 2) {
+                        setTelefone(value);
+                      } else if (value.length <= 7) {
+                        setTelefone(`(${value.substring(0, 2)}) ${value.substring(2)}`);
+                      } else {
+                        setTelefone(`(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7, 11)}`);
+                      }
+                    }}
+                    maxLength={15}
                     className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none"
                     placeholder="(99) 99999-9999"
                   />

@@ -12,6 +12,7 @@ interface CartItem {
   quantidade: number;
   observacao?: string;
   imagemUrl?: string;
+  isCombo?: boolean;
 }
 
 export function PDVPage() {
@@ -92,7 +93,8 @@ export function PDVPage() {
               nome: produto.nome,
               preco: produto.preco || 0,
               quantidade: 1,
-              imagemUrl: produto.imagemUrl
+              imagemUrl: produto.imagemUrl,
+              isCombo: produto.isCombo
           }];
       });
       if (window.innerWidth < 768) {
@@ -145,7 +147,8 @@ export function PDVPage() {
             enviarParaCozinha: enviarParaCozinha, 
             numeroMesa: mesaState?.numeroMesa || null,
             itens: cart.map(item => ({
-                idProduto: item.produtoId,
+                idProduto: !item.isCombo ? item.produtoId : null,
+                idCombo: item.isCombo ? item.produtoId : null,
                 qtd: item.quantidade,
                 adicionaisIds: [] 
             }))

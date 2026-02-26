@@ -261,7 +261,7 @@ export function CheckoutPage() {
   if (!cliente) return <div>Acesso negado.</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 text-gray-900 pb-24">
        <div className="bg-white shadow p-4 sticky top-0 z-10 flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="text-gray-600">
           <ArrowLeft size={24} />
@@ -335,42 +335,42 @@ export function CheckoutPage() {
                     ))}
                     <button 
                         onClick={() => { setEditingAddressId(null); setShowNovoEndereco(true); setNovoEndereco({ apelido: '', destinatario: '', logradouro: '', numero: '', bairro: '', cidade: '', estado: '', cep: '', complemento: '' }); }}
-                        className="text-green-600 text-sm font-medium mt-2 w-full text-center hover:underline"
-                    >
-                        + Adicionar novo endereço
-                    </button>
-                </div>
-            ) : (
-                <form onSubmit={handleSalvarEndereco} className="space-y-3">
-                     <input 
-                       placeholder="Apelido (ex: Casa, Trabalho)" 
-                       className="w-full p-2 border rounded" 
-                       value={novoEndereco.apelido} 
-                       onChange={e => setNovoEndereco({...novoEndereco, apelido: e.target.value})}
-                     />
-                     <input 
-                       placeholder="Nome de quem vai receber" 
-                       className="w-full p-2 border rounded" 
-                       value={novoEndereco.destinatario} 
-                       onChange={e => setNovoEndereco({...novoEndereco, destinatario: e.target.value})}
-                     />
-                     <input 
-                       placeholder="CEP" 
-                       className="w-full p-2 border rounded" 
-                       value={novoEndereco.cep} 
-                       onChange={e => handleCepChange(e.target.value)}
-                       maxLength={8}
-                     />
-                     <div className="grid grid-cols-3 gap-2">
-                        <input placeholder="Rua" className="col-span-2 w-full p-2 border rounded" value={novoEndereco.logradouro} onChange={e => setNovoEndereco({...novoEndereco, logradouro: e.target.value})} />
-                         <input placeholder="Numero" className="w-full p-2 border rounded" value={novoEndereco.numero} onChange={e => setNovoEndereco({...novoEndereco, numero: e.target.value})} />
-                     </div>
-                     <input placeholder="Complemento" className="w-full p-2 border rounded" value={novoEndereco.complemento} onChange={e => setNovoEndereco({...novoEndereco, complemento: e.target.value})} />
-                     <input placeholder="Bairro" className="w-full p-2 border rounded" value={novoEndereco.bairro} onChange={e => setNovoEndereco({...novoEndereco, bairro: e.target.value})} />
-                     <div className="grid grid-cols-3 gap-2">
-                        <input placeholder="Cidade" className="col-span-2 w-full p-2 border rounded" value={novoEndereco.cidade} onChange={e => setNovoEndereco({...novoEndereco, cidade: e.target.value})} />
-                         <input placeholder="UF" className="w-full p-2 border rounded" value={novoEndereco.estado} onChange={e => setNovoEndereco({...novoEndereco, estado: e.target.value})} />
-                     </div>
+                            className="text-green-600 text-sm font-medium mt-2 w-full text-center hover:underline"
+                        >
+                            + Adicionar novo endereço
+                        </button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSalvarEndereco} className="space-y-3">
+                         <input 
+                           placeholder="Apelido (ex: Casa, Trabalho)" 
+                           className="w-full p-2 border rounded text-gray-900 bg-white" 
+                           value={novoEndereco.apelido} 
+                           onChange={e => setNovoEndereco({...novoEndereco, apelido: e.target.value})}
+                         />
+                         <input 
+                           placeholder="Nome de quem vai receber" 
+                           className="w-full p-2 border rounded text-gray-900 bg-white" 
+                           value={novoEndereco.destinatario} 
+                           onChange={e => setNovoEndereco({...novoEndereco, destinatario: e.target.value})}
+                         />
+                         <input 
+                           placeholder="CEP" 
+                           className="w-full p-2 border rounded text-gray-900 bg-white" 
+                           value={novoEndereco.cep} 
+                           onChange={e => handleCepChange(e.target.value)}
+                           maxLength={8}
+                         />
+                         <div className="grid grid-cols-3 gap-2">
+                            <input placeholder="Rua" className="col-span-2 w-full p-2 border rounded text-gray-900 bg-white" value={novoEndereco.logradouro} onChange={e => setNovoEndereco({...novoEndereco, logradouro: e.target.value})} />
+                             <input placeholder="Numero" className="w-full p-2 border rounded text-gray-900 bg-white" value={novoEndereco.numero} onChange={e => setNovoEndereco({...novoEndereco, numero: e.target.value})} />
+                         </div>
+                         <input placeholder="Complemento" className="w-full p-2 border rounded text-gray-900 bg-white" value={novoEndereco.complemento} onChange={e => setNovoEndereco({...novoEndereco, complemento: e.target.value})} />
+                         <input placeholder="Bairro" className="w-full p-2 border rounded text-gray-900 bg-white" value={novoEndereco.bairro} onChange={e => setNovoEndereco({...novoEndereco, bairro: e.target.value})} />
+                         <div className="grid grid-cols-3 gap-2">
+                            <input placeholder="Cidade" className="col-span-2 w-full p-2 border rounded text-gray-900 bg-white" value={novoEndereco.cidade} onChange={e => setNovoEndereco({...novoEndereco, cidade: e.target.value})} />
+                             <input placeholder="UF" className="w-full p-2 border rounded text-gray-900 bg-white" value={novoEndereco.estado} onChange={e => setNovoEndereco({...novoEndereco, estado: e.target.value})} />
+                         </div>
                      <div className="flex gap-2 pt-2">
                         {enderecos.length > 0 && (
                             <button type="button" onClick={() => { setShowNovoEndereco(false); setEditingAddressId(null); }} className="px-4 py-2 text-gray-600">Cancelar</button>
@@ -411,7 +411,7 @@ export function CheckoutPage() {
                     <input 
                         type="text" 
                         placeholder="Ex: 50,00" 
-                        className={`w-full p-2 border rounded mt-1 ${
+                        className={`w-full p-2 border rounded mt-1 text-gray-900 bg-white ${
                             metodoPagamento === 'dinheiro' && trocoPara && 
                             parseFloat(trocoPara.replace(',', '.')) < (total + (isRetirada ? 0 : 5)) 
                             ? 'border-yellow-500 bg-yellow-50' 
@@ -434,7 +434,7 @@ export function CheckoutPage() {
                  <span className="text-xs text-gray-400 font-normal">(Opcional)</span>
                </label>
                <textarea
-                 className="w-full p-2 border rounded mt-1 text-sm h-20 resize-none"
+                 className="w-full p-2 border rounded mt-1 text-sm h-20 resize-none text-gray-900 bg-white"
                  placeholder="Ex: Tocar campainha, retirar cebola, etc."
                  value={observacao}
                  onChange={(e) => setObservacao(e.target.value)}

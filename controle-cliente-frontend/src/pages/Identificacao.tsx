@@ -66,7 +66,7 @@ export function Identificacao() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-gray-900">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
         {/* Header */}
         <div className="bg-brand-primary p-6 text-white text-center relative">
@@ -121,7 +121,7 @@ export function Identificacao() {
                     required
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none"
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none text-gray-900 bg-white"
                     placeholder="Seu nome"
                   />
                 </div>
@@ -135,8 +135,18 @@ export function Identificacao() {
                     type="tel"
                     required
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none"
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 2) {
+                        setPhone(value);
+                      } else if (value.length <= 7) {
+                        setPhone(`(${value.substring(0, 2)}) ${value.substring(2)}`);
+                      } else {
+                        setPhone(`(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7, 11)}`);
+                      }
+                    }}
+                    maxLength={15}
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none text-gray-900 bg-white"
                     placeholder="(99) 99999-9999"
                   />
                 </div>
@@ -153,7 +163,7 @@ export function Identificacao() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none"
+                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none text-gray-900 bg-white"
                 placeholder="seu@email.com"
               />
             </div>
@@ -168,7 +178,7 @@ export function Identificacao() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none"
+                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none text-gray-900 bg-white"
                 placeholder="******"
                 minLength={6}
               />
