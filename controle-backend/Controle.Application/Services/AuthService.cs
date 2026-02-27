@@ -94,7 +94,9 @@ namespace Controle.Application.Services
                 Id = l.Id,
                 Nome = l.Nome,
                 ImagemUrl = l.LogoUrl,
-                Aberta = l.AbertaManualmente != false // true if true or null
+                Aberta = l.AbertaManualmente != false,
+                LicencaValidaAte = l.LicencaValidaAte,
+                BloqueadaPorFaltaDePagamento = l.BloqueadaPorFaltaDePagamento
             }).ToList();
 
             var response = new AuthResponse

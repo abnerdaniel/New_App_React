@@ -127,6 +127,12 @@ export function LojaPage() {
 
   // Determine if store is closed
   const isLojaFechada = loja ? !loja.aberto : false;
+  
+  // Determine if store is blocked due to license/payment
+  const isLojaBloqueada = loja ? (
+    loja.bloqueadaPorFaltaDePagamento || 
+    (loja.licencaValidaAte && new Date(loja.licencaValidaAte) < new Date())
+  ) : false;
 
   // Filter categories
   const filteredCategories = activeCategory 
@@ -139,6 +145,29 @@ export function LojaPage() {
 
   if (!loja) {
     return <div className="min-h-screen flex items-center justify-center text-gray-500">Loja não encontrada</div>;
+  }
+
+  if (isLojaBloqueada) {
+    return (
+        <div className="min-h-screen bg-gray-50 pb-20 flex flex-col items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border-t-4 border-red-500">
+                {loja.logoUrl && (
+                    <img 
+                        src={loja.logoUrl} 
+                        alt={loja.nome} 
+                        className="w-24 h-24 rounded-full object-cover mx-auto mb-6 border-4 border-gray-50 shadow-sm" 
+                    />
+                )}
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Loja Indisponível</h1>
+                <p className="text-gray-600 mb-6">
+                    A loja <strong>{loja.nome}</strong> está temporariamente fechada para novos pedidos.
+                </p>
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                     <LogOut className="w-8 h-8 text-red-600" />
+                </div>
+            </div>
+        </div>
+    );
   }
 
   return (

@@ -10,7 +10,8 @@ import {
   Settings,
   Users,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ShieldAlert
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -23,11 +24,12 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   const location = useLocation();
 
-  const { activeFuncionario } = useAuth();
+  const { activeFuncionario, user } = useAuth();
   
   // Logic: Entregador without Full Access sees ONLY "Minhas Entregas"
   // Cargo might be "Motoboy / Entregador (Delivery)" or just "Entregador"
   const isMotoboyRestricted = activeFuncionario?.cargo?.toLowerCase().includes("entregador") && !activeFuncionario?.acessoSistemaCompleto;
+  const isSuperAdmin = user?.email === "abreu651@gmail.com" || user?.email === "eu@eu.com";
 
   const menuItems = isMotoboyRestricted ? [
       { icon: Bike, label: "Minhas Entregas", path: "/minhas-entregas" }
@@ -143,6 +145,26 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                     >
                         <Settings size={20} />
                         Minhas Lojas
+                    </Link>
+                </div>
+                )}
+
+                {isSuperAdmin && (
+                <div className="pt-6 mt-6 border-t border-gray-100">
+                    <p className="px-4 text-xs font-semibold text-red-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <ShieldAlert size={14} /> Super Admin
+                    </p>
+                    <Link
+                        to="/superadmin/lojas"
+                        onClick={() => { if(window.innerWidth < 768) onClose() }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        isActive('/superadmin/lojas')
+                            ? "bg-red-50 text-red-600"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                    >
+                        <ShieldAlert size={20} />
+                        Gestão de Lojas
                     </Link>
                 </div>
                 )}

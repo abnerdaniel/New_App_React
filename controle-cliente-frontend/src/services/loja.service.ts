@@ -18,7 +18,9 @@ export const lojaService = {
         tempoEntregaMax: loja.tempoEntregaMax || 45,
         taxaEntrega: loja.taxaEntrega || 5.00,
         categoria: loja.categoria || 'Diversos',
-        aberto: loja.aberta ?? true 
+        aberto: loja.aberta ?? true,
+        licencaValidaAte: loja.licencaValidaAte,
+        bloqueadaPorFaltaDePagamento: loja.bloqueadaPorFaltaDePagamento
       }));
     } catch (error) {
       console.error('Erro ao buscar lojas:', error);
@@ -45,7 +47,9 @@ export const lojaService = {
         tempoEntregaMax: data.tempoEntregaMax,
         taxaEntrega: data.taxaEntrega,
         categoria: data.categoria || 'Diversos',
-        aberto: data.aberta ?? true
+        aberto: data.aberta ?? true,
+        licencaValidaAte: data.licencaValidaAte,
+        bloqueadaPorFaltaDePagamento: data.bloqueadaPorFaltaDePagamento
       };
     } catch (error) {
        console.error('Erro ao buscar loja:', error);

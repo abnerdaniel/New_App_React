@@ -57,4 +57,9 @@ public class Loja
     // Automação
     public bool AceiteAutomatico { get; set; } = false; // Se true, pedido vai direto para "Em Preparo" ao chegar
     public bool DespachoAutomatico { get; set; } = false; // Se true, pedido vai direto para "Saiu para Entrega" ao ficar "Pronto"
+    
+    // Licenciamento (Super Admin)
+    public DateTime? LicencaValidaAte { get; set; }
+    public bool BloqueadaPorFaltaDePagamento { get; set; } = false;
+    public string? UrlComprovantePagamento { get; set; }
 }

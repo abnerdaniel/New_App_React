@@ -136,7 +136,9 @@ namespace Controle.Application.Services
                 TempoEntregaMax = loja.TempoMaximoEntrega ?? 45,
                 TaxaEntrega = loja.TaxaEntregaFixa ?? 5.0m,
                 Categoria = loja.Categoria ?? "Diversos",
-                Aberta = loja.AbertaManualmente ?? (cardapioSelecionado != null)
+                Aberta = loja.AbertaManualmente ?? (cardapioSelecionado != null),
+                LicencaValidaAte = loja.LicencaValidaAte,
+                BloqueadaPorFaltaDePagamento = loja.BloqueadaPorFaltaDePagamento
             };
 
             if (cardapioSelecionado != null)
@@ -227,7 +229,9 @@ namespace Controle.Application.Services
                     TempoEntregaMax = l.TempoMaximoEntrega ?? 45,
                     TaxaEntrega = l.TaxaEntregaFixa ?? 5.0m,
                     Categoria = l.Categoria ?? "Diversos",
-                    Aberta = l.AbertaManualmente ?? true
+                    Aberta = l.AbertaManualmente ?? true,
+                    LicencaValidaAte = l.LicencaValidaAte,
+                    BloqueadaPorFaltaDePagamento = l.BloqueadaPorFaltaDePagamento
                 })
                 .ToListAsync();
 

@@ -23,6 +23,7 @@ import { GarcomPage } from '../pages/Garcom/GarcomPage'
 import { WaiterOrderPage } from '../pages/Garcom/WaiterOrderPage'
 import { CozinhaPage } from '../pages/Cozinha/CozinhaPage'
 import { MinhasEntregasPage } from '../pages/Motoboy/MinhasEntregasPage'
+import { SuperAdminLojas } from '../pages/SuperAdmin/SuperAdminLojas'
 
 export function AppRoutes() {
   return (
@@ -45,6 +46,9 @@ export function AppRoutes() {
       <Route path="/manage-stores" element={<PrivateRoute><StoreList /></PrivateRoute>} />
       <Route path="/setup-employee" element={<PrivateRoute><SetupEmployee /></PrivateRoute>} />
       
+      {/* Super Admin */}
+      <Route path="/superadmin/lojas" element={<PrivateRoute><SuperAdminLojas /></PrivateRoute>} />
+
       {/* Main Modules */}
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/mesas" element={<PrivateRoute><MesasPage /></PrivateRoute>} />

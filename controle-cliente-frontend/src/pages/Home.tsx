@@ -20,10 +20,13 @@ export function Home() {
     });
   }, []);
 
-  const filteredLojas = lojas.filter(l => 
-    (l.nome?.toLowerCase() || '').includes(search.toLowerCase()) || 
-    (l.categoria?.toLowerCase() || '').includes(search.toLowerCase())
-  );
+  const filteredLojas = lojas.filter(l => {
+    const isBloqueada = l.bloqueadaPorFaltaDePagamento || (l.licencaValidaAte && new Date(l.licencaValidaAte) < new Date());
+    if (isBloqueada) return false;
+
+    return (l.nome?.toLowerCase() || '').includes(search.toLowerCase()) || 
+           (l.categoria?.toLowerCase() || '').includes(search.toLowerCase());
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">

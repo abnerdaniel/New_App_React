@@ -15,6 +15,8 @@ namespace Controle.Application.DTOs
         public decimal TaxaEntrega { get; set; }
         public string Categoria { get; set; } = string.Empty;
         public bool Aberta { get; set; }
+        public DateTime? LicencaValidaAte { get; set; }
+        public bool BloqueadaPorFaltaDePagamento { get; set; }
         public CardapioDTO? Cardapio { get; set; }
     }
 

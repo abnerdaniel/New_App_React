@@ -22,6 +22,8 @@ export interface Loja {
   complemento?: string;
   slug?: string;
   aceitandoPedidos?: boolean;
+  licencaValidaAte?: string;
+  bloqueadaPorFaltaDePagamento?: boolean;
 }
 
 export interface Produto {
