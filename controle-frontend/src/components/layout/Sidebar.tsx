@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -11,9 +12,11 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  Share2
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { ShareMenuModal } from "../ShareMenuModal";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -23,8 +26,9 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   const location = useLocation();
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  const { activeFuncionario, user } = useAuth();
+  const { activeFuncionario, user, activeLoja } = useAuth();
   
   // Logic: Entregador without Full Access sees ONLY "Minhas Entregas"
   // Cargo might be "Motoboy / Entregador (Delivery)" or just "Entregador"
@@ -118,6 +122,17 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                     {item.label}
                     </Link>
                 ))}
+                {!isMotoboyRestricted && (
+                    <button
+                        onClick={() => {
+                            setIsShareModalOpen(true);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900`}
+                    >
+                        <Share2 size={20} />
+                        Divulgar Cardápio
+                    </button>
+                )}
 
                 {!isMotoboyRestricted && (
                 <div className="pt-6 mt-6 border-t border-gray-100">
@@ -196,6 +211,14 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
             </div>
         </div>
       </aside>
+
+      {/* Modal QR Code */}
+      <ShareMenuModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        slug={activeLoja?.slug} 
+        nome={activeLoja?.nome}
+      />
     </>
   );
 }

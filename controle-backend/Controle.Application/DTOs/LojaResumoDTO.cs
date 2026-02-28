@@ -6,6 +6,7 @@ namespace Controle.Application.DTOs
     {
         public Guid Id { get; set; }
         public string Nome { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
         public string? Descricao { get; set; }
 
         public string? LogoUrl { get; set; }

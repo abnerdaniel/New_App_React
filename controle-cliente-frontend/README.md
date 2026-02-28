@@ -1,73 +1,43 @@
-# React + TypeScript + Vite
+# 📱 MenuTech - Cardápio Cliente (Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicação Web voltada para o cliente final do estabelecimento. Ela atua como um Cardápio Digital Interativo onde os clientes podem explorar os produtos, montar pedidos, adicionar complementos e efetuar ou enviar o pedido para o fluxo do lojista (delivery, retirada, ou na mesa via QR Code).
 
-Currently, two official plugins are available:
+## 🚀 Tecnologias
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- [React](https://reactjs.org/)
+- [Vite](https://vitejs.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- TailwindCSS
+- [React Query](https://tanstack.com/query/latest) / Axios - Gerenciamento de estado e fetch
+- [React Router DOM](https://reactrouter.com/)
+- Zustand (Gerenciamento de Carrinho, se aplicável)
 
-## React Compiler
+## 🛠 Como Executar Localmente
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Pré-requisitos
 
-## Expanding the ESLint configuration
+- Node.js (18+)
+- Backend (`controle-backend`) rodando localmente.
+- Pelo menos uma loja cadastrada com slug para testar as rotas (Ex: `/loja/nome-da-loja`).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Passos
 
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
+1. Instale as dependências:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+   ```bash
+   npm install
+   # ou
+   yarn install
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
-```
+2. (Opcional) Configure variáveis de ambiente caso necessário (`.env`).
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+3. Inicie o servidor de desenvolvimento:
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+   ```bash
+   npm run dev
+   # ou
+   yarn dev
+   ```
 
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
-```
+4. Acesse no navegador, ex: `http://localhost:5174/loja/slug-da-loja`.

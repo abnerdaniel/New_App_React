@@ -1,6 +1,7 @@
 export interface LojaResumo {
   id: string;
   nome: string;
+  slug?: string;
   imagemUrl?: string;
   bannerUrl?: string;
   descricao?: string;

@@ -219,6 +219,7 @@ namespace Controle.Application.Services
                 {
                     Id = l.Id,
                     Nome = l.Nome,
+                    Slug = l.Slug,
                     Descricao = l.Categoria, // Mapping Categoria to Descricao for now as Loja has no Descricao
                     LogoUrl = l.LogoUrl,
                     CapaUrl = l.CapaUrl, 

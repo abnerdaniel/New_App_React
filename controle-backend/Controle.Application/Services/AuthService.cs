@@ -93,6 +93,7 @@ namespace Controle.Application.Services
             {
                 Id = l.Id,
                 Nome = l.Nome,
+                Slug = l.Slug,
                 ImagemUrl = l.LogoUrl,
                 Aberta = l.AbertaManualmente != false,
                 LicencaValidaAte = l.LicencaValidaAte,
@@ -303,6 +304,7 @@ namespace Controle.Application.Services
                 {
                     Id = l.Id,
                     Nome = l.Nome,
+                    Slug = l.Slug,
                     ImagemUrl = l.LogoUrl,
                     Aberta = l.AbertaManualmente != false
                 }).ToList();
