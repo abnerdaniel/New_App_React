@@ -1,4 +1,4 @@
-import { ShoppingBag, Settings, ChefHat, Sparkles, Bot, Truck } from "lucide-react";
+import { ShoppingBag, Settings, ChefHat, Sparkles, Bot, Truck, TrendingUp } from "lucide-react";
 
 export function ProductFeatures() {
   return (
@@ -15,6 +15,18 @@ export function ProductFeatures() {
       </div>
 
       <div className="space-y-8">
+        {/* Feature 0 - Pain Point */}
+        <div className="flex items-start gap-5">
+          <div className="shrink-0 w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100 shadow-sm">
+            <TrendingUp className="text-emerald-500 w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold mb-1 text-slate-800">Mais Lucro, Zero Caos</h3>
+            <p className="text-slate-500 leading-snug">
+              Livre-se das taxas abusivas dos aplicativos de delivery (que chegam a 27%) e transforme o caos do atendimento no WhatsApp em um processo automático e altamente rentável.
+            </p>
+          </div>
+        </div>
         {/* Feature 1 */}
         <div className="flex items-start gap-5">
           <div className="shrink-0 w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center border border-red-100 shadow-sm">
