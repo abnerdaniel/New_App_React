@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
-  Share2
+  Share2,
+  Bot
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { ShareMenuModal } from "../ShareMenuModal";
@@ -161,6 +162,14 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                         <Settings size={20} />
                         Minhas Lojas
                     </Link>
+                    
+                    <div className="flex items-center justify-between px-4 py-3 mt-1 rounded-lg text-sm font-medium text-gray-400 bg-gray-50/50 cursor-not-allowed border border-dashed border-gray-200" title="Em desenvolvimento">
+                        <div className="flex items-center gap-3">
+                            <Bot size={20} className="text-brand-primary/50" />
+                            <span>Atendimento com IA</span>
+                        </div>
+                        <span className="text-[9px] uppercase font-bold bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full">Em breve</span>
+                    </div>
                 </div>
                 )}
 

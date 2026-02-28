@@ -7,6 +7,7 @@ Neste painel é possível:
 - Gerenciar cardápio (produtos, complementos, categorias).
 - Acompanhar pedidos em tempo real (Painel / Cozinha / Garçom).
 - Configurar funcionamento, layout e QR Codes da loja.
+- Autoatendimento com IA (🚧 Em Desenvolvimento): Configurar o assistente virtual inteligente e monitorar interações automatizadas com clientes.
 - Para SuperAdmin: Gerir lojas, assinaturas e faturamento global.
 
 ## 🚀 Tecnologias
