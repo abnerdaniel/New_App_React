@@ -11,6 +11,7 @@ namespace Controle.Application.DTOs
         public int? CategoriaId { get; set; }
         public int Estoque { get; set; }
         public bool Disponivel { get; set; } = true;
+        public string? ImagemUrl { get; set; }
     }
 
     public class ProdutoEstoqueDTO

@@ -93,7 +93,8 @@ namespace Controle.Application.Services
                 Preco = (int)dto.Preco, 
                 Estoque = dto.Estoque,
                 Descricao = dto.NovoProduto?.Descricao ?? produto.Descricao ?? string.Empty,
-                Disponivel = dto.Disponivel
+                Disponivel = dto.Disponivel,
+                ImagemUrl = dto.ImagemUrl
             };
 
             // Se CategoriaId foi informado, já cria o vínculo
@@ -128,15 +129,10 @@ namespace Controle.Application.Services
             if (dto.Descricao != null) produtoLoja.Descricao = dto.Descricao;
             if (dto.Disponivel.HasValue) produtoLoja.Disponivel = dto.Disponivel.Value;
 
-            // Atualizar Imagem no Produto Pai
+            // Atualizar Imagem na Loja
             if (dto.ImagemUrl != null)
             {
-                var produtoPai = await _produtoRepository.GetByIdAsync(produtoLoja.ProdutoId);
-                if (produtoPai != null)
-                {
-                    produtoPai.URL_Imagem = dto.ImagemUrl;
-                    await _produtoRepository.UpdateAsync(produtoPai);
-                }
+                produtoLoja.ImagemUrl = dto.ImagemUrl;
             }
             
             // Legacy CategoriaId update: If provided, clear and add. 
@@ -211,7 +207,7 @@ namespace Controle.Application.Services
                 // Fallback to empty if Produto is null (though it shouldn't be with valid data)
                 Nome = pl.Produto?.Nome ?? "Produto Desconhecido",
                 Tipo = pl.Produto?.Tipo ?? string.Empty,
-                ImagemUrl = pl.Produto?.URL_Imagem,
+                ImagemUrl = !string.IsNullOrWhiteSpace(pl.ImagemUrl) ? pl.ImagemUrl : pl.Produto?.URL_Imagem,
                 Preco = pl.Preco,
                 Estoque = pl.Estoque ?? 0,
                 LojaId = pl.LojaId,

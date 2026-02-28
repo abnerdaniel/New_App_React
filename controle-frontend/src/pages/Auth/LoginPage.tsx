@@ -6,6 +6,7 @@ import { LoginForm } from "./LoginForm";
 import { RegisterForm } from "./RegisterForm";
 import { GoogleLoginButton } from "../../components/GoogleLoginButton";
 import { LayoutDashboard, UserPlus, MessageCircle, Globe } from "lucide-react";
+import { ProductFeatures } from "./ProductFeatures";
 
 export function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -48,131 +49,119 @@ export function LoginPage() {
   }
 
   return (
-    /* auth-page class + inline style: dual guarantee against global CSS overrides */
-    <div
-      className="auth-page min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{ backgroundColor: '#0a0f1e' }}
-    >
-      {/* Atmospheric glow blobs */}
-      <div style={{
-        position: 'absolute', top: '-120px', left: '-80px',
-        width: '500px', height: '500px',
-        background: 'radial-gradient(circle, rgba(59,130,246,0.22) 0%, transparent 70%)',
-        pointerEvents: 'none'
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '-150px', right: '-60px',
-        width: '450px', height: '450px',
-        background: 'radial-gradient(circle, rgba(99,102,241,0.20) 0%, transparent 70%)',
-        pointerEvents: 'none'
-      }} />
+    <div className="min-h-screen flex bg-surface-background text-text-dark font-sans">
+      {/* Esquerda: Informações do Produto (Feature Section) */}
+      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-white border-r border-gray-200">
+        <ProductFeatures />
+        
+        {/* Soft Background Accent */}
+        <div style={{
+          position: 'absolute', top: '-10%', left: '-10%',
+          width: '600px', height: '600px',
+          background: 'radial-gradient(circle, rgba(234,29,44,0.03) 0%, transparent 70%)',
+          pointerEvents: 'none'
+        }} />
+        <div style={{
+          position: 'absolute', bottom: '-20%', right: '-10%',
+          width: '500px', height: '500px',
+          background: 'radial-gradient(circle, rgba(234,29,44,0.03) 0%, transparent 70%)',
+          pointerEvents: 'none'
+        }} />
+      </div>
 
-      <div className="relative w-full max-w-md z-10">
-        {/* Brand */}
-        <div className="text-center mb-8">
+      {/* Direita: Formulário de Login */}
+      <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 relative">
+        <div className="w-full max-w-md relative z-10">
+          
+          <div className="text-center mb-10 lg:hidden">
+            <div
+              className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 bg-red-50"
+              style={{ border: '1px solid #fee2e2' }}
+            >
+              <LayoutDashboard size={26} className="text-brand-primary" />
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">MenuTech</h1>
+            <p className="text-slate-500 font-medium text-sm mt-1">Gestão Inteligente</p>
+          </div>
+
           <div
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4"
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', boxShadow: '0 8px 32px rgba(59,130,246,0.4)' }}
+            className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
           >
-            <LayoutDashboard size={26} className="text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Controle Admin</h1>
-          <p style={{ color: '#94a3b8' }} className="text-sm mt-1">Sistema de Gestão de Restaurante</p>
-        </div>
-
-        {/* Card — inline style is the guarantee */}
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{
-            backgroundColor: '#111827',
-            border: '1px solid #1f2937',
-            boxShadow: '0 25px 50px rgba(0,0,0,0.6)'
-          }}
-        >
-          {/* Tabs */}
-          <div style={{ borderBottom: '1px solid #1f2937', display: 'flex' }}>
-            <button
-              onClick={() => { setIsLogin(true); setError(""); }}
-              style={{
-                flex: 1, padding: '1rem',
-                fontSize: '0.875rem', fontWeight: 600,
-                cursor: 'pointer', transition: 'all 0.2s',
-                backgroundColor: isLogin ? 'rgba(59,130,246,0.1)' : 'transparent',
-                color: isLogin ? '#fff' : '#64748b',
-                borderBottom: isLogin ? '2px solid #3b82f6' : '2px solid transparent',
-              }}
-            >
-              Entrar
-            </button>
-            <button
-              onClick={() => { setIsLogin(false); setError(""); }}
-              style={{
-                flex: 1, padding: '1rem',
-                fontSize: '0.875rem', fontWeight: 600,
-                cursor: 'pointer', transition: 'all 0.2s',
-                backgroundColor: !isLogin ? 'rgba(99,102,241,0.1)' : 'transparent',
-                color: !isLogin ? '#fff' : '#64748b',
-                borderBottom: !isLogin ? '2px solid #818cf8' : '2px solid transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-              }}
-            >
-              <UserPlus size={14} /> Criar Conta
-            </button>
-          </div>
-
-          <div style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Google */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <GoogleLoginButton />
+            {/* Tabs */}
+            <div className="flex border-b border-gray-100 bg-gray-50/50">
+              <button
+                onClick={() => { setIsLogin(true); setError(""); }}
+                className={`flex-1 p-4 text-sm font-semibold transition-all duration-200 border-b-2 ${
+                  isLogin 
+                    ? 'bg-white text-brand-primary border-brand-primary shadow-[0_2px_0_0_#EA1D2C]' 
+                    : 'text-slate-500 border-transparent hover:text-slate-700 hover:bg-gray-50'
+                }`}
+              >
+                Entrar
+              </button>
+              <button
+                onClick={() => { setIsLogin(false); setError(""); }}
+                className={`flex-1 p-4 text-sm font-semibold transition-all duration-200 border-b-2 flex items-center justify-center gap-2 ${
+                  !isLogin 
+                    ? 'bg-white text-brand-primary border-brand-primary shadow-[0_2px_0_0_#EA1D2C]' 
+                    : 'text-slate-500 border-transparent hover:text-slate-700 hover:bg-gray-50'
+                }`}
+              >
+                <UserPlus size={14} /> Criar Conta
+              </button>
             </div>
 
-            {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ flex: 1, height: '1px', backgroundColor: '#1f2937' }} />
-              <span style={{ fontSize: '0.7rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
-                ou continue com email
-              </span>
-              <div style={{ flex: 1, height: '1px', backgroundColor: '#1f2937' }} />
-            </div>
-
-            {/* Error */}
-            {error && (
-              <div style={{
-                backgroundColor: 'rgba(127,29,29,0.4)', border: '1px solid rgba(239,68,68,0.3)',
-                color: '#fca5a5', padding: '0.75rem', borderRadius: '0.75rem',
-                fontSize: '0.875rem', textAlign: 'center'
-              }}>
-                {error}
+            <div className="p-8 flex flex-col gap-6">
+              {/* Resumo visual quando em mobile se não houver feature text */}
+              <div className="lg:hidden text-center text-sm font-medium text-slate-500 mb-2">
+                Cardápio digital, gestão 360º, painel KDS e integrações (em breve).
               </div>
-            )}
 
-            {/* Form */}
-            {isLogin
-              ? <LoginForm onSubmit={handleLogin} loading={loading} />
-              : <RegisterForm onSubmit={handleRegister} loading={loading} />
-            }
+              <div className="flex justify-center">
+                <GoogleLoginButton />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                  ou use email
+                </span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-100 text-brand-primary p-3 rounded-xl text-sm font-medium text-center">
+                  {error}
+                </div>
+              )}
+
+              {/* Form container resets the global form styles that might interfere */}
+              <div className="[&>form]:shadow-none [&>form]:p-0 [&>form]:mb-0 [&>form]:bg-transparent">
+                {isLogin ? (
+                  <LoginForm onSubmit={handleLogin} loading={loading} />
+                ) : (
+                  <RegisterForm onSubmit={handleRegister} loading={loading} />
+                )}
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="mt-7 text-center" style={{ fontSize: '0.75rem', color: '#374151' }}>
-          <p>Desenvolvido por <span style={{ color: '#6b7280', fontWeight: 600 }}>Help me Here</span></p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '8px' }}>
-            <a href="https://wa.me/5521991680708" target="_blank" rel="noopener noreferrer"
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#4b5563', textDecoration: 'none' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
-            >
-              <MessageCircle size={12} /> (21) 99168-0708
-            </a>
-            <span style={{ color: '#1f2937' }}>|</span>
-            <a href="http://www.helpmehere.com.br" target="_blank" rel="noopener noreferrer"
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#4b5563', textDecoration: 'none' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#4b5563')}
-            >
-              <Globe size={12} /> helpmehere.com.br
-            </a>
+          {/* Footer - Social Proof & Help */}
+          <div className="mt-8 text-center text-xs font-medium text-slate-500">
+            <p>Desenvolvido por <span className="text-slate-700 font-semibold">Help me Here</span></p>
+            <div className="flex justify-center items-center gap-4 mt-3">
+              <a href="https://wa.me/5521991680708" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 hover:text-brand-primary transition-colors"
+              >
+                <MessageCircle size={14} /> (21) 99168-0708
+              </a>
+              <span className="text-gray-300">|</span>
+              <a href="http://www.helpmehere.com.br" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 hover:text-brand-primary transition-colors"
+              >
+                <Globe size={14} /> helpmehere.com.br
+              </a>
+            </div>
           </div>
         </div>
       </div>

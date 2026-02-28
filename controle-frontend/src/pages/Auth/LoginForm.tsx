@@ -12,16 +12,16 @@ const inputWrapperStyle: React.CSSProperties = {
   gap: '10px',
   height: '48px',
   padding: '0 16px',
-  backgroundColor: '#0f172a',
-  border: '1px solid #1e2d45',
+  backgroundColor: '#f8fafc',
+  border: '1px solid #e2e8f0',
   borderRadius: '12px',
-  transition: 'border-color 0.2s',
+  transition: 'border-color 0.2s, box-shadow 0.2s',
 };
 
 const inputStyle: React.CSSProperties = {
   flex: 1,
   background: 'transparent',
-  color: '#e2e8f0',
+  color: '#334155',
   outline: 'none',
   fontSize: '0.9rem',
   border: 'none',
@@ -40,8 +40,9 @@ export function LoginForm({ onSubmit, loading }: Props) {
 
   const focusedWrapper: React.CSSProperties = {
     ...inputWrapperStyle,
-    border: '1px solid #3b82f6',
-    boxShadow: '0 0 0 3px rgba(59,130,246,0.15)',
+    backgroundColor: '#ffffff',
+    border: '1px solid #ef4444',
+    boxShadow: '0 0 0 3px rgba(239,68,68,0.1)',
   };
 
   return (
@@ -49,7 +50,7 @@ export function LoginForm({ onSubmit, loading }: Props) {
       
       {/* Email / Login */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <label style={{ fontSize: '0.7rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Email ou usuário
         </label>
         <div style={focusField === 'email' ? focusedWrapper : inputWrapperStyle}>
@@ -74,10 +75,10 @@ export function LoginForm({ onSubmit, loading }: Props) {
       {/* Senha */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <label style={{ fontSize: '0.7rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Senha
           </label>
-          <a href="#" style={{ fontSize: '0.75rem', color: '#60a5fa', fontWeight: 500, textDecoration: 'none' }}>
+          <a href="#" style={{ fontSize: '0.75rem', color: '#ea1d2c', fontWeight: 600, textDecoration: 'none' }}>
             Esqueceu?
           </a>
         </div>
@@ -105,13 +106,13 @@ export function LoginForm({ onSubmit, loading }: Props) {
         disabled={loading}
         style={{
           width: '100%', height: '48px',
-          background: loading ? '#1e40af' : 'linear-gradient(135deg, #2563eb, #4f46e5)',
+          background: loading ? '#fca5a5' : '#ea1d2c',
           color: '#fff', borderRadius: '12px',
           fontWeight: 700, fontSize: '0.9rem',
           border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
           opacity: loading ? 0.7 : 1,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          boxShadow: '0 4px 20px rgba(59,130,246,0.35)',
+          boxShadow: '0 4px 14px rgba(234,29,44,0.3)',
           transition: 'all 0.2s',
           marginTop: '4px'
         }}

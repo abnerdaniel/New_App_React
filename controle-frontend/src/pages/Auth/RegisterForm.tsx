@@ -9,8 +9,8 @@ interface Props {
 const inputWrapperStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: '10px',
   height: '44px', padding: '0 14px',
-  backgroundColor: '#0f172a',
-  border: '1px solid #1e2d45',
+  backgroundColor: '#f8fafc',
+  border: '1px solid #e2e8f0',
   borderRadius: '10px',
   transition: 'border-color 0.2s, box-shadow 0.2s',
   boxSizing: 'border-box',
@@ -20,20 +20,21 @@ const inputWrapperStyle: React.CSSProperties = {
 
 const focusedStyle: React.CSSProperties = {
   ...inputWrapperStyle,
-  border: '1px solid #3b82f6',
-  boxShadow: '0 0 0 3px rgba(59,130,246,0.15)',
+  backgroundColor: '#ffffff',
+  border: '1px solid #ef4444',
+  boxShadow: '0 0 0 3px rgba(239,68,68,0.1)',
 };
 
 const inputBase: React.CSSProperties = {
   flex: 1, background: 'transparent',
-  color: '#e2e8f0', outline: 'none',
+  color: '#334155', outline: 'none',
   fontSize: '0.875rem', border: 'none',
 };
 
 const labelStyle: React.CSSProperties = {
-  fontSize: '0.68rem', fontWeight: 600,
-  color: '#94a3b8', textTransform: 'uppercase' as const,
-  letterSpacing: '0.08em',
+  fontSize: '0.7rem', fontWeight: 600,
+  color: '#64748b', textTransform: 'uppercase' as const,
+  letterSpacing: '0.05em',
 };
 
 function Field({ label, type, value, onChange, placeholder, focusKey, focusField, setFocusField, disabled }: {
@@ -92,9 +93,9 @@ export function RegisterForm({ onSubmit, loading }: Props) {
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '13px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
       {error && (
         <div style={{
-          backgroundColor: 'rgba(127,29,29,0.4)', border: '1px solid rgba(239,68,68,0.3)',
-          color: '#fca5a5', padding: '10px 14px', borderRadius: '10px',
-          fontSize: '0.8rem', textAlign: 'center',
+          backgroundColor: '#fef2f2', border: '1px solid #fecaca',
+          color: '#ef4444', padding: '10px 14px', borderRadius: '10px',
+          fontSize: '0.8rem', textAlign: 'center', fontWeight: 500
         }}>
           {error}
         </div>
@@ -113,13 +114,13 @@ export function RegisterForm({ onSubmit, loading }: Props) {
         disabled={loading}
         style={{
           width: '100%', height: '46px',
-          background: loading ? '#312e81' : 'linear-gradient(135deg, #2563eb, #4f46e5)',
+          background: loading ? '#fca5a5' : '#ea1d2c',
           color: '#fff', border: 'none', borderRadius: '10px',
           fontWeight: 700, fontSize: '0.875rem',
           cursor: loading ? 'not-allowed' : 'pointer',
           opacity: loading ? 0.7 : 1,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          boxShadow: '0 4px 18px rgba(59,130,246,0.35)',
+          boxShadow: '0 4px 14px rgba(234,29,44,0.3)',
           transition: 'all 0.2s', marginTop: '4px',
         }}
       >

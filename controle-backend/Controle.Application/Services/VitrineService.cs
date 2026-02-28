@@ -56,7 +56,7 @@ namespace Controle.Application.Services
             var todosProdutosLoja = await _context.ProdutosLojas
                 .AsNoTracking()
                 .Where(pl => pl.LojaId == lojaId)
-                .Select(pl => new { pl.ProdutoId, pl.Id, pl.Preco, pl.Descricao, pl.Estoque, pl.Produto.Nome })
+                .Select(pl => new { pl.ProdutoId, pl.Id, pl.Preco, pl.Descricao, pl.Estoque, ProdutoNome = pl.Produto.Nome, ProdutoDescricao = pl.Produto.Descricao })
                 .ToDictionaryAsync(x => x.ProdutoId, x => x);
 
             // 3. Buscar todos os cardápios ativos da loja (com seus includes: Categorias e Produtos).
@@ -161,10 +161,10 @@ namespace Controle.Application.Services
                                 {
                                     Id = p.Id,
                                     Nome = p.Produto?.Nome ?? p.Descricao,
-                                    Descricao = p.Descricao,
+                                    Descricao = !string.IsNullOrWhiteSpace(p.Descricao) ? p.Descricao : (p.Produto?.Descricao ?? ""),
                                     Preco = p.Preco,
                                     Tipo = !string.IsNullOrEmpty(p.Produto?.Tipo) ? p.Produto.Tipo : "Outros",
-                                    UrlImagem = p.Produto?.URL_Imagem ?? "", 
+                                    UrlImagem = !string.IsNullOrWhiteSpace(p.ImagemUrl) ? p.ImagemUrl : (p.Produto?.URL_Imagem ?? ""), 
                                     Esgotado = p.Estoque <= 0,
                                     LojaId = loja.Id,
                                     Disponivel = p.Disponivel,
@@ -174,8 +174,8 @@ namespace Controle.Application.Services
                                             var extraLoja = todosProdutosLoja[pa.ProdutoFilhoId];
                                             return new ProdutoLojaDTO {
                                                 Id = extraLoja.Id,
-                                                Nome = extraLoja.Nome ?? extraLoja.Descricao,
-                                                Descricao = extraLoja.Descricao,
+                                                Nome = extraLoja.ProdutoNome ?? extraLoja.Descricao,
+                                                Descricao = !string.IsNullOrWhiteSpace(extraLoja.Descricao) ? extraLoja.Descricao : (extraLoja.ProdutoDescricao ?? ""),
                                                 Preco = extraLoja.Preco,
                                                 Esgotado = (extraLoja.Estoque ?? 0) <= 0,
                                                 LojaId = loja.Id

@@ -1,40 +1,39 @@
-# PLAN: Modernização da Página de Login do Admin (MenuTech)
+# PLAN: Adaptação da Página de Login ao Tema do Admin
 
 ## 📌 Objetivo
 
-Redesenhar a página de login do painel administrativo (`controle-frontend/src/pages/Auth/LoginPage.tsx`). O objetivo é transformar a tela de login atual (focada apenas no formulário) em uma **Landing Page moderna** que apresente as funcionalidades e diferenciais do produto, melhorando a conversão e percepção de valor.
+Ajustar o visual da página de login recém-recriada (`LoginPage.tsx` e `ProductFeatures.tsx`) para que fique 100% alinhada com a identidade visual do recém-criado tema Admin do projeto (MenuTech).
+Atualmente, a página de login usa tons escuros (`slate-900`, bg azulado), enquanto o projeto se baseia numa paleta clara com toques vibrantes em vermelho (ifood-like / MenuTech delivery red).
 
-## 🛠 Abordagem Arquitetural (Split Screen Moderno)
+## 🎨 Análise do Tema Global
 
-A nova página será dividida em duas áreas principais:
+Com base em `src/styles/global.css` e `tailwind.config.js`:
 
-1. **Lado Esquerdo (Branding & Funcionalidades):**
-   - Fundo com cor base da marca e gradientes/abstrações.
-   - Textos de impacto destacando:
-     - 🛍️ **Para o Cliente Final** (Cardápio Interativo, Formatos de Atendimento, URLs Amigáveis)
-     - ⚙️ **Para o Dono do Restaurante** (Gestão, Visão 360º, Funil "Pulso da Operação", Lojas e Métricas)
-     - 👨‍🍳 **Para a Operação (Garçons e Cozinha)** (UX Otimizada, KDS)
-   - Layout animado ou cards com glassmorphism apresentando esses pontos essenciais.
+- **Cor Primária:** `#EA1D2C` (Vermelho brand)
+- **Cor Primária Hover:** `#C91622`
+- **Superfícies:** Branca (`#FFFFFF`) e Fundos Off-white (`#F7F7F7`)
+- **Textos:** Escuros (`#3E3E3E`) e Suaves (`#717171`)
+- **Estilo:** Moderno, limpo (clean), focado em usabilidade SAAS delivery.
 
-2. **Lado Direito (Acesso & Formulário):**
-   - O formulário atual de Login/Registro e Google Login, com refinamentos visuais de uma Landing Page SAAS (bordas suaves, sombras elegantes, tipografia moderna).
+## 🛠 Proposta de Ajuste (Light & Modern Theme)
 
-## 🚀 Fase 2: Implementação e Agentes Envolvidos
+Iremos abandonar o fundo escuro (Dark Mode) da página de login e convertê-la para um layout claro, sofisticado e vibrante, alinhado ao tema.
 
-Após a aprovação deste plano, iniciaremos a **Fase 2 (Implementação Paralela)** utilizando os seguintes agentes:
+### Lado Esquerdo (`ProductFeatures.tsx` - O Produto)
 
-1. **`frontend-specialist`**:
-   - Vai refatorar `LoginPage.tsx` para o layout de _Split Screen_.
-   - Criar um componente de apresentação (`ProductFeatures`) para não poluir o arquivo principal.
-   - Garantir que o design atenda aos requisitos SAAS modernos (UI/UX limpa, responsiva).
+1. **Fundo:** Passará a ter um fundo branco ou um gradiente muito suave (ex: um off-white que puxe para o cinza bem claro).
+2. **Textos:** Títulos escuros (`text-slate-900` ou a cor nativa `--text-dark`), subtítulos cinza-médio (`text-slate-500`).
+3. **Ícones:** Manteremos a paleta variada nos ícones para dar cor e vida, mas reduziremos a intensidade dos glows para se adequarem a fundos claros, ou podemos focar tudo no vermelho da marca (`#EA1D2C`).
 
-2. **`backend-specialist` / `orchestrator` (Suporte)**:
-   - Auxiliar verificando se as chamadas de login não sofrerão impacto.
+### Lado Direito (`LoginPage.tsx` - O Acesso)
 
-3. **`test-engineer` / `code-reviewer`**:
-   - Rodará os scripts de verificação (ex: `lint_runner.py`, testes básicos de renderização).
-   - Validar responsividade para mobile (onde o Split Screen vira uma coluna única).
+1. **Fundo Geral:** Passará de `bg-[#0a0f1e]` para um off-white sutil (`bg-gray-50`).
+2. **Card de Login:** Fundo banco puro (`bg-white`) com borda suave (`border-gray-200`) e sombra leve moderna (`shadow-lg`).
+3. **Inputs/Botões:** O botão de login principal usará a cor Primária do sistema (Vermelho: `bg-[#EA1D2C]` hover `bg-[#C91622]`).
+4. **Abas:** Abas de 'Entrar' e 'Criar Conta' com borda de destaque vermelha em vez de azul.
 
-## ✅ Próximos Passos
+## 🚀 Próximos Passos
 
-Solicitamos a aprovação deste plano para acionar os agentes na Fase 2.
+Após sua aprovação, o agente `frontend-specialist` irá modificar os arquivos `LoginPage.tsx` e `ProductFeatures.tsx`, assegurando a tipografia (Inter) e as cores adequadas através de utilitários do Tailwind.
+
+Por fim, o `test-engineer` vai rodar a checagem tsc e de linter.
