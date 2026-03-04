@@ -17,11 +17,13 @@ namespace Controle.API.Controllers
     {
         private readonly ILojaService _lojaService;
         private readonly ILojaRepository _lojaRepository;
+        private readonly IAuthService _authService;
 
-        public SuperAdminController(ILojaService lojaService, ILojaRepository lojaRepository)
+        public SuperAdminController(ILojaService lojaService, ILojaRepository lojaRepository, IAuthService authService)
         {
             _lojaService = lojaService;
             _lojaRepository = lojaRepository;
+            _authService = authService;
         }
 
         private bool IsSuperAdmin()
@@ -94,6 +96,27 @@ namespace Controle.API.Controllers
                 loja.BloqueadaPorFaltaDePagamento,
                 loja.UrlComprovantePagamento
             });
+        }
+
+        /// <summary>
+        /// Gera um token de acesso para a loja especificada (Impersonation).
+        /// </summary>
+        [HttpPost("impersonate/{lojaId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> Impersonate(Guid lojaId)
+        {
+            if (!IsSuperAdmin()) return Forbid();
+
+            var result = await _authService.ImpersonateAsync(lojaId);
+
+            if (!result.Success)
+            {
+                return BadRequest(new { message = result.Error });
+            }
+
+            return Ok(result.Data);
         }
     }
 }

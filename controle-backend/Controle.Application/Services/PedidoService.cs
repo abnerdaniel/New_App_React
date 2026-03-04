@@ -6,6 +6,7 @@ using Controle.Application.DTOs;
 using Controle.Application.Interfaces;
 using Controle.Domain.Entities;
 using Controle.Domain.Exceptions;
+using Controle.Domain.Services;
 using Controle.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -368,11 +369,22 @@ namespace Controle.Application.Services
 
         public async Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(Guid lojaId)
         {
-            var statusVisiveis = new[] { "Aberto", "Pendente", "Aguardando Aceitação", "Em Preparo", "Pronto", "Saiu para Entrega" };
+            var statusVisiveis = new[] { 
+                PedidoStatusMachine.Aberto, 
+                PedidoStatusMachine.Pendente, 
+                PedidoStatusMachine.AguardandoAceitacao, 
+                PedidoStatusMachine.EmPreparo, 
+                PedidoStatusMachine.Pronto, 
+                PedidoStatusMachine.SaiuParaEntrega 
+            };
             
+            var hoje = DateTime.UtcNow.Date;
+
             return await _context.Pedidos
-                .Where(p => p.LojaId == lojaId && statusVisiveis.Contains(p.Status))
-                .Where(p => p.Status != "Aberto" || p.Sacola.Any()) // Só mostrar 'Aberto' se tiver itens
+                .Where(p => p.LojaId == lojaId && 
+                            (statusVisiveis.Contains(p.Status) || 
+                            (p.DataVenda >= hoje && (p.Status == PedidoStatusMachine.Entregue || p.Status == PedidoStatusMachine.Concluido || p.Status == PedidoStatusMachine.Cancelado))))
+                .Where(p => p.Status != PedidoStatusMachine.Aberto || p.Sacola.Any()) // Só mostrar 'Aberto' se tiver itens
                 .Include(p => p.Funcionario) // Include Waiter/Cashier info
                 .Include(p => p.Cliente)
                 .Include(p => p.EnderecoDeEntrega)
@@ -442,55 +454,11 @@ namespace Controle.Application.Services
 
                 if (pedido.Status == "Cancelado") throw new DomainException("Pedido já está cancelado.");
 
-                pedido.Status = "Cancelado";
+                pedido.Status = PedidoStatusMachine.Cancelado;
                 pedido.Descricao += $" (Cancelado: {motivo})"; // Append reason to description or handle as needed
 
                 // Estorno de Estoque
-                foreach (var item in pedido.Sacola)
-                {
-                    if (item.ProdutoLojaId.HasValue)
-                    {
-                        var produtoLoja = await _context.ProdutosLojas.FindAsync(item.ProdutoLojaId.Value);
-                        if (produtoLoja != null)
-                        {
-                            produtoLoja.Estoque = (produtoLoja.Estoque ?? 0) + item.Quantidade; // Sync Estorno
-                            produtoLoja.Vendas -= item.Quantidade; 
-                            _context.ProdutosLojas.Update(produtoLoja);
-                        }
-                    }
-                    else if (item.ComboId.HasValue)
-                    {
-                         // Estornar itens do Combo
-                         var combo = await _context.Combos
-                             .Include(c => c.Itens).ThenInclude(ci => ci.ProdutoLoja)
-                             .FirstOrDefaultAsync(c => c.Id == item.ComboId.Value);
-                         
-                         if (combo != null)
-                         {
-                             foreach(var ci in combo.Itens)
-                             {
-                                 ci.ProdutoLoja.Estoque = (ci.ProdutoLoja.Estoque ?? 0) + (ci.Quantidade * item.Quantidade); // Sync Estorno
-                                 ci.ProdutoLoja.Vendas -= (ci.Quantidade * item.Quantidade);
-                             }
-                         }
-                    }
-
-                    // Estornar ADICIONAIS
-                    if (item.Adicionais != null && item.Adicionais.Any())
-                    {
-                        foreach (var adicional in item.Adicionais)
-                        {
-                            var adicionalLoja = await _context.ProdutosLojas.FindAsync(adicional.ProdutoLojaId);
-                            if (adicionalLoja != null)
-                            {
-                                // Cada unidade do item principal consome 1 unidade do adicional
-                                adicionalLoja.Estoque = (adicionalLoja.Estoque ?? 0) + item.Quantidade; // Sync Estorno
-                                adicionalLoja.Vendas -= item.Quantidade;
-                                _context.ProdutosLojas.Update(adicionalLoja);
-                            }
-                        }
-                    }
-                }
+                await RestaurarEstoqueInternalAsync(pedido);
 
                 _context.Pedidos.Update(pedido);
                 await _context.SaveChangesAsync();
@@ -522,69 +490,18 @@ namespace Controle.Application.Services
             if (!loja.PermitirCancelamentoCliente)
                 throw new Exception("Esta loja não permite cancelamento pelo cliente.");
 
-            // Validar Status logic
-            int currentRank = GetStatusRank(pedido.Status);
-            int limitRank = GetStatusRank(loja.StatusMaximoCancelamento);
-
-            if (currentRank > limitRank)
+            // Validar Status logic usando StatusMachine
+            if (!PedidoStatusMachine.CanCancel(pedido.Status, loja.StatusMaximoCancelamento))
                 throw new Exception($"Cancelamento não permitido nesta etapa ({pedido.Status}).");
             
-            if (pedido.Status == "Cancelado")
+            if (pedido.Status == PedidoStatusMachine.Cancelado)
                  throw new Exception("Pedido já está cancelado.");
 
-            // Restaurar Estoque logic reusing Lojista logic or calling internal
-            // For now, I'll Copy-Paste logic or Refactor. 
-            // Better Copy-Paste to avoid breaking Lojista logic if I want to refactor later.
-            // Or better: Extract private method `RestaurarEstoque(Pedido pedido)`.
-            // But for speed and safety now, I will inline logic similar to Logista.
-            
-            // Actually, I can call `_produtoLojaService.RestaurarEstoque(pedido)` if I had it?
-            // Existing Lojista code does manual logic inside the method.
-            // I will inline it here too to match existing style.
-             foreach (var item in pedido.Sacola)
-                {
-                    if (item.ProdutoLojaId.HasValue)
-                    {
-                        var produtoLoja = await _context.ProdutosLojas.FindAsync(item.ProdutoLojaId.Value);
-                        if (produtoLoja != null)
-                        {
-                            produtoLoja.Estoque = (produtoLoja.Estoque ?? 0) + item.Quantidade;
-                            produtoLoja.Vendas -= item.Quantidade; 
-                            _context.ProdutosLojas.Update(produtoLoja);
-                        }
-                    }
-                    else if (item.ComboId.HasValue)
-                    {
-                         var combo = await _context.Combos
-                             .Include(c => c.Itens).ThenInclude(ci => ci.ProdutoLoja)
-                             .FirstOrDefaultAsync(c => c.Id == item.ComboId.Value);
-                         
-                         if (combo != null)
-                         {
-                             foreach(var ci in combo.Itens)
-                             {
-                                 ci.ProdutoLoja.Estoque = (ci.ProdutoLoja.Estoque ?? 0) + (ci.Quantidade * item.Quantidade);
-                                 ci.ProdutoLoja.Vendas -= (ci.Quantidade * item.Quantidade);
-                             }
-                         }
-                    }
-                    if (item.Adicionais != null && item.Adicionais.Any())
-                    {
-                        foreach (var adicional in item.Adicionais)
-                        {
-                            var adicionalLoja = await _context.ProdutosLojas.FindAsync(adicional.ProdutoLojaId);
-                            if (adicionalLoja != null)
-                            {
-                                adicionalLoja.Estoque = (adicionalLoja.Estoque ?? 0) + item.Quantidade;
-                                adicionalLoja.Vendas -= item.Quantidade;
-                                _context.ProdutosLojas.Update(adicionalLoja);
-                            }
-                        }
-                    }
-                }
+            // Restaurar Estoque
+            await RestaurarEstoqueInternalAsync(pedido);
 
             // Atualizar Pedido
-            pedido.Status = "Cancelado";
+            pedido.Status = PedidoStatusMachine.Cancelado;
             pedido.MotivoCancelamento = motivo;
 
             // Incrementar Contador do Cliente
@@ -609,20 +526,49 @@ namespace Controle.Application.Services
             return pedido;
         }
 
-        private int GetStatusRank(string? status)
+        private async Task RestaurarEstoqueInternalAsync(Pedido pedido)
         {
-            if (string.IsNullOrEmpty(status)) return -1;
-            switch (status.ToLower())
+            foreach (var item in pedido.Sacola)
             {
-                case "pendente": return 0;
-                case "aguardando": return 0; // Alias
-                case "aguardando aceitação": return 0; // Novo Status
-                case "em preparo": return 1;
-                case "pronto": return 2;
-                case "saiu para entrega": return 3;
-                case "entregue": return 4;
-                case "cancelado": return 99;
-                default: return 99;
+                if (item.ProdutoLojaId.HasValue)
+                {
+                    var produtoLoja = await _context.ProdutosLojas.FindAsync(item.ProdutoLojaId.Value);
+                    if (produtoLoja != null)
+                    {
+                        produtoLoja.Estoque = (produtoLoja.Estoque ?? 0) + item.Quantidade;
+                        produtoLoja.Vendas -= item.Quantidade;
+                        _context.ProdutosLojas.Update(produtoLoja);
+                    }
+                }
+                else if (item.ComboId.HasValue)
+                {
+                    var combo = await _context.Combos
+                        .Include(c => c.Itens).ThenInclude(ci => ci.ProdutoLoja)
+                        .FirstOrDefaultAsync(c => c.Id == item.ComboId.Value);
+
+                    if (combo != null)
+                    {
+                        foreach (var ci in combo.Itens)
+                        {
+                            ci.ProdutoLoja.Estoque = (ci.ProdutoLoja.Estoque ?? 0) + (ci.Quantidade * item.Quantidade);
+                            ci.ProdutoLoja.Vendas -= (ci.Quantidade * item.Quantidade);
+                        }
+                    }
+                }
+
+                if (item.Adicionais != null && item.Adicionais.Any())
+                {
+                    foreach (var adicional in item.Adicionais)
+                    {
+                        var adicionalLoja = await _context.ProdutosLojas.FindAsync(adicional.ProdutoLojaId);
+                        if (adicionalLoja != null)
+                        {
+                            adicionalLoja.Estoque = (adicionalLoja.Estoque ?? 0) + item.Quantidade;
+                            adicionalLoja.Vendas -= item.Quantidade;
+                            _context.ProdutosLojas.Update(adicionalLoja);
+                        }
+                    }
+                }
             }
         }
 
@@ -860,46 +806,48 @@ namespace Controle.Application.Services
             var itens = pedido.Sacola;
             string novoStatusPedido = pedido.Status;
 
-            // Logica Pedido
-            if (itens.All(i => i.Status == "Cancelado"))
+            // Logica Pedido baseada na state machine
+            if (itens.All(i => i.Status == PedidoStatusMachine.Cancelado))
             {
-                novoStatusPedido = "Cancelado";
+                novoStatusPedido = PedidoStatusMachine.Cancelado;
             }
-            else if (itens.All(i => i.Status == "Pronto" || i.Status == "Entregue" || i.Status == "Cancelado" || i.Status == "Concluido"))
+            else if (itens.All(i => i.Status == PedidoStatusMachine.Pronto || i.Status == PedidoStatusMachine.Entregue || i.Status == PedidoStatusMachine.Cancelado || i.Status == PedidoStatusMachine.Concluido || i.Status == PedidoStatusMachine.SaiuParaEntrega))
             {
-                // Se tudo pronto/entregue, qual o status final?
-                // Se tem algo Entregue, vamos assumir que o pedido todo está caminhando para Entregue?
-                // Se TODOS sao "Entregue", entao "Entregue".
-                if (itens.All(i => i.Status == "Entregue" || i.Status == "Cancelado")) 
-                    novoStatusPedido = "Entregue";
-                else if (itens.All(i => i.Status == "Pronto" || i.Status == "Entregue" || i.Status == "Cancelado"))
-                    novoStatusPedido = "Pronto";
+                if (itens.All(i => i.Status == PedidoStatusMachine.Entregue || i.Status == PedidoStatusMachine.Cancelado)) 
+                    novoStatusPedido = PedidoStatusMachine.Entregue;
+                else if (itens.All(i => i.Status == PedidoStatusMachine.SaiuParaEntrega || i.Status == PedidoStatusMachine.Entregue || i.Status == PedidoStatusMachine.Cancelado))
+                    novoStatusPedido = PedidoStatusMachine.SaiuParaEntrega;
+                else if (itens.All(i => i.Status == PedidoStatusMachine.Pronto || i.Status == PedidoStatusMachine.Entregue || i.Status == PedidoStatusMachine.Cancelado || i.Status == PedidoStatusMachine.SaiuParaEntrega))
+                    novoStatusPedido = PedidoStatusMachine.Pronto;
             }
-            else if (itens.Any(i => i.Status == "Em Preparo"))
+            else if (itens.Any(i => i.Status == PedidoStatusMachine.EmPreparo || i.Status == PedidoStatusMachine.Preparando))
             {
-                novoStatusPedido = "Em Preparo";
+                novoStatusPedido = PedidoStatusMachine.EmPreparo;
             }
-            else if (itens.Any(i => string.IsNullOrEmpty(i.Status) || i.Status == "Pendente" || i.Status == "Aguardando Aceitação"))
+            else if (itens.Any(i => string.IsNullOrEmpty(i.Status) || i.Status == PedidoStatusMachine.Pendente || i.Status == PedidoStatusMachine.AguardandoAceitacao))
             {
-                // Se sobrou item pendente (ex: adicionado depois), o status volta a ser Pendente/Em Preparo
-                novoStatusPedido = (pedido.Loja != null && pedido.Loja.AceiteAutomatico) ? "Em Preparo" : "Aguardando Aceitação";
+                novoStatusPedido = (pedido.Loja != null && pedido.Loja.AceiteAutomatico) ? PedidoStatusMachine.EmPreparo : PedidoStatusMachine.AguardandoAceitacao;
             }
-            
-            // Logica Especial para Mesa vs Delivery (Overrides)
-            /*
-            if (pedido.IsRetirada || (pedido.NumeroMesa.HasValue && pedido.NumeroMesa > 0))
-            {
-                // Local
-                 if (itens.All(i => i.Status == "Entregue" || i.Status == "Cancelado"))
-                {
-                    novoStatusPedido = "Entregue";
-                }
-            }
-            */
-            // A lógica genérica acima já cobre bem: Se ALL Entregue -> Entregue.
 
             if (pedido.Status != novoStatusPedido) 
             {
+                // Auto-Dispatch Logic for "Pronto"
+                if (novoStatusPedido == PedidoStatusMachine.Pronto && (pedido.Loja?.DespachoAutomatico == true))
+                {
+                    if (!pedido.IsRetirada)
+                    {
+                        novoStatusPedido = PedidoStatusMachine.SaiuParaEntrega;
+                        foreach(var item in pedido.Sacola)
+                        {
+                            if (item.Status != PedidoStatusMachine.Cancelado && item.Status != PedidoStatusMachine.Entregue)
+                            {
+                                item.Status = PedidoStatusMachine.SaiuParaEntrega;
+                                _context.Entry(item).State = EntityState.Modified;
+                            }
+                        }
+                    }
+                }
+
                 pedido.Status = novoStatusPedido;
                 _context.Pedidos.Update(pedido);
                 await _context.SaveChangesAsync();
@@ -910,7 +858,6 @@ namespace Controle.Application.Services
             {
                 await _mesaService.RecalcularStatusMesaAsync(pedido.NumeroMesa.Value);
             }
-
 
             return pedido;
         }

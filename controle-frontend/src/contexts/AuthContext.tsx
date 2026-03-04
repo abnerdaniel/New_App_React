@@ -12,6 +12,9 @@ interface AuthContextData {
   selectLoja: (lojaId: string) => void;
   updateActiveLoja: (dados: Partial<LojaResumo>) => void;
   isAuthenticated: boolean;
+  impersonate: (authData: AuthResponse) => void;
+  revertImpersonation: () => void;
+  isImpersonating: boolean;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -114,6 +117,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.removeItem('@App:user');
     localStorage.removeItem('@App:activeLoja');
     localStorage.removeItem('@App:activeFuncionario');
+    localStorage.removeItem('@App:superadmin_token');
+    localStorage.removeItem('@App:superadmin_user');
+  };
+
+  const impersonate = (authData: AuthResponse) => {
+    // Save current super admin state before overriding
+    if (token && user) {
+        localStorage.setItem('@App:superadmin_token', token);
+        localStorage.setItem('@App:superadmin_user', JSON.stringify(user));
+    }
+    // Perform normal login flow with the impersonated data
+    login(authData);
+  };
+
+  const revertImpersonation = () => {
+    const saToken = localStorage.getItem('@App:superadmin_token');
+    const saUserStr = localStorage.getItem('@App:superadmin_user');
+    
+    if (saToken && saUserStr) {
+        const saUser = JSON.parse(saUserStr);
+        setToken(saToken);
+        setUser(saUser);
+        setActiveLoja(null);
+        setActiveFuncionario(null);
+
+        localStorage.setItem('@App:token', saToken);
+        localStorage.setItem('@App:user', saUserStr);
+        localStorage.removeItem('@App:activeLoja');
+        localStorage.removeItem('@App:activeFuncionario');
+        localStorage.removeItem('@App:superadmin_token');
+        localStorage.removeItem('@App:superadmin_user');
+    } else {
+        logout();
+    }
   };
 
   const updateActiveLoja = (dados: Partial<LojaResumo>) => {
@@ -132,6 +169,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const isAuthenticated = !!token && !!user;
+  const isImpersonating = !!localStorage.getItem('@App:superadmin_token');
 
   return (
     <AuthContext.Provider
@@ -146,6 +184,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         selectLoja,
         updateActiveLoja,
         isAuthenticated,
+        impersonate,
+        revertImpersonation,
+        isImpersonating,
       }}
     >
       {children}

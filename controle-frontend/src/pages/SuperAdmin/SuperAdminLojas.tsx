@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ShieldAlert, Save, Lock, Unlock, Image as ImageIcon } from 'lucide-react';
+import { ShieldAlert, Save, Lock, Unlock, Image as ImageIcon, LogIn } from 'lucide-react';
 import { api } from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -17,7 +17,7 @@ interface LojaAdmin {
 }
 
 export function SuperAdminLojas() {
-  const { user } = useAuth();
+  const { user, impersonate } = useAuth();
   const navigate = useNavigate();
   const [lojas, setLojas] = useState<LojaAdmin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +54,17 @@ export function SuperAdminLojas() {
     setEditLicenca(loja.licencaValidaAte ? loja.licencaValidaAte.split('T')[0] : '');
     setEditBloqueada(loja.bloqueadaPorFaltaDePagamento);
     setEditUrl(loja.urlComprovantePagamento || '');
+  };
+
+  const handleImpersonate = async (loja: LojaAdmin) => {
+    try {
+      const res = await api.post(`/api/superadmin/impersonate/${loja.id}`);
+      impersonate(res.data);
+      navigate('/dashboard');
+    } catch (error) {
+       console.error("Erro ao acessar loja", error);
+       alert("Erro ao tentar acessar a loja.");
+    }
   };
 
   const saveEdit = async (id: string) => {
@@ -192,12 +203,21 @@ export function SuperAdminLojas() {
                           <Save size={18} />
                         </button>
                       ) : (
-                        <button 
-                          onClick={() => startEdit(loja)}
-                          className="bg-gray-100 text-gray-600 px-3 py-1.5 rounded hover:bg-gray-200 text-sm font-medium transition-colors"
-                        >
-                          Editar
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                            <button 
+                              onClick={() => handleImpersonate(loja)}
+                              className="bg-brand-primary/10 text-brand-primary px-3 py-1.5 rounded hover:bg-brand-primary hover:text-white inline-flex items-center gap-1 text-sm font-medium transition-colors"
+                              title="Acessar como dono"
+                            >
+                              <LogIn size={16} /> Acessar
+                            </button>
+                            <button 
+                              onClick={() => startEdit(loja)}
+                              className="bg-gray-100 text-gray-600 px-3 py-1.5 rounded hover:bg-gray-200 text-sm font-medium transition-colors"
+                            >
+                              Editar
+                            </button>
+                        </div>
                       )}
                     </td>
 

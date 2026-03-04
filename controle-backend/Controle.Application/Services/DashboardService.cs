@@ -7,6 +7,7 @@ using Controle.Application.DTOs;
 using Controle.Application.Interfaces;
 using Controle.Domain.Interfaces;
 using Controle.Domain.Entities;
+using Controle.Domain.Services;
 
 namespace Controle.Application.Services
 {
@@ -31,11 +32,11 @@ namespace Controle.Application.Services
             var hoje = DateTime.UtcNow.Date;
             var pedidosHoje = pedidos.Where(p => p.LojaId == lojaId && p.DataVenda.Date == hoje).ToList();
 
-            var totalVendido = pedidosHoje.Where(p => p.Status != "Cancelado").Sum(p => p.ValorTotal); // Sum de int? returns int? mas se erro diz int e int, vamos confiar. Se der erro converteremos.
+            var totalVendido = pedidosHoje.Where(p => p.Status != PedidoStatusMachine.Cancelado).Sum(p => p.ValorTotal); // Sum de int? returns int? mas se erro diz int e int, vamos confiar. Se der erro converteremos.
             // Na verdade, se ValorTotal é int?, Sum deve retornar int? ou 0 se vazio?
             // Teste: Se der erro de conversão int? para int, usaremos (int)(Sum(...) ?? 0).
             // O erro anterior foi "Operator ?? cannot be applied to int and int". Entao retorna int.
-            var pedidosCancelados = pedidosHoje.Count(p => p.Status == "Cancelado");
+            var pedidosCancelados = pedidosHoje.Count(p => p.Status == PedidoStatusMachine.Cancelado);
             var totalPedidos = pedidosHoje.Count;
             var ticketMedio = totalPedidos > 0 ? (totalVendido ?? 0) / totalPedidos : 0; // Se totalVendido é int?, precisamos tratar aqui.
             // Se totalVendido é int, o compilador reclamará do ?? 0 aqui também.
@@ -63,7 +64,7 @@ namespace Controle.Application.Services
             // Filter by Today to match "Ranking do Dia" requirement
             var hoje = DateTime.UtcNow.Date;
             var pedidosLoja = pedidos
-                .Where(p => p.LojaId == lojaId && p.Status != "Cancelado" && p.DataVenda.Date == hoje)
+                .Where(p => p.LojaId == lojaId && p.Status != PedidoStatusMachine.Cancelado && p.DataVenda.Date == hoje)
                 .ToList();
             
             var pedidoIds = pedidosLoja.Select(p => p.Id).ToList();
@@ -95,7 +96,7 @@ namespace Controle.Application.Services
              // Ou todos os ativos? Geralmente o funil é o "agora".
              // Vamos pegar pedidos abertos ou do dia.
              var pedidosAtivos = pedidos.Where(p => p.LojaId == lojaId && 
-                (p.Status != "Concluido" && p.Status != "Cancelado" && p.Status != "Entregue") || (p.DataVenda.Date == hoje)).ToList();
+                (p.Status != PedidoStatusMachine.Concluido && p.Status != PedidoStatusMachine.Cancelado && p.Status != PedidoStatusMachine.Entregue) || (p.DataVenda.Date == hoje)).ToList();
 
              // Refinando lógica: O funil deve mostrar o estado ATUAL.
              // Novos: Pendente
@@ -105,10 +106,10 @@ namespace Controle.Application.Services
 
              return new DashboardFunilDTO
              {
-                 Novos = pedidosAtivos.Count(p => p.Status == "Pendente" || p.Status == "Recebido" || p.Status == "Aguardando"),
-                 NaCozinha = pedidosAtivos.Count(p => p.Status == "Aceito" || p.Status == "Em Preparo"),
-                 Prontos = pedidosAtivos.Count(p => p.Status == "Pronto" || p.Status == "Aguardando Entregador"),
-                 EmRota = pedidosAtivos.Count(p => p.Status == "Saiu para Entrega" || p.Status == "Em Entrega")
+                 Novos = pedidosAtivos.Count(p => p.Status == PedidoStatusMachine.Pendente || p.Status == "Recebido" || p.Status == "Aguardando" || p.Status == PedidoStatusMachine.AguardandoAceitacao),
+                 NaCozinha = pedidosAtivos.Count(p => p.Status == "Aceito" || p.Status == PedidoStatusMachine.EmPreparo),
+                 Prontos = pedidosAtivos.Count(p => p.Status == PedidoStatusMachine.Pronto || p.Status == "Aguardando Entregador"),
+                 EmRota = pedidosAtivos.Count(p => p.Status == PedidoStatusMachine.SaiuParaEntrega || p.Status == "Em Entrega")
              };
         }
 
@@ -138,7 +139,7 @@ namespace Controle.Application.Services
             // Status de cozinha
             var pedidosAtrasados = pedidos
                 .Where(p => p.LojaId == lojaId && 
-                            (p.Status == "Em Preparo" || p.Status == "Aceito") && 
+                            (p.Status == PedidoStatusMachine.EmPreparo || p.Status == "Aceito") && 
                             p.DataVenda < limiteAtraso)
                 .ToList();
 
@@ -177,7 +178,7 @@ namespace Controle.Application.Services
                 .Where(p => p.LojaId == lojaId 
                             && p.DataVenda >= dataInicio 
                             && p.DataVenda <= dataFim
-                            && p.Status != "Cancelado") 
+                            && p.Status != PedidoStatusMachine.Cancelado) 
                 .ToList();
 
             var dto = new FinanceiroResumoDTO();
@@ -261,7 +262,7 @@ namespace Controle.Application.Services
                  NumeroPedido = p.Id,
                  DataHora = p.DataVenda,
                  NomeCliente = p.Cliente?.Nome ?? "Cliente Balcão",
-                 Tipo = p.Status == "Cancelado" ? "Cancelamento" : "Venda",
+                 Tipo = p.Status == PedidoStatusMachine.Cancelado ? "Cancelamento" : "Venda",
                  Status = p.Status ?? "Desconhecido",
                  FormaPagamento = p.MetodoPagamento ?? "N/A",
                  ValorTotal = (decimal)(p.ValorTotal ?? 0) / 100m

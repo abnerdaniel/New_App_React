@@ -4,6 +4,7 @@ import { api } from '../../api/axios';
 import { Clock, User, CheckCircle, Truck, UtensilsCrossed, AlertCircle, ChefHat, MapPin, Bike, Phone, X, MessageCircle, Printer } from 'lucide-react';
 import { formatPhoneForWhatsapp } from '../../utils/formatters';
 import { printReceipt } from '../../utils/printReceipt';
+import { PedidoStatus } from '../../constants/pedidoStatus';
 
 interface PedidoMonitor {
   id: number;
@@ -66,7 +67,7 @@ export function MonitorPedidos() {
   const { activeLoja } = useAuth();
   const [pedidos, setPedidos] = useState<PedidoMonitor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState<'todos' | 'delivery' | 'local'>('todos');
+  const [filterType, setFilterType] = useState<'todos' | 'delivery' | 'local' | 'historico'>('todos');
   
   // Dispatch Modal State
   const [showDispatchModal, setShowDispatchModal] = useState(false);
@@ -158,6 +159,15 @@ export function MonitorPedidos() {
   };
 
   const filteredPedidos = pedidos.filter(p => {
+    // Determine if it's finished (history)
+    const isFinished = p.status === PedidoStatus.Concluido || p.status === PedidoStatus.Cancelado || p.status === PedidoStatus.Entregue;
+    
+    // If we're looking at history, only show finished orders
+    if (filterType === 'historico') return isFinished;
+    
+    // If not history, hide finished orders from active tabs
+    if (isFinished) return false;
+
     const isMesa = (p.numeroMesa && p.numeroMesa > 0);
     const hasAddress = p.enderecoDeEntrega && (p.enderecoDeEntrega.logradouro || p.enderecoDeEntrega.bairro);
     
@@ -174,19 +184,19 @@ export function MonitorPedidos() {
     
     if (filterType === 'delivery') return isDelivery;
     if (filterType === 'local') return isLocal;
-    return true;
+    return true; // 'todos' tab (but we already filtered out completed above)
   });
 
   const getStatusColor = (status: string) => {
       switch(status) {
-          case 'Pendente': 
-          case 'Aguardando Aceitação': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-          case 'Em Preparo': return 'bg-blue-100 text-blue-800 border-blue-200';
-          case 'Pronto': return 'bg-green-100 text-green-800 border-green-200';
-          case 'Saiu para Entrega':
-          case 'Entregue': 
+          case PedidoStatus.Pendente: 
+          case PedidoStatus.AguardandoAceitacao: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+          case PedidoStatus.EmPreparo: return 'bg-blue-100 text-blue-800 border-blue-200';
+          case PedidoStatus.Pronto: return 'bg-green-100 text-green-800 border-green-200';
+          case PedidoStatus.SaiuParaEntrega:
+          case PedidoStatus.Entregue: 
             return 'bg-purple-100 text-purple-800 border-purple-200';
-          case 'Concluido': return 'bg-gray-100 text-gray-800 border-gray-200';
+          case PedidoStatus.Concluido: return 'bg-gray-100 text-gray-800 border-gray-200';
           default: return 'bg-gray-100 text-gray-800 border-gray-200';
       }
   };
@@ -210,9 +220,10 @@ export function MonitorPedidos() {
           </div>
           
           <div className="flex bg-gray-100 p-1 rounded-lg">
-              <button onClick={() => setFilterType('todos')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${filterType === 'todos' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Todos ({pedidos.length})</button>
+              <button onClick={() => setFilterType('todos')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${filterType === 'todos' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Todos Activos</button>
               <button onClick={() => setFilterType('local')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${filterType === 'local' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Local / Mesa</button>
               <button onClick={() => setFilterType('delivery')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${filterType === 'delivery' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Delivery</button>
+              <button onClick={() => setFilterType('historico')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${filterType === 'historico' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}>Histórico Hoje</button>
           </div>
       </div>
 
@@ -349,29 +360,29 @@ export function MonitorPedidos() {
                                                   <button 
                                                      onClick={(e) => {
                                                          e.stopPropagation();
-                                                         const nextStatus = (!item.status || item.status === 'Pendente') ? 'Em Preparo' 
-                                                             : item.status === 'Em Preparo' ? 'Pronto' 
-                                                             : item.status === 'Pronto' ? 'Entregue' 
-                                                             : 'Pendente';
+                                                         const nextStatus = (!item.status || item.status === PedidoStatus.Pendente) ? PedidoStatus.Preparando 
+                                                             : item.status === PedidoStatus.Preparando ? PedidoStatus.Pronto 
+                                                             : item.status === PedidoStatus.Pronto ? PedidoStatus.Entregue 
+                                                             : PedidoStatus.Pendente;
                                                          updateItemStatus(item.id, nextStatus);
                                                      }}
                                                      className={`
                                                          ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border transition-colors whitespace-nowrap
-                                                         ${!item.status || item.status === 'Pendente' ? 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' : ''}
-                                                         ${item.status === 'Em Preparo' ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' : ''}
-                                                         ${item.status === 'Pronto' ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : ''}
-                                                         ${item.status === 'Entregue' ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' : ''}
-                                                         ${item.status === 'Saiu para Entrega' ? 'bg-purple-100 text-purple-800 border-purple-300' : ''}
-                                                         ${item.status === 'Cancelado' ? 'bg-red-50 text-red-700 border-red-200' : ''}
+                                                         ${!item.status || item.status === PedidoStatus.Pendente ? 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' : ''}
+                                                         ${item.status === PedidoStatus.Preparando ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' : ''}
+                                                         ${item.status === PedidoStatus.Pronto ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : ''}
+                                                         ${item.status === PedidoStatus.Entregue ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' : ''}
+                                                         ${item.status === PedidoStatus.SaiuParaEntrega ? 'bg-purple-100 text-purple-800 border-purple-300' : ''}
+                                                         ${item.status === PedidoStatus.Cancelado ? 'bg-red-50 text-red-700 border-red-200' : ''}
                                                      `}
                                                      title="Alterar status do item"
                                                    >
                                                        <span className="flex items-center gap-1">
-                                                         {(!item.status || item.status === 'Pendente') && <Clock size={10} />}
-                                                         {item.status === 'Em Preparo' && <ChefHat size={10} />}
-                                                         {item.status === 'Pronto' && <CheckCircle size={10} />}
-                                                         {(item.status === 'Entregue' || item.status === 'Saiu para Entrega') && <UtensilsCrossed size={10} />}
-                                                         {item.status || 'Pendente'}
+                                                         {(!item.status || item.status === PedidoStatus.Pendente) && <Clock size={10} />}
+                                                         {item.status === PedidoStatus.Preparando && <ChefHat size={10} />}
+                                                         {item.status === PedidoStatus.Pronto && <CheckCircle size={10} />}
+                                                         {(item.status === PedidoStatus.Entregue || item.status === PedidoStatus.SaiuParaEntrega) && <UtensilsCrossed size={10} />}
+                                                         {item.status || PedidoStatus.Pendente}
                                                        </span>
                                                    </button>
                                              </div>
@@ -388,30 +399,48 @@ export function MonitorPedidos() {
                          </div>
 
                          {/* Card Actions */}
-                         <div className="p-3 border-t bg-gray-50 rounded-b-xl flex gap-2">
-                             {(pedido.status === 'Aguardando Aceitação' || pedido.status === 'Pendente') && (
-                                 <button onClick={() => updateStatus(pedido.id, 'Em Preparo')} className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-sm">Aceitar & Preparar</button>
-                             )}
-                             {pedido.status === 'Em Preparo' && (
-                                 <button onClick={() => updateStatus(pedido.id, 'Pronto')} className="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-green-700 transition-colors shadow-sm">Marcar como Pronto</button>
-                             )}
-                             {pedido.status === 'Pronto' && (
-                                 <button 
-                                     onClick={() => {
-                                         if (pedido.isRetirada || (pedido.numeroMesa && pedido.numeroMesa > 0)) {
-                                             updateStatus(pedido.id, 'Entregue');
-                                         } else {
-                                             handleOpenDispatchModal(pedido);
-                                         }
-                                     }}
-                                     className="flex-1 bg-gray-800 text-white py-2 rounded-lg font-bold text-sm hover:bg-black transition-colors shadow-sm flex items-center justify-center gap-2"
+                         <div className="p-3 border-t bg-gray-50 rounded-b-xl flex flex-col gap-2">
+                             <div className="flex gap-2">
+                                 <select 
+                                     value={pedido.status || PedidoStatus.Pendente}
+                                     onChange={(e) => updateStatus(pedido.id, e.target.value)}
+                                     className="bg-white border border-gray-300 text-gray-700 text-xs rounded-lg focus:ring-brand-primary focus:border-brand-primary block p-2 flex-1 outline-none font-medium shadow-sm"
+                                     title="Alterar status manualmente"
                                  >
-                                     {(pedido.isRetirada || (pedido.numeroMesa && pedido.numeroMesa > 0)) ? 'Entregue na Mesa/Balcão' : <><Bike size={16}/> Despachar Entrega</>}
-                                 </button>
-                             )}
-                             {pedido.status === 'Saiu para Entrega' && (
-                                 <button onClick={() => updateStatus(pedido.id, 'Entregue')} className="flex-1 bg-green-700 text-white py-2 rounded-lg font-bold text-sm hover:bg-green-800 transition-colors shadow-sm">Confirmar Entrega</button>
-                             )}
+                                     <option value={PedidoStatus.AguardandoAceitacao}>Aguardando Aceitação</option>
+                                     <option value={PedidoStatus.Pendente}>Pendente</option>
+                                     <option value={PedidoStatus.EmPreparo}>Em Preparo</option>
+                                     <option value={PedidoStatus.Pronto}>Pronto</option>
+                                     <option value={PedidoStatus.SaiuParaEntrega}>Saiu para Entrega</option>
+                                     <option value={PedidoStatus.Entregue}>Entregue</option>
+                                     <option value={PedidoStatus.Concluido}>Concluído</option>
+                                     <option value={PedidoStatus.Cancelado}>Cancelado</option>
+                                 </select>
+
+                                 {(pedido.status === PedidoStatus.AguardandoAceitacao || pedido.status === PedidoStatus.Pendente) && (
+                                     <button onClick={() => updateStatus(pedido.id, PedidoStatus.EmPreparo)} className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition-colors shadow-sm">Aceitar & Preparar</button>
+                                 )}
+                                 {pedido.status === PedidoStatus.EmPreparo && (
+                                     <button onClick={() => updateStatus(pedido.id, PedidoStatus.Pronto)} className="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold text-xs hover:bg-green-700 transition-colors shadow-sm">Marcar como Pronto</button>
+                                 )}
+                                 {pedido.status === PedidoStatus.Pronto && (
+                                     <button 
+                                         onClick={() => {
+                                             if (pedido.isRetirada || (pedido.numeroMesa && pedido.numeroMesa > 0)) {
+                                                 updateStatus(pedido.id, PedidoStatus.Entregue);
+                                             } else {
+                                                 handleOpenDispatchModal(pedido);
+                                             }
+                                         }}
+                                         className="flex-1 bg-gray-800 text-white py-2 rounded-lg font-bold text-xs hover:bg-black transition-colors shadow-sm flex items-center justify-center gap-1"
+                                     >
+                                         {(pedido.isRetirada || (pedido.numeroMesa && pedido.numeroMesa > 0)) ? 'Entregue na Mesa/Balcão' : <><Bike size={14}/> Despachar</>}
+                                     </button>
+                                 )}
+                                 {pedido.status === PedidoStatus.SaiuParaEntrega && (
+                                     <button onClick={() => updateStatus(pedido.id, PedidoStatus.Entregue)} className="flex-1 bg-green-700 text-white py-2 rounded-lg font-bold text-xs hover:bg-green-800 transition-colors shadow-sm">Confirmar Entrega</button>
+                                 )}
+                             </div>
                          </div>
                      </div>
                  ))}

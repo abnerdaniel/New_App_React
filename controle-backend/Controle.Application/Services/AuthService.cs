@@ -475,5 +475,77 @@ namespace Controle.Application.Services
             var hashOfInput = HashPassword(password);
             return hashOfInput == hash;
         }
+
+        public async Task<Result<AuthResponse>> ImpersonateAsync(Guid lojaId)
+        {
+            var loja = await _lojaRepository.GetByIdAsync(lojaId);
+            if (loja == null)
+            {
+                return Result<AuthResponse>.Fail("Loja não encontrada.");
+            }
+
+            var usuario = await _usuarioRepository.GetByIdAsync(loja.UsuarioId);
+            if (usuario == null)
+            {
+                return Result<AuthResponse>.Fail("Usuário dono da loja não encontrado.");
+            }
+
+            // Fetches employees linked to this user
+            var funcionarios = await _funcionarioRepository.GetByUsuarioIdAsync(usuario.Id);
+            var funcionariosDto = new List<FuncionarioResumoDTO>();
+            int? primaryFuncionarioId = null;
+
+            foreach (var f in funcionarios)
+            {
+                var cargo = await _cargoRepository.GetByIdAsync(f.CargoId);
+                funcionariosDto.Add(new FuncionarioResumoDTO
+                {
+                    Id = f.Id,
+                    LojaId = f.LojaId,
+                    Cargo = cargo?.Nome ?? "Desconhecido",
+                    Ativo = f.Ativo,
+                    AcessoSistemaCompleto = f.AcessoSistemaCompleto,
+                    Telefone = f.Telefone
+                });
+                
+                // Picking the first active one from this specific store
+                if (primaryFuncionarioId == null && f.Ativo && f.LojaId == lojaId) 
+                    primaryFuncionarioId = f.Id;
+            }
+            
+            // If none found for this store, try finding any active one
+            if (primaryFuncionarioId == null)
+            {
+                primaryFuncionarioId = funcionarios.FirstOrDefault(f => f.Ativo)?.Id;
+            }
+
+            var token = GenerateJwtToken(usuario, primaryFuncionarioId);
+
+            // Fetch stores tied to this user
+            var lojas = await _lojaRepository.GetByUsuarioIdAsync(usuario.Id);
+            var lojasDto = lojas.Select(l => new LojaResumoDTO
+            {
+                Id = l.Id,
+                Nome = l.Nome,
+                Slug = l.Slug,
+                ImagemUrl = l.LogoUrl,
+                Aberta = l.AbertaManualmente != false,
+                LicencaValidaAte = l.LicencaValidaAte,
+                BloqueadaPorFaltaDePagamento = l.BloqueadaPorFaltaDePagamento
+            }).ToList();
+
+            var response = new AuthResponse
+            {
+                Id = usuario.Id,
+                Nome = usuario.Nome,
+                Login = usuario.Login,
+                Email = usuario.Email,
+                Token = token,
+                Lojas = lojasDto,
+                Funcionarios = funcionariosDto
+            };
+
+            return Result<AuthResponse>.Ok(response);
+        }
     }
 }

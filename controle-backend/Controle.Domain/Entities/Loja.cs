@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Controle.Domain.Services;
 
 namespace Controle.Domain.Entities;
 public class Loja
@@ -49,7 +50,7 @@ public class Loja
     
     // Configuração de Cancelamento
     public bool PermitirCancelamentoCliente { get; set; } = true;
-    public string StatusMaximoCancelamento { get; set; } = "Saiu para Entrega"; // "Pendente", "Em Preparo", "Saiu para Entrega"
+    public string StatusMaximoCancelamento { get; set; } = PedidoStatusMachine.SaiuParaEntrega; // "Pendente", "Em Preparo", "Saiu para Entrega"
     
     // Configuração de Delivery
     public bool AceitandoPedidos { get; set; } = true; // Se false, não aceita novos pedidos delivery

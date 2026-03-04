@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Controle.Application.Interfaces;
 using Controle.Domain.Entities;
 using Controle.Domain.Exceptions;
+using Controle.Domain.Services;
 using Controle.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -99,9 +100,9 @@ public class MesaService : IMesaService
         var mesa = await _context.Mesas.Include(m => m.PedidoAtual).FirstOrDefaultAsync(m => m.Id == mesaId);
         if (mesa == null) throw new DomainException("Mesa não encontrada.");
 
-        if (mesa.PedidoAtual != null && mesa.PedidoAtual.Status == "Aberto")
+        if (mesa.PedidoAtual != null && mesa.PedidoAtual.Status == PedidoStatusMachine.Aberto)
         {
-             mesa.PedidoAtual.Status = "Concluido";
+             mesa.PedidoAtual.Status = PedidoStatusMachine.Concluido;
         }
 
         mesa.Status = "Livre";
@@ -199,7 +200,7 @@ public class MesaService : IMesaService
         if (item == null) throw new DomainException("Item não encontrado.");
 
         var pedido = await _context.Pedidos.FindAsync(item.PedidoId);
-        if (pedido == null || pedido.Status != "Aberto")
+        if (pedido == null || pedido.Status != PedidoStatusMachine.Aberto)
             throw new DomainException("Pedido não encontrado ou já fechado.");
 
         _context.Set<PedidoItem>().Remove(item);
@@ -217,7 +218,7 @@ public class MesaService : IMesaService
     {
         var pedido = await _context.Pedidos.FindAsync(pedidoId);
         if (pedido == null) throw new DomainException("Pedido não encontrado.");
-        if (pedido.Status != "Aberto")
+        if (pedido.Status != PedidoStatusMachine.Aberto)
             throw new DomainException("Não é possível aplicar desconto em pedido fechado.");
 
         pedido.Desconto = desconto;
@@ -323,7 +324,7 @@ public class MesaService : IMesaService
                 .FirstOrDefaultAsync(m => m.Id == mesaId);
 
             if (mesa == null) return;
-            if (mesa.PedidoAtual == null || mesa.PedidoAtual.Status == "Cancelado" || mesa.PedidoAtual.Status == "Concluido")
+            if (mesa.PedidoAtual == null || mesa.PedidoAtual.Status == PedidoStatusMachine.Cancelado || mesa.PedidoAtual.Status == PedidoStatusMachine.Concluido)
             {
                 if (mesa.Status != "Livre")
                 {
@@ -339,7 +340,7 @@ public class MesaService : IMesaService
             string novoStatus = "Ocupada"; // Default if items exist
 
             // Se tem algum item não entregue (Pendente, Em Preparo, Pronto) -> Esperando
-            if (itens.Any(i => i.Status != "Entregue" && i.Status != "Cancelado"))
+            if (itens.Any(i => i.Status != PedidoStatusMachine.Entregue && i.Status != PedidoStatusMachine.Cancelado))
             {
                 novoStatus = "Esperando";
             }
