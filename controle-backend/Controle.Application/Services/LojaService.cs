@@ -8,6 +8,9 @@ using Controle.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
+using System.Text;
+using System.Text.RegularExpressions;
+
 namespace Controle.Application.Services
 {
     public class LojaService : ILojaService
@@ -34,7 +37,11 @@ namespace Controle.Application.Services
             var loja = await _context.Lojas.FindAsync(lojaId);
             if (loja == null) throw new DomainException("Loja não encontrada.");
 
-            if (!string.IsNullOrEmpty(dto.Nome)) loja.Nome = dto.Nome;
+            if (!string.IsNullOrEmpty(dto.Nome)) 
+            {
+                loja.Nome = dto.Nome;
+                loja.Slug = await GenerateUniqueSlugAsync(dto.Nome, loja.Id);
+            }
             if (!string.IsNullOrEmpty(dto.LogoUrl)) loja.LogoUrl = dto.LogoUrl;
             if (dto.TempoMinimoEntrega.HasValue) loja.TempoMinimoEntrega = dto.TempoMinimoEntrega;
             if (dto.TempoMaximoEntrega.HasValue) loja.TempoMaximoEntrega = dto.TempoMaximoEntrega;
@@ -73,10 +80,12 @@ namespace Controle.Application.Services
         }
         public async Task<Loja> CriarLojaAsync(CreateLojaDTO dto)
         {
+            var newId = Controle.Domain.Utils.UuidV7.NewUuid();
             var loja = new Loja
             {
-                Id = Controle.Domain.Utils.UuidV7.NewUuid(),
+                Id = newId,
                 Nome = dto.Nome,
+                Slug = await GenerateUniqueSlugAsync(dto.Nome, newId),
                 CpfCnpj = dto.CpfCnpj,
                 Telefone = dto.Telefone,
                 Email = dto.Email,
@@ -122,7 +131,11 @@ namespace Controle.Application.Services
             var loja = await _context.Lojas.FindAsync(lojaId);
             if (loja == null) throw new DomainException("Loja não encontrada.");
 
-            if (!string.IsNullOrEmpty(dto.Nome)) loja.Nome = dto.Nome;
+            if (!string.IsNullOrEmpty(dto.Nome)) 
+            {
+                loja.Nome = dto.Nome;
+                loja.Slug = await GenerateUniqueSlugAsync(dto.Nome, loja.Id);
+            }
             if (!string.IsNullOrEmpty(dto.CpfCnpj)) loja.CpfCnpj = dto.CpfCnpj;
             if (!string.IsNullOrEmpty(dto.Telefone)) loja.Telefone = dto.Telefone;
             if (!string.IsNullOrEmpty(dto.Email)) loja.Email = dto.Email;
@@ -214,6 +227,49 @@ namespace Controle.Application.Services
 
             _context.Lojas.Remove(loja);
             await _context.SaveChangesAsync();
+        }
+
+        private string GenerateSlug(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+
+            var normalizedString = text.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder();
+
+            foreach (var c in normalizedString)
+            {
+                var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            var slug = stringBuilder.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant();
+            
+            // Substituir espaços e caracteres indesejados por hífens
+            slug = Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+            // Substituir múltiplos espaços ou hífens por um único hífen
+            slug = Regex.Replace(slug, @"[\s-]+", "-");
+            // Remover hífens do início e do final
+            slug = slug.Trim('-');
+
+            return slug;
+        }
+
+        private async Task<string> GenerateUniqueSlugAsync(string text, Guid? currentLojaId = null)
+        {
+            var slug = GenerateSlug(text);
+            if (string.IsNullOrEmpty(slug)) return string.Empty;
+
+            var slugExists = await _context.Lojas.AnyAsync(l => l.Slug == slug && (!currentLojaId.HasValue || l.Id != currentLojaId.Value));
+
+            if (slugExists)
+            {
+                throw new DomainException($"O nome da loja '{text}' já está em uso por outro estabelecimento. Por favor, escolha outro nome ou adicione o nome do seu bairro/cidade ao final (ex: '{text} Centro') para criar um link único e exclusivo.");
+            }
+
+            return slug;
         }
     }
 }

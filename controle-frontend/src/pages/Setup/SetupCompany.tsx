@@ -170,7 +170,8 @@ export function SetupCompany() {
 
     } catch (err: any) {
       console.error("Erro no setup:", err);
-      setError("Erro ao salvar dados da empresa. Tente novamente.");
+      const errorMessage = err.response?.data?.message || "Erro ao salvar dados da empresa. Tente novamente.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
