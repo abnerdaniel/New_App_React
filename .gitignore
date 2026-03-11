@@ -82,3 +82,4 @@ appsettings.Development.json
 ## --- Sistema Operacional ---
 .DS_Store
 Thumbs.db
+/help-me-here-nexus
