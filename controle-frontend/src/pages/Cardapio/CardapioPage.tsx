@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'; // Assuming we don't have this, I'll build a simple tab UI
-import { Plus, Trash2, Edit2, Search, X, Check } from 'lucide-react';
+import { cloudinaryService } from '../../services/cloudinary.service';
+import { Plus, Trash2, Edit2, Search, X, Check, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
 
 // --- Interfaces ---
 
@@ -335,6 +335,7 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
     const [descricao, setDescricao] = useState('');
     const [preco, setPreco] = useState('');
     const [imagemUrl, setImagemUrl] = useState('');
+    const [uploading, setUploading] = useState(false);
     const [selectedProducts, setSelectedProducts] = useState<{product: ProdutoEstoqueDTO, qtd: number}[]>([]);
     
     // Product Selection State
@@ -568,8 +569,61 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Imagem URL (Opcional)</label>
-                                    <input value={imagemUrl} onChange={e => setImagemUrl(e.target.value)} className="w-full border p-2 rounded focus:ring-2 focus:ring-brand-primary/20 outline-none" placeholder="https://..." />
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Imagem da Oferta (Opcional)</label>
+                                    <div className="mt-1 flex items-center gap-4">
+                                        <div className="h-20 w-20 shrink-0 bg-gray-100 rounded flex items-center justify-center border border-gray-200 overflow-hidden relative group">
+                                            {uploading && (
+                                                <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                                                    <Loader2 size={20} className="text-brand-primary animate-spin" />
+                                                </div>
+                                            )}
+                                            {imagemUrl ? (
+                                                <>
+                                                    <img src={imagemUrl} alt="Preview" className="w-full h-full object-cover" />
+                                                    <button 
+                                                        type="button" 
+                                                        className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center text-white"
+                                                        onClick={() => setImagemUrl("")}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <ImageIcon size={24} className="text-gray-300" />
+                                            )}
+                                        </div>
+                                        
+                                        <div className="flex-1">
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                className="hidden" 
+                                                id="comboImageUpload"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        setUploading(true);
+                                                        try {
+                                                            const url = await cloudinaryService.uploadImage(file);
+                                                            setImagemUrl(url);
+                                                        } catch {
+                                                            alert("Erro ao fazer upload da imagem.");
+                                                        } finally {
+                                                            setUploading(false);
+                                                            e.target.value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            <label 
+                                                htmlFor="comboImageUpload"
+                                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+                                            >
+                                                <Upload size={16} />
+                                                {uploading ? "Enviando..." : "Carregar Foto"}
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Vincular ao Menu/Categoria</label>

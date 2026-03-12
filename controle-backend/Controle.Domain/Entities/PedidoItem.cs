@@ -15,7 +15,10 @@ public class PedidoItem
     public int? ComboId { get; set; } // Se o item for um combo
     public Combo? Combo { get; set; }
 
-    public string Status { get; set; } = "Pendente"; // Pendente, Preparando, Entregue, Cancelado
+    public int? ParentPedidoItemId { get; set; } // Referência para o Item Pai (Cabeçalho do Combo)
+    public PedidoItem? ParentPedidoItem { get; set; } // Navegação para o Pai
+    public ICollection<PedidoItem> SubItens { get; set; } = new List<PedidoItem>(); // Lista de Itens do Combo
 
+    public string Status { get; set; } = "Pendente"; // Pendente, Preparando, Entregue, Cancelado
     public ICollection<PedidoItemAdicional> Adicionais { get; set; } = new List<PedidoItemAdicional>();
 }

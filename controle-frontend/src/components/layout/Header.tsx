@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Menu, Store } from "lucide-react";
 import { api } from "../../api/axios";
 
@@ -11,19 +11,18 @@ interface HeaderProps {
 export function Header({ onMobileMenuClick }: HeaderProps) {
   const { user, logout, activeLoja, selectLoja, updateActiveLoja } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
   const [showStoreMenu, setShowStoreMenu] = useState(false);
   const storeMenuRef = useRef<HTMLDivElement>(null);
 
-  const isCardapioSection = location.pathname.startsWith('/cardapio') && activeLoja;
+  const hasActiveLoja = !!activeLoja;
 
-  // Effect to change Favicon and Title on Cardapio Section
+  // Effect to change Favicon and Title based on active store
   useEffect(() => {
     const link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
     if (!link) return;
 
-    if (isCardapioSection && activeLoja?.imagemUrl) {
+    if (hasActiveLoja && activeLoja?.imagemUrl) {
         const logoUrl = activeLoja.imagemUrl;
         const img = new Image();
         img.src = logoUrl;
@@ -46,7 +45,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
     return () => {
         // Optional: Reset if leaving context, but the effect dependency handles it
     };
-  }, [isCardapioSection, activeLoja]);
+  }, [hasActiveLoja, activeLoja]);
 
   // Close store menu when clicking outside
   useEffect(() => {
@@ -100,16 +99,16 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
 
          {/* Logo placeholder - text based for now */}
          <div className="bg-white text-brand-primary font-black text-xl w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg shadow-sm shrink-0 overflow-hidden">
-            {isCardapioSection && activeLoja?.imagemUrl ? (
+            {hasActiveLoja && activeLoja?.imagemUrl ? (
                 <img src={activeLoja.imagemUrl} alt={activeLoja.nome} className="w-full h-full object-cover" />
-            ) : isCardapioSection ? (
+            ) : hasActiveLoja ? (
                 <span>{activeLoja?.nome?.substring(0,2).toUpperCase()}</span>
             ) : (
                 <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" />
             )}
          </div>
          <h1 className="text-xl font-bold tracking-tight hidden md:block">
-            {isCardapioSection ? activeLoja?.nome : "OpenFood"}
+            {hasActiveLoja ? activeLoja?.nome : "OpenFood"}
          </h1>
       </div>
       {user && (

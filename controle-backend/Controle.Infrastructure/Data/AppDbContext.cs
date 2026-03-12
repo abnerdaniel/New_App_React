@@ -67,5 +67,12 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(pa => pa.ProdutoFilhoId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Configuração PedidoItem Pai-Filho (Combos)
+        modelBuilder.Entity<PedidoItem>()
+            .HasOne(pi => pi.ParentPedidoItem)
+            .WithMany(pi => pi.SubItens)
+            .HasForeignKey(pi => pi.ParentPedidoItemId)
+            .OnDelete(DeleteBehavior.Cascade); // Deletar combo deleta itens
     }
 }

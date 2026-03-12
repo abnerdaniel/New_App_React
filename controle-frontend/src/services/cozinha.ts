@@ -16,8 +16,10 @@ export interface PedidoFila {
     id: number;
     nomeProduto?: string;
     produtoLoja?: {
+      descricao?: string;
       produto?: {
         nome: string;
+        descricao?: string;
       }
     };
     quantidade: number;
@@ -36,6 +38,29 @@ export interface PedidoFila {
             quantidade: number;
         }>
     };
+    subItens?: Array<{
+        id: number;
+        nomeProduto?: string;
+        produtoLoja?: {
+            descricao?: string;
+            produto?: {
+                nome: string;
+                descricao?: string;
+            }
+        };
+        quantidade: number;
+        status?: string;
+    }>;
+    adicionais?: Array<{
+        id: number;
+        produtoLoja?: {
+            produto?: {
+                nome: string;
+            };
+            descricao?: string;
+        };
+        quantidade: number;
+    }>;
   }>;
 }
 

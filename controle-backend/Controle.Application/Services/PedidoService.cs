@@ -166,19 +166,18 @@ namespace Controle.Application.Services
                            comboItem.ProdutoLojaId = produtoLojaAtivo.Id;
                         }
 
-                        // Criar PedidoItem para o Combo
+                        // Criar PedidoItem para o Combo (Cabeçalho)
                         var pedidoItem = new PedidoItem
                         {
                             ComboId = combo.Id,
                             ProdutoLojaId = null, // É um combo
                             NomeProduto = combo.Nome,
                             PrecoVenda = combo.Preco,
-                            Quantidade = itemDto.Qtd
+                            Quantidade = itemDto.Qtd,
+                            SubItens = new List<PedidoItem>()
                         };
-                        pedido.Sacola.Add(pedidoItem);
-                        valorTotal += (decimal)pedidoItem.PrecoVenda * pedidoItem.Quantidade;
-
-                        // Baixar Estoque
+                        
+                        // Baixar Estoque E Adicionar Sub-Itens
                         foreach (var comboItem in combo.Itens)
                         {
                             if (comboItem.ProdutoLoja != null)
@@ -188,8 +187,23 @@ namespace Controle.Application.Services
                                 
                                 comboItem.ProdutoLoja.Vendas += (comboItem.Quantidade * itemDto.Qtd);
                                 _context.ProdutosLojas.Update(comboItem.ProdutoLoja); // Garante update no item certo
+                                
+                                // Adiciona o componente físico do combo como subitem (Preço já cobrado no master)
+                                var subItem = new PedidoItem
+                                {
+                                    ProdutoLojaId = comboItem.ProdutoLojaId,
+                                    NomeProduto = comboItem.ProdutoLoja.Produto?.Nome ?? comboItem.ProdutoLoja.Descricao ?? "Item de Combo",
+                                    PrecoVenda = 0,
+                                    Quantidade = comboItem.Quantidade * itemDto.Qtd,
+                                    Status = DetermineStatus(loja, pedidoDto) // Subitem tem status próprio na Cozinha
+                                };
+                                pedidoItem.SubItens.Add(subItem);
+                                pedido.Sacola.Add(subItem); // Associa explícito ao pedido para EF rastrear FK
                             }
                         }
+
+                        pedido.Sacola.Add(pedidoItem);
+                        valorTotal += (decimal)pedidoItem.PrecoVenda * pedidoItem.Quantidade;
                     }
                     else if (itemDto.IdProduto.HasValue)
                     {
@@ -330,11 +344,15 @@ namespace Controle.Application.Services
 
         public async Task<Pedido?> GetPedidoByIdAsync(int id)
         {
-            return await _context.Pedidos
+            var pedido = await _context.Pedidos
                 .AsSplitQuery()
                 .Include(p => p.Loja)
                 .Include(p => p.Sacola)
                     .ThenInclude(s => s.Adicionais)
+                        .ThenInclude(a => a.ProdutoLoja)
+                            .ThenInclude(pl => pl.Produto)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.SubItens)
                 .Include(p => p.Sacola)
                     .ThenInclude(s => s.ProdutoLoja)
                         .ThenInclude(pl => pl.Produto)
@@ -345,15 +363,27 @@ namespace Controle.Application.Services
                                 .ThenInclude(pl => pl.Produto)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Id == id);
+                
+            if (pedido != null && pedido.Sacola != null)
+            {
+                // Remove subitens da raiz para evitar duplicação no Json (Eles já estão alocados no .SubItens do Parent)
+                pedido.Sacola = pedido.Sacola.Where(s => s.ParentPedidoItemId == null).ToList();
+            }
+            return pedido;
         }
+
 
         public async Task<IEnumerable<Pedido>> GetPedidosByClienteIdAsync(int clienteId)
         {
-            return await _context.Pedidos
+            var pedidos = await _context.Pedidos
                 .Where(p => p.ClienteId == clienteId)
                 .Include(p => p.Loja)
                 .Include(p => p.Sacola)
                     .ThenInclude(s => s.Adicionais)
+                        .ThenInclude(a => a.ProdutoLoja)
+                            .ThenInclude(pl => pl.Produto)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.SubItens)
                 .Include(p => p.Sacola)
                     .ThenInclude(s => s.ProdutoLoja)
                         .ThenInclude(pl => pl.Produto)
@@ -365,6 +395,12 @@ namespace Controle.Application.Services
                 .OrderByDescending(p => p.DataVenda)
                 .AsNoTracking()
                 .ToListAsync();
+
+            foreach (var p in pedidos)
+            {
+                p.Sacola = p.Sacola.Where(s => s.ParentPedidoItemId == null).ToList();
+            }
+            return pedidos;
         }
 
         public async Task<IEnumerable<Pedido>> ListarPedidosFilaAsync(Guid lojaId)
@@ -380,14 +416,20 @@ namespace Controle.Application.Services
             
             var hoje = DateTime.UtcNow.Date;
 
-            return await _context.Pedidos
+            var pedidos = await _context.Pedidos
                 .Where(p => p.LojaId == lojaId && 
                             (statusVisiveis.Contains(p.Status) || 
-                            (p.DataVenda >= hoje && (p.Status == PedidoStatusMachine.Entregue || p.Status == PedidoStatusMachine.Concluido || p.Status == PedidoStatusMachine.Cancelado))))
+                            (p.DataVenda >= hoje && (p.Status == PedidoStatusMachine.Entregue || p.Status == PedidoStatusMachine.Concluido))))
                 .Where(p => p.Status != PedidoStatusMachine.Aberto || p.Sacola.Any()) // Só mostrar 'Aberto' se tiver itens
                 .Include(p => p.Funcionario) // Include Waiter/Cashier info
                 .Include(p => p.Cliente)
                 .Include(p => p.EnderecoDeEntrega)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.Adicionais)
+                        .ThenInclude(a => a.ProdutoLoja)
+                            .ThenInclude(pl => pl.Produto)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.SubItens)
                 .Include(p => p.Sacola)
                     .ThenInclude(s => s.ProdutoLoja)
                         .ThenInclude(pl => pl.Produto)
@@ -398,6 +440,12 @@ namespace Controle.Application.Services
                                 .ThenInclude(pl => pl.Produto)
                 .OrderBy(p => p.DataVenda)
                 .ToListAsync();
+
+            foreach (var p in pedidos)
+            {
+                p.Sacola = p.Sacola.Where(s => s.ParentPedidoItemId == null).ToList();
+            }
+            return pedidos;
         }
 
         public async Task<Pedido> AtualizarStatusPedidoAsync(int pedidoId, string novoStatus)
@@ -405,6 +453,7 @@ namespace Controle.Application.Services
             var pedido = await _context.Pedidos
                 .Include(p => p.Loja)
                 .Include(p => p.Sacola) // Required for syncing item status
+                    .ThenInclude(s => s.SubItens) // Need SubItens to sync their status too
                 .FirstOrDefaultAsync(p => p.Id == pedidoId);
 
             if (pedido == null) throw new DomainException("Pedido não encontrado.");
@@ -528,45 +577,54 @@ namespace Controle.Application.Services
 
         private async Task RestaurarEstoqueInternalAsync(Pedido pedido)
         {
-            foreach (var item in pedido.Sacola)
+            // Pegar apenas os itens folha para estornar (não repetir em master keys)
+            var itensPlanos = pedido.Sacola.Where(i => i.ProdutoLojaId.HasValue || i.ComboId.HasValue).ToList();
+
+            foreach (var item in itensPlanos)
             {
-                if (item.ProdutoLojaId.HasValue)
+                await RestaurarItemEstoqueAsync(item);
+            }
+        }
+
+        private async Task RestaurarItemEstoqueAsync(PedidoItem item)
+        {
+            if (item.ProdutoLojaId.HasValue)
+            {
+                var produtoLoja = await _context.ProdutosLojas.FindAsync(item.ProdutoLojaId.Value);
+                if (produtoLoja != null)
                 {
-                    var produtoLoja = await _context.ProdutosLojas.FindAsync(item.ProdutoLojaId.Value);
-                    if (produtoLoja != null)
+                    produtoLoja.Estoque = (produtoLoja.Estoque ?? 0) + item.Quantidade;
+                    produtoLoja.Vendas -= item.Quantidade;
+                    _context.ProdutosLojas.Update(produtoLoja);
+                }
+            }
+            // A antiga checagem `if (item.ComboId.HasValue)` foi unificada com SubItens. Itens de Combo antigos (legado sem subitens) não estornarão por aqui de forma perfeita a menos que eu mantenha o fallback, mas manterei para retrocompatibilidade
+            else if (item.ComboId.HasValue && (item.SubItens == null || !item.SubItens.Any()))
+            {
+                var combo = await _context.Combos
+                    .Include(c => c.Itens).ThenInclude(ci => ci.ProdutoLoja)
+                    .FirstOrDefaultAsync(c => c.Id == item.ComboId.Value);
+
+                if (combo != null)
+                {
+                    foreach (var ci in combo.Itens)
                     {
-                        produtoLoja.Estoque = (produtoLoja.Estoque ?? 0) + item.Quantidade;
-                        produtoLoja.Vendas -= item.Quantidade;
-                        _context.ProdutosLojas.Update(produtoLoja);
+                        ci.ProdutoLoja.Estoque = (ci.ProdutoLoja.Estoque ?? 0) + (ci.Quantidade * item.Quantidade);
+                        ci.ProdutoLoja.Vendas -= (ci.Quantidade * item.Quantidade);
                     }
                 }
-                else if (item.ComboId.HasValue)
-                {
-                    var combo = await _context.Combos
-                        .Include(c => c.Itens).ThenInclude(ci => ci.ProdutoLoja)
-                        .FirstOrDefaultAsync(c => c.Id == item.ComboId.Value);
+            }
 
-                    if (combo != null)
-                    {
-                        foreach (var ci in combo.Itens)
-                        {
-                            ci.ProdutoLoja.Estoque = (ci.ProdutoLoja.Estoque ?? 0) + (ci.Quantidade * item.Quantidade);
-                            ci.ProdutoLoja.Vendas -= (ci.Quantidade * item.Quantidade);
-                        }
-                    }
-                }
-
-                if (item.Adicionais != null && item.Adicionais.Any())
+            if (item.Adicionais != null && item.Adicionais.Any())
+            {
+                foreach (var adicional in item.Adicionais)
                 {
-                    foreach (var adicional in item.Adicionais)
+                    var adicionalLoja = await _context.ProdutosLojas.FindAsync(adicional.ProdutoLojaId);
+                    if (adicionalLoja != null)
                     {
-                        var adicionalLoja = await _context.ProdutosLojas.FindAsync(adicional.ProdutoLojaId);
-                        if (adicionalLoja != null)
-                        {
-                            adicionalLoja.Estoque = (adicionalLoja.Estoque ?? 0) + item.Quantidade;
-                            adicionalLoja.Vendas -= item.Quantidade;
-                            _context.ProdutosLojas.Update(adicionalLoja);
-                        }
+                        adicionalLoja.Estoque = (adicionalLoja.Estoque ?? 0) + item.Quantidade;
+                        adicionalLoja.Vendas -= item.Quantidade;
+                        _context.ProdutosLojas.Update(adicionalLoja);
                     }
                 }
             }
@@ -663,6 +721,16 @@ namespace Controle.Application.Services
 
                         if (combo == null || !combo.Ativo) throw new DomainException($"Combo indisponível.");
 
+                        var pedidoItem = new PedidoItem
+                        {
+                            ComboId = combo.Id,
+                            NomeProduto = combo.Nome,
+                            PrecoVenda = combo.Preco,
+                            Quantidade = itemDto.Qtd,
+                            Status = (loja.AceiteAutomatico || pedido.NumeroMesa.HasValue) ? "Em Preparo" : "Aguardando Aceitação", // Auto-accept for Mesas/Waiters
+                            SubItens = new List<PedidoItem>()
+                        };
+                        
                         foreach (var comboItem in combo.Itens)
                         {
                            // Smart Lookup for Combo Item
@@ -687,16 +755,20 @@ namespace Controle.Application.Services
                            produtoLojaAtivo.Estoque = (produtoLojaAtivo.Estoque ?? 0) - required;
                            produtoLojaAtivo.Vendas += required;
                            _context.ProdutosLojas.Update(produtoLojaAtivo);
+                           
+                           // Adiciona sub-item real fisicamente
+                           var subItem = new PedidoItem
+                           {
+                               ProdutoLojaId = produtoLojaAtivo.Id,
+                               NomeProduto = produtoLojaAtivo.Produto?.Nome ?? produtoLojaAtivo.Descricao ?? "Item de Combo",
+                               PrecoVenda = 0,
+                               Quantidade = comboItem.Quantidade * itemDto.Qtd,
+                               Status = pedidoItem.Status
+                           };
+                           pedidoItem.SubItens.Add(subItem);
+                           pedido.Sacola.Add(subItem);
                         }
 
-                        var pedidoItem = new PedidoItem
-                        {
-                            ComboId = combo.Id,
-                            NomeProduto = combo.Nome,
-                            PrecoVenda = combo.Preco,
-                            Quantidade = itemDto.Qtd,
-                            Status = (loja.AceiteAutomatico || pedido.NumeroMesa.HasValue) ? "Em Preparo" : "Aguardando Aceitação" // Auto-accept for Mesas/Waiters
-                        };
                         pedido.Sacola.Add(pedidoItem);
                         valorAdicional += (decimal)pedidoItem.PrecoVenda * pedidoItem.Quantidade;
                     }
@@ -803,7 +875,9 @@ namespace Controle.Application.Services
             
             if (pedido == null) throw new DomainException("Pedido não encontrado.");
 
-            var itens = pedido.Sacola;
+            // Pegar apenas os itens folha que definem se o pedido de fato acabou (ignora masters virtuais do combo)
+            var itens = pedido.Sacola.Where(i => i.ParentPedidoItemId != null || !i.SubItens.Any()).ToList();
+
             string novoStatusPedido = pedido.Status;
 
             // Logica Pedido baseada na state machine
@@ -837,12 +911,23 @@ namespace Controle.Application.Services
                     if (!pedido.IsRetirada)
                     {
                         novoStatusPedido = PedidoStatusMachine.SaiuParaEntrega;
-                        foreach(var item in pedido.Sacola)
+                        foreach(var master in pedido.Sacola)
                         {
-                            if (item.Status != PedidoStatusMachine.Cancelado && item.Status != PedidoStatusMachine.Entregue)
+                            if (master.Status != PedidoStatusMachine.Cancelado && master.Status != PedidoStatusMachine.Entregue)
                             {
-                                item.Status = PedidoStatusMachine.SaiuParaEntrega;
-                                _context.Entry(item).State = EntityState.Modified;
+                                master.Status = PedidoStatusMachine.SaiuParaEntrega;
+                                _context.Entry(master).State = EntityState.Modified;
+                            }
+                            if (master.SubItens != null && master.SubItens.Any())
+                            {
+                                foreach (var sub in master.SubItens)
+                                {
+                                     if (sub.Status != PedidoStatusMachine.Cancelado && sub.Status != PedidoStatusMachine.Entregue)
+                                     {
+                                         sub.Status = PedidoStatusMachine.SaiuParaEntrega;
+                                         _context.Entry(sub).State = EntityState.Modified;
+                                     }
+                                }
                             }
                         }
                     }

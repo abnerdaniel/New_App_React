@@ -167,43 +167,108 @@ function OrderCard({ pedido, onStatusItem, getWaitTime, type }: {
             <div className="space-y-2">
                 {pedido.sacola.map(item => {
                     const itemName = item.comboId ? 
-                        (item.combo?.nome || 'Combo') : 
+                        (item.combo?.nome || item.nomeProduto || 'Combo') : 
                         (item.nomeProduto || item.produtoLoja?.produto?.nome || 'Item');
                     
                     const itemStatus = item.status || 'Pendente';
+                    const hasSubItems = item.subItens && item.subItens.length > 0;
                     
                     return (
-                        <div key={item.id} className="flex items-center justify-between group">
-                            <div className="flex-1">
-                                <span className="font-bold mr-2">{item.quantidade}x</span>
-                                <span className={itemStatus === 'Entregue' ? 'text-gray-400 line-through' : 'text-gray-800'}>
-                                    {itemName}
-                                </span>
-                                {item.observacao && (
-                                    <div className="text-xs text-red-500 italic ml-6">Obs: {item.observacao}</div>
-                                )}
-                                {/* Combo items details if needed */}
-                                {item.combo && (
-                                    <div className="ml-6 text-xs text-gray-500">
-                                        {item.combo.itens.map(ci => (
-                                            <div key={ci.id}>• {ci.produtoLoja?.produto?.nome}</div>
-                                        ))}
-                                    </div>
+                        <div key={item.id} className="flex flex-col group border-b border-gray-100 last:border-0 pb-2 mb-2 last:mb-0 last:pb-0">
+                            {/* ITEM PRINCIPAL (Produto ou Cabeçalho do Combo) */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <span className="font-bold mr-2">{item.quantidade}x</span>
+                                    <span className={itemStatus === 'Entregue' && !hasSubItems ? 'text-gray-400 line-through' : 'text-gray-800 font-medium'}>
+                                        {itemName}
+                                    </span>
+                                    {(item.produtoLoja?.produto?.descricao || item.produtoLoja?.descricao) && (
+                                        <div className="text-xs text-gray-500 mt-0.5 ml-6 italic">
+                                            Ingredientes: {item.produtoLoja?.produto?.descricao || item.produtoLoja?.descricao}
+                                        </div>
+                                    )}
+                                    {item.observacao && (
+                                        <div className="text-xs text-red-500 font-medium mt-0.5 ml-6">Obs: {item.observacao}</div>
+                                    )}
+                                </div>
+                                
+                                {/* Botão de Status Apenas se NÃO for Combo (pois combos usam subitens) */}
+                                {!hasSubItems && (
+                                    <button 
+                                        onClick={() => onStatusItem(item.id, item.status)}
+                                        className={`
+                                            px-2 py-1 rounded text-xs font-bold uppercase transition-colors min-w-[80px] text-center
+                                            ${itemStatus === 'Pendente' || itemStatus === 'Aguardando Aceitação' ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : ''}
+                                            ${itemStatus === 'Preparando' || itemStatus === 'Em Preparo' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : ''}
+                                            ${itemStatus === 'Pronto' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : ''}
+                                            ${itemStatus === 'Entregue' || itemStatus === 'Saiu para Entrega' ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''}
+                                        `}
+                                    >
+                                        {itemStatus === 'Aguardando Aceitação' ? 'Pendente' : itemStatus === 'Em Preparo' ? 'Preparando' : itemStatus}
+                                    </button>
                                 )}
                             </div>
+
+                            {/* ADICIONAIS DO ITEM */}
+                            {item.adicionais && item.adicionais.length > 0 && (
+                                <div className="ml-6 mt-1 text-xs text-gray-500">
+                                    <span className="font-semibold text-gray-600">Adicionais:</span>
+                                    {item.adicionais.map(add => (
+                                        <div key={add.id} className="ml-2 flex items-center gap-1">
+                                            <span>+</span>
+                                            <span>{add.quantidade || item.quantidade}x</span>
+                                            <span>{add.produtoLoja?.produto?.nome || add.produtoLoja?.descricao || 'Adicional'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* SUB-ITENS DO COMBO (Com botões de status individuais) */}
+                            {hasSubItems && (
+                                <div className="ml-6 mt-2 space-y-2 border-l-2 border-gray-200 pl-3">
+                                    {item.subItens!.map(sub => {
+                                         const subStatus = sub.status || 'Pendente';
+                                         return (
+                                             <div key={sub.id} className="flex items-center justify-between">
+                                                 <div className="flex-1 text-sm flex flex-col justify-center">
+                                                     <div>
+                                                         <span className="font-medium mr-1">{sub.quantidade}x</span>
+                                                         <span className={subStatus === 'Entregue' ? 'text-gray-400 line-through' : 'text-gray-700'}>
+                                                            {sub.nomeProduto || 'Item do Combo'}
+                                                         </span>
+                                                     </div>
+                                                     {(sub.produtoLoja?.produto?.descricao || sub.produtoLoja?.descricao) && (
+                                                         <div className="text-[10px] text-gray-400 italic mt-0.5 ml-4">
+                                                             Ingredientes: {sub.produtoLoja?.produto?.descricao || sub.produtoLoja?.descricao}
+                                                         </div>
+                                                     )}
+                                                 </div>
+                                                 <button 
+                                                    onClick={() => onStatusItem(sub.id, sub.status)}
+                                                    className={`
+                                                        px-2 py-0.5 rounded text-[10px] font-bold uppercase transition-colors min-w-[70px] text-center
+                                                        ${subStatus === 'Pendente' || subStatus === 'Aguardando Aceitação' ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : ''}
+                                                        ${subStatus === 'Preparando' || subStatus === 'Em Preparo' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : ''}
+                                                        ${subStatus === 'Pronto' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : ''}
+                                                        ${subStatus === 'Entregue' || subStatus === 'Saiu para Entrega' ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''}
+                                                    `}
+                                                 >
+                                                     {subStatus === 'Aguardando Aceitação' ? 'Pendente' : subStatus === 'Em Preparo' ? 'Preparando' : subStatus}
+                                                 </button>
+                                             </div>
+                                         );
+                                    })}
+                                </div>
+                            )}
                             
-                            <button 
-                                onClick={() => onStatusItem(item.id, item.status)}
-                                className={`
-                                    px-2 py-1 rounded text-xs font-bold uppercase transition-colors min-w-[80px] text-center
-                                    ${itemStatus === 'Pendente' ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : ''}
-                                    ${itemStatus === 'Preparando' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : ''}
-                                    ${itemStatus === 'Pronto' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : ''}
-                                    ${itemStatus === 'Entregue' ? 'bg-green-100 text-green-700 hover:bg-green-200' : ''}
-                                `}
-                            >
-                                {itemStatus}
-                            </button>
+                            {/* FALLBACK LEGACY COMBO (Pedidos velhos sem sub-itens registrados no banco) */}
+                            {!hasSubItems && item.combo && item.combo.itens && (
+                                <div className="ml-6 mt-1 text-xs text-gray-500 italic">
+                                    {item.combo.itens.map(ci => (
+                                        <div key={ci.id}>• {ci.produtoLoja?.produto?.nome}</div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     );
                 })}
