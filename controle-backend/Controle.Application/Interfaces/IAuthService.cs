@@ -18,6 +18,8 @@ namespace Controle.Application.Interfaces
         Task<Result> DesativarUsuarioAsync(Guid usuarioId);
         Task<Result> DeletarUsuarioAsync(Guid usuarioId);
         Task<Result> AlterarSenhaUsuarioAsync(Guid usuarioId, string novaSenha);
+        Task<Result> AlterarSenhaComValidacaoAsync(Guid usuarioId, string senhaAtual, string novaSenha);
+        Task<Result<UsuarioResponse>> AtualizarPerfilAsync(Guid usuarioId, string novoNome);
         Task<Result<AuthResponse>> ImpersonateAsync(Guid lojaId);
     }
 }

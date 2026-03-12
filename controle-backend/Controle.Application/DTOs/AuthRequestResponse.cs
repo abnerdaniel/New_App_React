@@ -34,6 +34,22 @@ namespace Controle.Application.DTOs
         public Guid? LojaId { get; set; }
     }
 
+    public class AlterarSenhaRequest
+    {
+        [Required]
+        public string SenhaAtual { get; set; } = null!;
+
+        [Required]
+        [MinLength(6)]
+        public string NovaSenha { get; set; } = null!;
+    }
+
+    public class AtualizarPerfilRequest
+    {
+        [Required]
+        public string Nome { get; set; } = null!;
+    }
+
     public class AuthResponse
     {
         public Guid Id { get; set; }

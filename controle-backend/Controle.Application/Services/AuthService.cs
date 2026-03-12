@@ -434,6 +434,40 @@ namespace Controle.Application.Services
              return Result.Ok();
         }
 
+        public async Task<Result> AlterarSenhaComValidacaoAsync(Guid usuarioId, string senhaAtual, string novaSenha)
+        {
+            var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
+            if (usuario == null) return Result.Fail("Usuário não encontrado.");
+
+            if (!VerifyPasswordHash(senhaAtual, usuario.PasswordHash))
+                return Result.Fail("Senha atual incorreta.");
+
+            usuario.PasswordHash = HashPassword(novaSenha);
+            await _usuarioRepository.UpdateAsync(usuario);
+
+            return Result.Ok();
+        }
+
+        public async Task<Result<UsuarioResponse>> AtualizarPerfilAsync(Guid usuarioId, string novoNome)
+        {
+            var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
+            if (usuario == null) return Result<UsuarioResponse>.Fail("Usuário não encontrado.");
+
+            usuario.Nome = novoNome.Trim();
+            await _usuarioRepository.UpdateAsync(usuario);
+
+            return Result<UsuarioResponse>.Ok(new UsuarioResponse
+            {
+                Id = usuario.Id,
+                Nome = usuario.Nome,
+                Login = usuario.Login,
+                Email = usuario.Email,
+                Ativo = usuario.Ativo,
+                DataCriacao = usuario.DataCriacao,
+                UltimoAcesso = usuario.UltimoAcesso
+            });
+        }
+
         private string GenerateJwtToken(Usuario usuario, int? funcionarioId = null)
         {
             var secretKey = _configuration["Jwt:Key"] ?? "MinhaSuperChaveSecretaParaJWT1234567890";

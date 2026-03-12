@@ -37,7 +37,7 @@ export function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await authApi.register({ nome, email, password });
+      const response = await authApi.register({ nome, login: email, email, password });
       login(response);
       navigate("/pessoas");
     } catch (err: unknown) {

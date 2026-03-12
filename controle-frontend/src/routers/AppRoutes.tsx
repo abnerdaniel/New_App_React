@@ -24,6 +24,7 @@ import { WaiterOrderPage } from '../pages/Garcom/WaiterOrderPage'
 import { CozinhaPage } from '../pages/Cozinha/CozinhaPage'
 import { MinhasEntregasPage } from '../pages/Motoboy/MinhasEntregasPage'
 import { SuperAdminLojas } from '../pages/SuperAdmin/SuperAdminLojas'
+import { ContaPage } from '../pages/Conta/ContaPage'
 
 export function AppRoutes() {
   return (
@@ -48,6 +49,9 @@ export function AppRoutes() {
       
       {/* Super Admin */}
       <Route path="/superadmin/lojas" element={<PrivateRoute><SuperAdminLojas /></PrivateRoute>} />
+
+      {/* Conta do Usuário */}
+      <Route path="/conta" element={<PrivateRoute><ContaPage /></PrivateRoute>} />
 
       {/* Main Modules */}
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

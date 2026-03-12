@@ -11,6 +11,7 @@ interface AuthContextData {
   logout: () => void;
   selectLoja: (lojaId: string) => void;
   updateActiveLoja: (dados: Partial<LojaResumo>) => void;
+  updateUser: (dados: Partial<Usuario>) => void;
   isAuthenticated: boolean;
   impersonate: (authData: AuthResponse) => void;
   revertImpersonation: () => void;
@@ -168,6 +169,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
   };
 
+  const updateUser = (dados: Partial<Usuario>) => {
+      if (!user) return;
+      const novoUser = { ...user, ...dados };
+      setUser(novoUser);
+      localStorage.setItem('@App:user', JSON.stringify(novoUser));
+  };
+
   const isAuthenticated = !!token && !!user;
   const isImpersonating = !!localStorage.getItem('@App:superadmin_token');
 
@@ -183,6 +191,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         logout,
         selectLoja,
         updateActiveLoja,
+        updateUser,
         isAuthenticated,
         impersonate,
         revertImpersonation,

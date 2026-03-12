@@ -196,9 +196,21 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
                 >
                   Funcionários
                 </button>
-                <div className="px-4 py-2 text-xs text-gray-400 bg-gray-50 text-center uppercase tracking-wider font-semibold">
-                    Gerenciar Login
+                <div className="px-4 py-2 text-xs text-gray-400 bg-gray-50 text-center uppercase tracking-wider font-semibold border-b border-gray-50">
+                    Gerenciar Perfil
                 </div>
+                <button 
+                  onClick={() => { navigate('/conta'); setShowMenu(false); }} 
+                  className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-primary transition-colors border-b border-gray-50"
+                >
+                  Minha Conta
+                </button>
+                <button 
+                  onClick={() => { handleLogout(); setShowMenu(false); }} 
+                  className="block w-full text-left px-4 py-3 text-sm text-red-600 font-medium hover:bg-red-50 transition-colors"
+                >
+                  Sair
+                </button>
               </div>
             )}
           </div>

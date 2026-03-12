@@ -8,6 +8,7 @@ using Controle.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Controle.API.Controllers
 {
@@ -140,6 +141,50 @@ namespace Controle.API.Controllers
             }
 
             return Ok(usuario);
+        }
+
+        /// <summary>
+        /// Altera a senha do usuário logado.
+        /// </summary>
+        [HttpPut("minha-conta/alterar-senha")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AlterarMinhaSenha([FromBody] Controle.Application.DTOs.AlterarSenhaRequest request)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var result = await _authService.AlterarSenhaComValidacaoAsync(userId, request.SenhaAtual, request.NovaSenha);
+
+            if (!result.Success)
+                return BadRequest(new { message = result.Error });
+
+            return Ok(new { message = "Senha alterada com sucesso." });
+        }
+
+        /// <summary>
+        /// Atualiza o perfil (nome) do usuário logado.
+        /// </summary>
+        [HttpPut("minha-conta/perfil")]
+        [Authorize]
+        [ProducesResponseType(typeof(UsuarioResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AtualizarMeuPerfil([FromBody] AtualizarPerfilRequest request)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var result = await _authService.AtualizarPerfilAsync(userId, request.Nome);
+
+            if (!result.Success)
+                return BadRequest(new { message = result.Error });
+
+            return Ok(result.Data);
         }
 
         /// <summary>
