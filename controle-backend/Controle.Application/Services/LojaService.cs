@@ -62,6 +62,9 @@ namespace Controle.Application.Services
             loja.SendOrderSummary = dto.SendOrderSummary;
             loja.OrderUpdates = dto.OrderUpdates;
             loja.BotWithoutIA = dto.BotWithoutIA;
+            loja.OrderSummaryTemplate = dto.OrderSummaryTemplate;
+            loja.ShowAddressOnSummary = dto.ShowAddressOnSummary;
+            loja.ShowPaymentOnSummary = dto.ShowPaymentOnSummary;
 
             _context.Lojas.Update(loja);
             await _context.SaveChangesAsync();

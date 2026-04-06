@@ -74,4 +74,9 @@ public class Loja
     public bool SendOrderSummary { get; set; } = false;
     public bool OrderUpdates { get; set; } = false;
     public bool BotWithoutIA { get; set; } = false;
+
+    // Order Summary Customization
+    public string? OrderSummaryTemplate { get; set; }
+    public bool ShowAddressOnSummary { get; set; } = true;
+    public bool ShowPaymentOnSummary { get; set; } = true;
 }

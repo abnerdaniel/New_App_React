@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { whatsappService } from '../../services/whatsapp.service';
-import { MessageCircle, QrCode, LogOut, Loader2, AlertTriangle, ShieldCheck, Settings, Info } from 'lucide-react';
+import { MessageCircle, QrCode, LogOut, Loader2, AlertTriangle, ShieldCheck, Settings, Info, Settings2 } from 'lucide-react';
 import { CustomToggle as Toggle } from '../../components/ui/CustomToggle';
+import { OrderSummarySettingsModal } from '../../components/modals/OrderSummarySettingsModal';
 
 export function AtendimentoIA() {
     const { activeLoja } = useAuth();
@@ -12,6 +13,7 @@ export function AtendimentoIA() {
     const [errorMsg, setErrorMsg] = useState<string>('');
     const [isConnecting, setIsConnecting] = useState(false);
     const [timeLeft, setTimeLeft] = useState(40);
+    const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
     
     // Configurações UI
     const [configs, setConfigs] = useState({
@@ -19,7 +21,10 @@ export function AtendimentoIA() {
         sendCustomerNumber: false,
         sendOrderSummary: false,
         orderUpdates: false,
-        botWithoutIA: false
+        botWithoutIA: false,
+        orderSummaryTemplate: "",
+        showAddressOnSummary: true,
+        showPaymentOnSummary: true
     });
 
     useEffect(() => {
@@ -31,7 +36,10 @@ export function AtendimentoIA() {
                         sendCustomerNumber: lojaData.sendCustomerNumber ?? false,
                         sendOrderSummary: lojaData.sendOrderSummary ?? false,
                         orderUpdates: lojaData.orderUpdates ?? false,
-                        botWithoutIA: lojaData.botWithoutIA ?? false
+                        botWithoutIA: lojaData.botWithoutIA ?? false,
+                        orderSummaryTemplate: lojaData.orderSummaryTemplate ?? "",
+                        showAddressOnSummary: lojaData.showAddressOnSummary ?? true,
+                        showPaymentOnSummary: lojaData.showPaymentOnSummary ?? true
                     });
                 })
                 .catch(console.error);
@@ -213,7 +221,18 @@ export function AtendimentoIA() {
                                                 <hr className="border-gray-50" />
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <h4 className="font-semibold text-gray-800">Resumo após Pedido</h4>
+                                                        <div className="flex items-center gap-2">
+                                                            <h4 className="font-semibold text-gray-800">Resumo após Pedido</h4>
+                                                            {configs.sendOrderSummary && (
+                                                                <button 
+                                                                    onClick={() => setIsSummaryModalOpen(true)}
+                                                                    className="p-1 text-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-full transition-all flex items-center justify-center -mt-0.5 mx-1 tooltip cursor-pointer"
+                                                                    title="Configurar Mensagem"
+                                                                >
+                                                                    <Settings2 className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                         <p className="text-sm text-gray-500 mt-0.5">Enviar o resumo detalhado logo após receber o pedido.</p>
                                                     </div>
                                                     <Toggle active={configs.sendOrderSummary} onClick={() => toggleConfig('sendOrderSummary')} />
@@ -328,6 +347,25 @@ export function AtendimentoIA() {
                     </div>
                 </div>
             </div>
+
+            {/* Template Engine Modal */}
+            <OrderSummarySettingsModal 
+                isOpen={isSummaryModalOpen} 
+                onClose={() => setIsSummaryModalOpen(false)} 
+                currentConfigs={configs}
+                onSave={async (newTemplateConfigs) => {
+                    if (!activeLoja) return;
+                    const mergedConfigs = { ...configs, ...newTemplateConfigs };
+                    setConfigs(mergedConfigs);
+                    try {
+                        await whatsappService.updateConfigs(activeLoja.id, mergedConfigs);
+                    } catch (err) {
+                        console.error('Failed to save template configs', err);
+                        setConfigs(configs); // rollback
+                        alert('Falha ao salvar as configurações de mensagem');
+                    }
+                }} 
+            />
         </>
     );
 }

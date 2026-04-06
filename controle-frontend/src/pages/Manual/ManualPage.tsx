@@ -16,6 +16,7 @@ import {
   Lightbulb,
   Clock,
   ArrowRight,
+  MessageCircle,
 } from 'lucide-react';
 
 interface Section {
@@ -33,8 +34,9 @@ const sections: Section[] = [
   { id: 'estoque', title: '5. Estoque e Gestão de Produtos', shortTitle: 'Estoque', icon: Package },
   { id: 'cardapio', title: '6. Cardápios e Promoções', shortTitle: 'Cardápio', icon: UtensilsCrossed },
   { id: 'operacao', title: '7. Operação Multicanal', shortTitle: 'Operação', icon: MonitorSmartphone },
-  { id: 'dashboard', title: '8. Dashboard e Faturamento', shortTitle: 'Dashboard', icon: BarChart3 },
-  { id: 'suporte', title: '9. Suporte e Roadmap', shortTitle: 'Suporte', icon: Headphones },
+  { id: 'atendimento-ia', title: '8. Atendimento Automatizado e WhatsApp', shortTitle: 'Atendimento', icon: MessageCircle },
+  { id: 'dashboard', title: '9. Dashboard e Faturamento', shortTitle: 'Dashboard', icon: BarChart3 },
+  { id: 'suporte', title: '10. Suporte e Roadmap', shortTitle: 'Suporte', icon: Headphones },
 ];
 
 function SectionCard({ children, id }: { children: React.ReactNode; id: string }) {
@@ -478,14 +480,55 @@ export function ManualPage() {
             </div>
           </SectionCard>
 
-          {/* Section 8 */}
+          {/* Section 8: Atendimento Automatizado */}
+          <SectionCard id="atendimento-ia">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-green-50 rounded-lg">
+                  <MessageCircle size={20} className="text-green-500" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">8. Atendimento Automatizado e WhatsApp</h2>
+              </div>
+              <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
+                <p>Nesta área você conecta o WhatsApp da loja para disparo de mensagens e notificações automáticas.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-gray-200 rounded-xl p-4">
+                    <p className="font-semibold text-gray-800 mb-2">Conexão do Número</p>
+                    <ul className="space-y-1 text-xs list-disc list-inside">
+                      <li>Use o leitor de QR Code para vincular seu celular (Recomendamos um chip isolado apenas para isso).</li>
+                      <li>Nunca desligue o aparelho da internet, ou as mensagens pararão de ser enviadas.</li>
+                    </ul>
+                  </div>
+                  <div className="border border-gray-200 rounded-xl p-4">
+                    <p className="font-semibold text-gray-800 mb-2">Resumo de Pedidos e Variáveis</p>
+                    <ul className="space-y-1 text-xs list-disc list-inside">
+                      <li>Ative <strong>"Resumo após Pedido"</strong> para enviar a notificação inicial automaticamente e configurá-la.</li>
+                      <li>Use a <strong>Engrenagem</strong> ao lado para personalizar a mensagem usando tags ({'{NomeCliente}'}, {'{Total}'}).</li>
+                      <li>Ligue/desligue as chaves de Endereço e Metódo de Pagamento do resumo.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <InfoBox type="warning">
+                  <strong>Regras da Meta e Bloqueios:</strong> Não envie massivamente propagandas por ali, o envio de atualizações e resumos não tem problema, mas cuidado caso use números virgens (sem aquecimento).
+                </InfoBox>
+
+                <div className="mt-5">
+                  <DeepLinkButton to="/atendimento-ia" label="Ir para Atendimento Automatizado" />
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* Section 9 */}
           <SectionCard id="dashboard">
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-teal-50 rounded-lg">
                   <BarChart3 size={20} className="text-teal-500" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-800">8. Dashboard, Faturamento e Inteligência de Dados</h2>
+                <h2 className="text-xl font-bold text-gray-800">9. Dashboard, Faturamento e Inteligência de Dados</h2>
               </div>
               <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
                 <p>A transformação de dados em decisões estratégicas ocorre através do monitoramento constante.</p>
@@ -517,14 +560,14 @@ export function ManualPage() {
             </div>
           </SectionCard>
 
-          {/* Section 9 */}
+          {/* Section 10 */}
           <SectionCard id="suporte">
             <div className="bg-gradient-to-br from-brand-primary/8 to-white border border-brand-primary/20 rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-brand-primary/10 rounded-lg">
                   <Headphones size={20} className="text-brand-primary" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-800">9. Suporte Técnico e Roadmap de Evolução</h2>
+                <h2 className="text-xl font-bold text-gray-800">10. Suporte Técnico e Roadmap de Evolução</h2>
               </div>
               <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
                 <p>O Help me Here é um sistema vivo, em constante aprimoramento. Nosso compromisso é com o crescimento sustentável do seu restaurante.</p>

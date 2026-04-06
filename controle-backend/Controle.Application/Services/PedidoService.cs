@@ -342,9 +342,10 @@ namespace Controle.Application.Services
                     try
                     {
                         string? telefoneDst = null;
+                        ClienteFinal? cliente = null;
                         if (pedidoDto.ClienteId.HasValue)
                         {
-                            var cliente = await _context.Set<ClienteFinal>().FindAsync(pedidoDto.ClienteId.Value);
+                            cliente = await _context.Set<ClienteFinal>().FindAsync(pedidoDto.ClienteId.Value);
                             telefoneDst = cliente?.Telefone;
                             Console.WriteLine($"[WHATSAPP-SUMMARY] Cliente {cliente?.Id} encontrado com telefone Original DB: '{telefoneDst}'");
                         }
@@ -359,16 +360,71 @@ namespace Controle.Application.Services
                         if (!string.IsNullOrEmpty(numLimpo))
                         {
                             var resumoBuilder = new System.Text.StringBuilder();
-                            resumoBuilder.AppendLine($"🍔 *Resumo do seu Pedido #{pedido.Id}*");
-                            resumoBuilder.AppendLine($"Status: *{pedido.Status}*\n");
-                            foreach (var item in pedido.Sacola.Where(i => i.ParentPedidoItemId == null))
-                            {
-                                resumoBuilder.AppendLine($"🔹 {item.Quantidade}x {item.NomeProduto}");
-                            }
                             
                             var valorBrl = (pedido.ValorTotal ?? 0) / 100.0m;
-                            if (pedido.ValorTotal != null && pedido.ValorTotal < 1000 && valorBrl < 1) valorBrl = pedido.ValorTotal.Value; // Fallback se não for centavos.
-                            resumoBuilder.AppendLine($"\n💵 *Total: R$ {valorBrl:F2}*");
+                            if (pedido.ValorTotal != null && pedido.ValorTotal < 1000 && valorBrl < 1) valorBrl = pedido.ValorTotal.Value;
+
+                            string itensStr = string.Join("\n", pedido.Sacola.Where(i => i.ParentPedidoItemId == null).Select(item => $"🔹 {item.Quantidade}x {item.NomeProduto}"));
+                            
+                            string enderecoStr = "";
+                            if (loja.ShowAddressOnSummary)
+                            {
+                                if (!pedido.IsRetirada && pedido.EnderecoDeEntregaId.HasValue)
+                                {
+                                    var end = await _context.Set<Endereco>().FindAsync(pedido.EnderecoDeEntregaId.Value);
+                                    if (end != null)
+                                    {
+                                        enderecoStr = $"\n📍 *Endereço de Entrega:*\n{end.Logradouro}, {end.Numero}";
+                                        if (!string.IsNullOrEmpty(end.Complemento)) enderecoStr += $" - {end.Complemento}";
+                                        enderecoStr += $"\n{end.Bairro}";
+                                    }
+                                }
+                                else if (pedido.IsRetirada)
+                                {
+                                    enderecoStr = $"\n📍 *Entrega:* Retirada no Local da Loja";
+                                    if (!string.IsNullOrEmpty(loja.Logradouro))
+                                    {
+                                        enderecoStr += $"\n{loja.Logradouro}, {loja.Numero}";
+                                        if (!string.IsNullOrEmpty(loja.Complemento)) enderecoStr += $" - {loja.Complemento}";
+                                        if (!string.IsNullOrEmpty(loja.Bairro)) enderecoStr += $"\n{loja.Bairro}";
+                                    }
+                                }
+                            }
+
+                            string pagamentoStr = "";
+                            if (loja.ShowPaymentOnSummary && !string.IsNullOrEmpty(pedido.MetodoPagamento))
+                            {
+                                pagamentoStr = $"\n💵 *Pagamento:* {pedido.MetodoPagamento}";
+                                if (pedido.TrocoPara != null && pedido.TrocoPara > 0)
+                                    pagamentoStr += $" (Troco p/ R${pedido.TrocoPara.Value:F2})";
+                            }
+
+                            string totalStr = $"R$ {valorBrl:F2}";
+                            
+                            if (!string.IsNullOrEmpty(loja.OrderSummaryTemplate))
+                            {
+                                string msg = loja.OrderSummaryTemplate
+                                    .Replace("{NomeCliente}", cliente?.Nome ?? "Cliente")
+                                    .Replace("{Id}", pedido.Id.ToString())
+                                    .Replace("{Status}", pedido.Status ?? "Pendente")
+                                    .Replace("{Itens}", itensStr)
+                                    .Replace("{Total}", totalStr)
+                                    .Replace("{Endereco}", enderecoStr)
+                                    .Replace("{Pagamento}", pagamentoStr);
+                                
+                                resumoBuilder.Append(msg);
+                            }
+                            else
+                            {
+                                // Default Fallback
+                                resumoBuilder.AppendLine($"🍔 *Resumo do seu Pedido #{pedido.Id}*");
+                                resumoBuilder.AppendLine($"Olá {cliente?.Nome ?? "Cliente"}!");
+                                resumoBuilder.AppendLine($"Status: *{pedido.Status}*\n");
+                                resumoBuilder.AppendLine(itensStr);
+                                resumoBuilder.AppendLine($"\n💵 *Total: {totalStr}*");
+                                if (!string.IsNullOrEmpty(enderecoStr)) resumoBuilder.AppendLine(enderecoStr);
+                                if (!string.IsNullOrEmpty(pagamentoStr)) resumoBuilder.AppendLine(pagamentoStr);
+                            }
                             
                             Console.WriteLine($"[WHATSAPP-SUMMARY] Enviando mensagem final... Instância: {loja.EvolutionInstanceName}");
                             var resEvo = await _evolutionApiService.SendTextAsync(loja.EvolutionInstanceName, numLimpo, resumoBuilder.ToString());
