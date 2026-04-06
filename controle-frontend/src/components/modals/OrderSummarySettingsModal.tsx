@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Save, RotateCcw, Info } from 'lucide-react';
 import { CustomToggle as Toggle } from '../ui/CustomToggle';
 
@@ -56,7 +56,7 @@ export function OrderSummarySettingsModal({ isOpen, onClose, onSave, currentConf
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 
                 {/* Header */}
