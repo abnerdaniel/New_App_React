@@ -16,6 +16,9 @@ const inputWrapperStyle: React.CSSProperties = {
   border: '1px solid #e2e8f0',
   borderRadius: '12px',
   transition: 'border-color 0.2s, box-shadow 0.2s',
+  boxSizing: 'border-box',
+  width: '100%',
+  minWidth: 0,
 };
 
 const inputStyle: React.CSSProperties = {
@@ -25,6 +28,8 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
   fontSize: '0.9rem',
   border: 'none',
+  minWidth: 0,
+  width: '100%',
 };
 
 export function LoginForm({ onSubmit, loading }: Props) {
@@ -46,10 +51,10 @@ export function LoginForm({ onSubmit, loading }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box', width: '100%' }}>
       
       {/* Email / Login */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0, width: '100%' }}>
         <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Email ou usuário
         </label>
@@ -73,7 +78,7 @@ export function LoginForm({ onSubmit, loading }: Props) {
       </div>
 
       {/* Senha */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0, width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Senha

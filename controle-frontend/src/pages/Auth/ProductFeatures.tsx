@@ -2,9 +2,9 @@ import { ShoppingBag, Settings, ChefHat, Sparkles, Bot, Truck, TrendingUp } from
 
 export function ProductFeatures() {
   return (
-    <div className="flex flex-col justify-center h-full p-10 lg:p-20 text-slate-800 relative z-10">
-      <div className="mb-12">
-        <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-4 leading-tight text-slate-900">
+    <div className="flex flex-col justify-center h-full p-6 md:p-10 lg:p-20 text-slate-800 relative z-10">
+      <div className="mb-10 lg:mb-12 mt-8 lg:mt-0">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4 leading-tight text-slate-900">
           Gestão <span className="text-brand-primary">Inteligente</span> <br />
           para o seu Restaurante
         </h2>

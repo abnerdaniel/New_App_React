@@ -49,9 +49,9 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-surface-background text-text-dark font-sans">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-surface-background text-text-dark font-sans">
       {/* Esquerda: Informações do Produto (Feature Section) */}
-      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-white border-r border-gray-200">
+      <div className="order-2 lg:order-1 flex flex-col w-full lg:w-[55%] relative overflow-hidden bg-white border-t lg:border-t-0 lg:border-r border-gray-200">
         <ProductFeatures />
         
         {/* Soft Background Accent */}
@@ -70,7 +70,7 @@ export function LoginPage() {
       </div>
 
       {/* Direita: Formulário de Login */}
-      <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 relative">
+      <div className="order-1 lg:order-2 flex-1 flex flex-col justify-center items-center p-6 sm:p-12 relative min-h-screen lg:min-h-0 shrink-0 w-full">
         <div className="w-full max-w-md relative z-10">
           
           <div className="text-center mb-10 lg:hidden">
@@ -112,9 +112,8 @@ export function LoginPage() {
             </div>
 
             <div className="p-8 flex flex-col gap-6">
-              {/* Resumo visual quando em mobile se não houver feature text */}
-              <div className="lg:hidden text-center text-sm font-medium text-slate-500 mb-2">
-                Cardápio digital, gestão 360º, painel KDS e integrações (em breve).
+              {/* Ocultamos o resumo mini pois as features estarão logo abaixo */}
+              <div className="hidden">
               </div>
 
               <div className="flex justify-center">
