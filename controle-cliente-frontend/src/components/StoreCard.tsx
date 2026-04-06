@@ -36,9 +36,9 @@ export function StoreCard({ loja, onClick }: StoreCardProps) {
              />
            </div>
         )}
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
+        <div className="flex-1 min-w-0 overflow-hidden flex flex-col gap-1">
             <div className="flex justify-between items-start">
-            <h3 className="font-semibold text-gray-900 line-clamp-1">{loja.nome}</h3>
+            <h3 className="font-semibold text-gray-900 truncate min-w-0" title={loja.nome}>{loja.nome}</h3>
             {loja.avaliacao !== undefined && (
                 <div className="flex items-center gap-1 text-yellow-500 text-sm font-medium shrink-0 ml-1">
                 <Star className="w-3 h-3 fill-current" />
@@ -46,14 +46,14 @@ export function StoreCard({ loja, onClick }: StoreCardProps) {
                 </div>
             )}
             </div>
-            <p className="text-xs text-gray-500 line-clamp-1">{loja.categoria} • {loja.descricao}</p>
-            <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
-                <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
+            <p className="text-xs text-gray-500 truncate min-w-0" title={`${loja.categoria} • ${loja.descricao}`}>{loja.categoria} • {loja.descricao}</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 mt-2">
+                <div className="flex items-center gap-1 shrink-0">
+                    <Clock className="w-3 h-3 shrink-0" />
                     <span>{loja.tempoEntregaMin}-{loja.tempoEntregaMax} min</span>
                 </div>
-                <span>•</span>
-                <span className={loja.taxaEntrega === 0 ? 'text-green-600 font-medium' : ''}>
+                <span className="shrink-0">•</span>
+                <span className={`shrink-0 ${loja.taxaEntrega === 0 ? 'text-green-600 font-medium' : ''}`}>
                     {loja.taxaEntrega === 0 ? 'Grátis' : `R$ ${loja.taxaEntrega.toFixed(2).replace('.', ',')}`}
                 </span>
             </div>

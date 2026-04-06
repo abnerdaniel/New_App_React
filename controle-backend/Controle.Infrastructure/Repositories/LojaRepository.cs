@@ -49,6 +49,11 @@ namespace Controle.Infrastructure.Repositories
             return await _context.Lojas.Where(l => l.UsuarioId == usuarioId).ToListAsync();
         }
 
+        public async Task<Loja?> GetByTelefoneAsync(string telefone)
+        {
+            return await _context.Lojas.FirstOrDefaultAsync(l => l.Telefone == telefone);
+        }
+
         public async Task UpdateAsync(Loja loja)
         {
             _context.Lojas.Update(loja);

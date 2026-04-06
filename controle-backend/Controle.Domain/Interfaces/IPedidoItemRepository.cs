@@ -7,6 +7,7 @@ namespace Controle.Domain.Interfaces
     public interface IPedidoItemRepository
     {
         Task<IEnumerable<PedidoItem>> GetAllAsync();
+        Task<IEnumerable<PedidoItem>> GetByPedidoIdsAsync(IEnumerable<int> pedidoIds);
         Task<PedidoItem?> GetByIdAsync(int id);
         Task AddAsync(PedidoItem pedidoItem);
         Task UpdateAsync(PedidoItem pedidoItem);

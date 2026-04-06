@@ -12,7 +12,7 @@ export interface Loja {
   taxaEntrega: number;
   categoria: string;
   aberto: boolean;
-  // Endereço
+  // Endereço e Contato
   logradouro?: string;
   numero?: string;
   bairro?: string;
@@ -20,6 +20,9 @@ export interface Loja {
   estado?: string;
   cep?: string;
   complemento?: string;
+  telefone?: string;
+  whatsapp?: string;
+  
   slug?: string;
   aceitandoPedidos?: boolean;
   licencaValidaAte?: string;

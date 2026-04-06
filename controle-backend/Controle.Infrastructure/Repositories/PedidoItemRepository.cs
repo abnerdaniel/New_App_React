@@ -44,6 +44,15 @@ namespace Controle.Infrastructure.Repositories
             return await _context.PedidoItems.FindAsync(id);
         }
 
+        public async Task<IEnumerable<PedidoItem>> GetByPedidoIdsAsync(IEnumerable<int> pedidoIds)
+        {
+            var idsList = pedidoIds.ToList();
+            if (!idsList.Any()) return new List<PedidoItem>();
+            return await _context.PedidoItems
+                .Where(i => idsList.Contains(i.PedidoId))
+                .ToListAsync();
+        }
+
         public async Task UpdateAsync(PedidoItem pedidoItem)
         {
             _context.PedidoItems.Update(pedidoItem);

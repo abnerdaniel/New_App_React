@@ -26,11 +26,8 @@ namespace Controle.Application.Services
 
         public async Task<DashboardResumoDTO> GetResumoDoDiaAsync(Guid lojaId)
         {
-            var pedidos = await _pedidoRepository.GetAllAsync();
-            
-            // Filtra pedidos da loja e da data de hoje
             var hoje = DateTime.UtcNow.Date;
-            var pedidosHoje = pedidos.Where(p => p.LojaId == lojaId && p.DataVenda.Date == hoje).ToList();
+            var pedidosHoje = (await _pedidoRepository.GetByLojaIdAndDateAsync(lojaId, hoje)).ToList();
 
             var totalVendido = pedidosHoje.Where(p => p.Status != PedidoStatusMachine.Cancelado).Sum(p => p.ValorTotal); // Sum de int? returns int? mas se erro diz int e int, vamos confiar. Se der erro converteremos.
             // Na verdade, se ValorTotal é int?, Sum deve retornar int? ou 0 se vazio?
@@ -60,17 +57,15 @@ namespace Controle.Application.Services
 
         public async Task<IEnumerable<ProdutoRankingDTO>> GetProdutosMaisVendidosAsync(Guid lojaId)
         {
-            var pedidos = await _pedidoRepository.GetAllAsync();
             // Filter by Today to match "Ranking do Dia" requirement
             var hoje = DateTime.UtcNow.Date;
-            var pedidosLoja = pedidos
-                .Where(p => p.LojaId == lojaId && p.Status != PedidoStatusMachine.Cancelado && p.DataVenda.Date == hoje)
+            var pedidosLoja = (await _pedidoRepository.GetByLojaIdAndDateAsync(lojaId, hoje))
+                .Where(p => p.Status != PedidoStatusMachine.Cancelado)
                 .ToList();
             
             var pedidoIds = pedidosLoja.Select(p => p.Id).ToList();
 
-            var itens = await _pedidoItemRepository.GetAllAsync();
-            var itensLoja = itens.Where(i => pedidoIds.Contains(i.PedidoId)).ToList();
+            var itensLoja = (await _pedidoItemRepository.GetByPedidoIdsAsync(pedidoIds)).ToList();
 
             var ranking = itensLoja
                 .GroupBy(i => i.NomeProduto)
@@ -89,13 +84,13 @@ namespace Controle.Application.Services
 
         public async Task<DashboardFunilDTO> GetFunilPedidosAsync(Guid lojaId)
         {
-             var pedidos = await _pedidoRepository.GetAllAsync();
              var hoje = DateTime.UtcNow.Date;
+             var pedidosLoja = await _pedidoRepository.GetByLojaIdAsync(lojaId);
              
              // Consideramos apenas pedidos do dia para o funil operacional imediato? 
              // Ou todos os ativos? Geralmente o funil é o "agora".
              // Vamos pegar pedidos abertos ou do dia.
-             var pedidosAtivos = pedidos.Where(p => p.LojaId == lojaId && 
+             var pedidosAtivos = pedidosLoja.Where(p => 
                 (p.Status != PedidoStatusMachine.Concluido && p.Status != PedidoStatusMachine.Cancelado && p.Status != PedidoStatusMachine.Entregue) || (p.DataVenda.Date == hoje)).ToList();
 
              // Refinando lógica: O funil deve mostrar o estado ATUAL.
@@ -133,13 +128,12 @@ namespace Controle.Application.Services
             }
 
             // 2. Pedidos Atrasados (> 45 min na cozinha)
-            var pedidos = await _pedidoRepository.GetAllAsync();
+            var pedidosLoja = await _pedidoRepository.GetByLojaIdAsync(lojaId);
             var limiteAtraso = DateTime.UtcNow.AddMinutes(-45);
             
             // Status de cozinha
-            var pedidosAtrasados = pedidos
-                .Where(p => p.LojaId == lojaId && 
-                            (p.Status == PedidoStatusMachine.EmPreparo || p.Status == "Aceito") && 
+            var pedidosAtrasados = pedidosLoja
+                .Where(p => (p.Status == PedidoStatusMachine.EmPreparo || p.Status == "Aceito") && 
                             p.DataVenda < limiteAtraso)
                 .ToList();
 
@@ -160,7 +154,7 @@ namespace Controle.Application.Services
 
         public async Task<FinanceiroResumoDTO> GetFinanceiroResumoAsync(Guid lojaId, DateTime inicio, DateTime fim)
         {
-            var pedidos = await _pedidoRepository.GetAllAsync();
+            var pedidosLoja = await _pedidoRepository.GetByLojaIdAsync(lojaId);
             
             // Filtro por Loja, Status "Concluido" (ou similar, vamos usar != Cancelado por enquanto para pegar tudo que rolou, ou apenas Concluído?)
             // O usuário pediu "Faturação Bruta: Soma de todos os pedidos concluídos". 
@@ -174,9 +168,8 @@ namespace Controle.Application.Services
             var dataInicio = inicio.Date;
             var dataFim = fim.Date.AddDays(1).AddTicks(-1);
 
-            var pedidosFiltrados = pedidos
-                .Where(p => p.LojaId == lojaId 
-                            && p.DataVenda >= dataInicio 
+            var pedidosFiltrados = pedidosLoja
+                .Where(p => p.DataVenda >= dataInicio 
                             && p.DataVenda <= dataFim
                             && p.Status != PedidoStatusMachine.Cancelado) 
                 .ToList();
@@ -244,14 +237,13 @@ namespace Controle.Application.Services
 
         public async Task<IEnumerable<TransacaoDTO>> GetTransacoesAsync(Guid lojaId, DateTime inicio, DateTime fim)
         {
-             var pedidos = await _pedidoRepository.GetAllAsync();
+             var pedidosLoja = await _pedidoRepository.GetByLojaIdAsync(lojaId);
              
              var dataInicio = inicio.Date;
              var dataFim = fim.Date.AddDays(1).AddTicks(-1);
 
-             var pedidosFiltrados = pedidos
-                .Where(p => p.LojaId == lojaId 
-                            && p.DataVenda >= dataInicio 
+             var pedidosFiltrados = pedidosLoja
+                .Where(p => p.DataVenda >= dataInicio 
                             && p.DataVenda <= dataFim)
                 .OrderByDescending(p => p.DataVenda)
                 .ToList();

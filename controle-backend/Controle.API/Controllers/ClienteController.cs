@@ -6,6 +6,7 @@ using Controle.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace Controle.API.Controllers
 {
@@ -205,6 +206,56 @@ namespace Controle.API.Controllers
             if (!result.Success) return BadRequest(new { message = result.Error });
 
             return Ok(new { message = "Perfil atualizado com sucesso." });
+        }
+
+        /// <summary>
+        /// Busca cliente pelo telefone para o PDV (Nome e Endereços).
+        /// </summary>
+        [HttpGet("buscar-telefone/{telefone}")]
+        [AllowAnonymous] // Assumindo que o PDV tem acesso ou usa um token válido genérico
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> BuscarPorTelefone(string telefone)
+        {
+            var cleanPhone = new string(telefone.Where(char.IsDigit).ToArray());
+            if (string.IsNullOrEmpty(cleanPhone))
+            {
+                return BadRequest("Telefone inválido.");
+            }
+
+            var cliente = await _clienteService.GetByPhoneAsync(cleanPhone);
+            if (cliente == null)
+            {
+                return NotFound(new { message = "Cliente não encontrado." });
+            }
+
+            // Opcional: Buscar endereços cadastrados
+            var enderecos = await _clienteService.ListarEnderecosAsync(cliente.Id);
+
+            return Ok(new
+            {
+                Id = cliente.Id,
+                Nome = cliente.Nome,
+                Telefone = cliente.Telefone,
+                Email = cliente.Email,
+                Enderecos = enderecos
+            });
+        }
+
+        [HttpPost("pre-registro-pdv")]
+        [AllowAnonymous] // Idealmente proteger com policy de PDV/Admin
+        public async Task<IActionResult> CriarPreRegistroPdv([FromBody] PreRegistroPdvDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _clienteService.CriarPreRegistroPdvAsync(dto);
+
+            if (!result.Success)
+                return BadRequest(result.Error);
+
+            return Ok(new { ClienteId = result.Data, Message = "Pré-registro criado com sucesso." });
         }
     }
 }

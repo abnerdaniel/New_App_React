@@ -52,6 +52,23 @@ namespace Controle.Application.Services
             return loja;
         }
 
+        public async Task<Loja> AtualizarAtendimentoIAConfiguracoesAsync(Guid lojaId, AtendimentoIAConfigsDTO dto)
+        {
+            var loja = await _context.Lojas.FindAsync(lojaId);
+            if (loja == null) throw new DomainException("Loja não encontrada.");
+
+            loja.IaEnabled = dto.IaEnabled;
+            loja.SendCustomerNumber = dto.SendCustomerNumber;
+            loja.SendOrderSummary = dto.SendOrderSummary;
+            loja.OrderUpdates = dto.OrderUpdates;
+            loja.BotWithoutIA = dto.BotWithoutIA;
+
+            _context.Lojas.Update(loja);
+            await _context.SaveChangesAsync();
+
+            return loja;
+        }
+
         public async Task<Loja> GerirTaxasEntregaAsync(Guid lojaId, TaxaEntregaDTO dto)
         {
             var loja = await _context.Lojas.FindAsync(lojaId);

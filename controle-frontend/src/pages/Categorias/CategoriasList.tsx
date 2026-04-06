@@ -10,21 +10,23 @@ export function CategoriasList({ categorias }: Props) {
   }
 
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Descrição</th>
-          <th>Finalidade</th>
-        </tr>
-      </thead>
-      <tbody>
-        {categorias.map((categoria) => (
-          <tr key={categoria.id}>
-            <td>{categoria.descricao}</td>
-            <td>{categoria.finalidade}</td>
+    <div className="w-full overflow-x-auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Descrição</th>
+            <th>Finalidade</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {categorias.map((categoria) => (
+            <tr key={categoria.id}>
+              <td>{categoria.descricao}</td>
+              <td>{categoria.finalidade}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

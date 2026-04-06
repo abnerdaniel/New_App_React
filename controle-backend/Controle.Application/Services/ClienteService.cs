@@ -140,9 +140,59 @@ namespace Controle.Application.Services
         public async Task<Result<ClienteLoginResponseDTO>> RegisterAsync(ClienteRegisterDTO dto)
         {
             var existingUser = await _clienteFinalRepository.GetByEmailAsync(dto.Email);
+            
+            // Lógica de Omini-Channel / Fusão de Conta
             if (existingUser != null)
             {
-                return Result<ClienteLoginResponseDTO>.Fail("Email já cadastrado.");
+                if (existingUser.IsPreRegistrado)
+                {
+                    // A conta era de um visitante do PDV. Faremos o merge!
+                    existingUser.Nome = dto.Nome;
+                    existingUser.Telefone = dto.Telefone;
+                    existingUser.PasswordHash = HashPassword(dto.Password);
+                    existingUser.IsPreRegistrado = false; // Fusão Completa. Torna-se Cliente Real (GARANTIA DE USO ÚNICO)
+                    existingUser.Ativo = true;
+
+                    await _clienteFinalRepository.UpdateAsync(existingUser);
+                    
+                    var tokenMerge = GenerateJwtToken(existingUser);
+                    return Result<ClienteLoginResponseDTO>.Ok(new ClienteLoginResponseDTO
+                    {
+                        Id = existingUser.Id,
+                        Nome = existingUser.Nome,
+                        Email = existingUser.Email,
+                        Token = tokenMerge,
+                        Telefone = existingUser.Telefone ?? string.Empty
+                    });
+                }
+                else
+                {
+                    // Conta Real e Registrada já existe com esse email.
+                    return Result<ClienteLoginResponseDTO>.Fail("Email já cadastrado.");
+                }
+            }
+
+            // Fallback: Tentativa de Fusão por Telefone (se o email for novo mas o telefone já existir no BD de Visitantes)
+            var phoneUser = await _clienteFinalRepository.GetByPhoneAsync(dto.Telefone);
+            if (phoneUser != null && phoneUser.IsPreRegistrado)
+            {
+                phoneUser.Nome = dto.Nome;
+                phoneUser.Email = dto.Email; // Registra o novo email
+                phoneUser.PasswordHash = HashPassword(dto.Password);
+                phoneUser.IsPreRegistrado = false; // Fusão Completa
+                phoneUser.Ativo = true;
+
+                await _clienteFinalRepository.UpdateAsync(phoneUser);
+                
+                var tokenPhoneMerge = GenerateJwtToken(phoneUser);
+                return Result<ClienteLoginResponseDTO>.Ok(new ClienteLoginResponseDTO
+                {
+                    Id = phoneUser.Id,
+                    Nome = phoneUser.Nome,
+                    Email = phoneUser.Email,
+                    Token = tokenPhoneMerge,
+                    Telefone = phoneUser.Telefone ?? string.Empty
+                });
             }
 
             var cliente = new ClienteFinal
@@ -151,7 +201,8 @@ namespace Controle.Application.Services
                 Email = dto.Email,
                 Telefone = dto.Telefone,
                 PasswordHash = HashPassword(dto.Password),
-                Ativo = true
+                Ativo = true,
+                IsPreRegistrado = false
             };
 
             await _clienteFinalRepository.AddAsync(cliente);
@@ -159,7 +210,7 @@ namespace Controle.Application.Services
             // Auto-login
             var token = GenerateJwtToken(cliente);
 
-                return Result<ClienteLoginResponseDTO>.Ok(new ClienteLoginResponseDTO
+            return Result<ClienteLoginResponseDTO>.Ok(new ClienteLoginResponseDTO
             {
                 Id = cliente.Id,
                 Nome = cliente.Nome,
@@ -172,6 +223,12 @@ namespace Controle.Application.Services
         public async Task<Result<ClienteLoginResponseDTO>> LoginAsync(ClienteLoginDTO dto)
         {
             var cliente = await _clienteFinalRepository.GetByEmailAsync(dto.Email);
+
+            if (cliente != null && cliente.IsPreRegistrado)
+            {
+                return Result<ClienteLoginResponseDTO>.Fail("Esta conta ainda não possui senha pois foi criada via Balcão. Faça seu cadastro pelo App clicando em 'Criar Conta' utilizando o mesmo Telefone/E-mail para unificá-la.");
+            }
+
             if (cliente == null || !VerifyPasswordHash(dto.Password, cliente.PasswordHash))
             {
                 return Result<ClienteLoginResponseDTO>.Fail("Email ou senha inválidos.");
@@ -217,10 +274,19 @@ namespace Controle.Application.Services
                         Nome = payload.Name,
                         Email = payload.Email,
                         PasswordHash = HashPassword(Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + "!G1"), // Senha aleatória
-                        Ativo = true
+                        Ativo = true,
+                        IsPreRegistrado = false
                     };
 
                     await _clienteFinalRepository.AddAsync(cliente);
+                }
+                else if (cliente.IsPreRegistrado)
+                {
+                    // Fusão pelo Google (Omini-Channel)
+                    cliente.IsPreRegistrado = false; // Torna-se cliente de verdade.
+                    cliente.Nome = payload.Name;
+                    // Hash permanece o anterior randômico ou substitui.
+                    await _clienteFinalRepository.UpdateAsync(cliente);
                 }
 
                 // Verifica se está ativo
@@ -263,6 +329,41 @@ namespace Controle.Application.Services
             return Result.Ok();
         }
 
+        public async Task<ClienteFinal?> GetByPhoneAsync(string phone)
+        {
+            return await _clienteFinalRepository.GetByPhoneAsync(phone);
+        }
+
+        public async Task<Result<int>> CriarPreRegistroPdvAsync(PreRegistroPdvDTO dto)
+        {
+            // Primeiro verifica de novo se o telefone já não existe (prevenção)
+            var clienteExistente = await _clienteFinalRepository.GetByPhoneAsync(dto.Telefone);
+            if (clienteExistente != null)
+            {
+                return Result<int>.Ok(clienteExistente.Id);
+            }
+
+            // Cadastra a Entidade Isolada "Visitante"
+            var visitante = new ClienteFinal
+            {
+                Nome = dto.Nome,
+                Telefone = dto.Telefone,
+                Email = !string.IsNullOrWhiteSpace(dto.Email) ? dto.Email : null,
+                PasswordHash = HashPassword(Guid.NewGuid().ToString() + "!!!PdvTemp"), // Placeholder Irrecuperável
+                Ativo = true,
+                IsPreRegistrado = true
+            };
+
+            await _clienteFinalRepository.AddAsync(visitante); // O método Add deve popular o visitante.Id após saveChanges
+            
+            // Adiciona o endereço base que o Caixa mandou
+            if (dto.Endereco != null && (!string.IsNullOrEmpty(dto.Endereco.Logradouro) || !string.IsNullOrEmpty(dto.Endereco.Bairro)))
+            {
+                await AdicionarEnderecoAsync(visitante.Id, dto.Endereco);
+            }
+
+            return Result<int>.Ok(visitante.Id);
+        }
 
         private string GenerateJwtToken(ClienteFinal cliente)
         {

@@ -44,6 +44,20 @@ namespace Controle.Infrastructure.Repositories
             return await _context.Pedidos.FindAsync(id);
         }
 
+        public async Task<IEnumerable<Pedido>> GetByLojaIdAsync(Guid lojaId)
+        {
+            return await _context.Pedidos
+                .Where(p => p.LojaId == lojaId)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Pedido>> GetByLojaIdAndDateAsync(Guid lojaId, DateTime date)
+        {
+            return await _context.Pedidos
+                .Where(p => p.LojaId == lojaId && p.DataVenda.Date == date.Date)
+                .ToListAsync();
+        }
+
         public async Task UpdateAsync(Pedido pedido)
         {
             _context.Pedidos.Update(pedido);

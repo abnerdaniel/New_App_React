@@ -63,4 +63,15 @@ public class Loja
     public DateTime? LicencaValidaAte { get; set; }
     public bool BloqueadaPorFaltaDePagamento { get; set; } = false;
     public string? UrlComprovantePagamento { get; set; }
+
+    // Evolution API Integration
+    public string? EvolutionInstanceName { get; set; }
+    public string EvolutionConnectionStatus { get; set; } = "DISCONNECTED"; // DISCONNECTED, PENDING_QR, CONNECTED
+
+    // IA & Atendimento
+    public bool IaEnabled { get; set; } = true;
+    public bool SendCustomerNumber { get; set; } = false;
+    public bool SendOrderSummary { get; set; } = false;
+    public bool OrderUpdates { get; set; } = false;
+    public bool BotWithoutIA { get; set; } = false;
 }

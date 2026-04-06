@@ -11,6 +11,7 @@ namespace Controle.Domain.Interfaces
         Task<IEnumerable<Loja>> GetAllAsync();
         Task<Loja?> GetByIdAsync(Guid id);
         Task<IEnumerable<Loja>> GetByUsuarioIdAsync(Guid usuarioId);
+        Task<Loja?> GetByTelefoneAsync(string telefone);
         Task AddAsync(Loja loja);
         Task UpdateAsync(Loja loja);
         Task DeleteAsync(Guid id);

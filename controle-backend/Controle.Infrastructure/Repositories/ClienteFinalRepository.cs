@@ -54,5 +54,10 @@ namespace Controle.Infrastructure.Repositories
             _context.CientesFinais.Update(clienteFinal);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<ClienteFinal?> GetByPhoneAsync(string phone)
+        {
+            return await _context.CientesFinais.FirstOrDefaultAsync(c => c.Telefone == phone);
+        }
     }
 }

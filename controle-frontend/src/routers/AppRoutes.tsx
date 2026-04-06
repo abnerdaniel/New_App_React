@@ -6,6 +6,7 @@ import { EmployeeLoginPage } from '../pages/Auth/EmployeeLoginPage'
 import { SetupCompany } from '../pages/Setup/SetupCompany'
 import { SetupEmployee } from '../pages/Setup/SetupEmployee'
 import { StoreList } from '../pages/Setup/StoreList'
+import { AtendimentoIA } from '../pages/Setup/AtendimentoIA'
 import { PrivateRoute } from '../components/auth/PrivateRoute'
 
 // New Pages
@@ -25,6 +26,7 @@ import { CozinhaPage } from '../pages/Cozinha/CozinhaPage'
 import { MinhasEntregasPage } from '../pages/Motoboy/MinhasEntregasPage'
 import { SuperAdminLojas } from '../pages/SuperAdmin/SuperAdminLojas'
 import { ContaPage } from '../pages/Conta/ContaPage'
+import { ManualPage } from '../pages/Manual/ManualPage'
 
 export function AppRoutes() {
   return (
@@ -46,12 +48,14 @@ export function AppRoutes() {
       <Route path="/setup" element={<PrivateRoute><SetupCompany /></PrivateRoute>} />
       <Route path="/manage-stores" element={<PrivateRoute><StoreList /></PrivateRoute>} />
       <Route path="/setup-employee" element={<PrivateRoute><SetupEmployee /></PrivateRoute>} />
+      <Route path="/atendimento-ia" element={<PrivateRoute><AtendimentoIA /></PrivateRoute>} />
       
       {/* Super Admin */}
       <Route path="/superadmin/lojas" element={<PrivateRoute><SuperAdminLojas /></PrivateRoute>} />
 
       {/* Conta do Usuário */}
       <Route path="/conta" element={<PrivateRoute><ContaPage /></PrivateRoute>} />
+      <Route path="/manual" element={<PrivateRoute><ManualPage /></PrivateRoute>} />
 
       {/* Main Modules */}
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

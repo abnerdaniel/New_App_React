@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Controle.Application.DTOs;
 using Controle.Application.Services; // For Result class
+using Controle.Domain.Entities;
 
 namespace Controle.Application.Interfaces
 {
@@ -16,5 +17,7 @@ namespace Controle.Application.Interfaces
         Task<Result> AtualizarEnderecoAsync(int clienteId, EnderecoDTO enderecoDto);
         Task<Result> RemoverEnderecoAsync(int clienteId, int enderecoId);
         Task<Result> UpdateProfileAsync(int clienteId, UpdateClienteProfileDTO dto);
+        Task<ClienteFinal?> GetByPhoneAsync(string phone);
+        Task<Result<int>> CriarPreRegistroPdvAsync(PreRegistroPdvDTO dto);
     }
 }

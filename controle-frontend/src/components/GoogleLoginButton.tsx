@@ -15,9 +15,10 @@ export function GoogleLoginButton() {
         const response = await authApi.googleLogin(credentialResponse.credential);
         login(response);
         
-        // Verifica se precisa de setup
-        if (response.lojas.length === 0 || (response.lojas.length > 0 && response.lojas[0].nome === "Nova Loja")) {
-          navigate("/setup");
+        // Novos usuários (sem loja configurada) vão para o manual de onboarding
+        const hasStores = response.lojas.length > 0 && response.lojas[0].nome !== "Nova Loja";
+        if (!hasStores) {
+          navigate("/manual");
         } else {
           navigate("/dashboard");
         }

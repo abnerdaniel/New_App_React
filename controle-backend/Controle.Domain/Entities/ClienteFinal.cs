@@ -25,4 +25,5 @@ public class ClienteFinal
     public string? Twitch { get; set; } = string.Empty;
     public string? TikTok { get; set; } = string.Empty;
     public int PedidosCancelados { get; set; } = 0;
+    public bool IsPreRegistrado { get; set; } = false;
 }

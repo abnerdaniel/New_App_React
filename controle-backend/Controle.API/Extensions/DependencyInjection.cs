@@ -1,4 +1,4 @@
-﻿using Controle.Application.Interfaces;
+using Controle.Application.Interfaces;
 using Controle.Application.Services;
 using Controle.Domain.Interfaces;
 using Controle.Infrastructure.Data;
@@ -30,6 +30,9 @@ namespace Controle.API.Extensions
             services.AddScoped<IProdutoService, ProdutoService>();
             services.AddScoped<IProdutoLojaService, ProdutoLojaService>();
             services.AddScoped<ICategoriaService, CategoriaService>();
+            
+            // External APIs
+            services.AddHttpClient<IEvolutionApiService, EvolutionApiService>();
 
             // Repositories
             // Repositories

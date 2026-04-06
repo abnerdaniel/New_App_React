@@ -14,7 +14,8 @@ import {
   ChevronRight,
   ShieldAlert,
   Share2,
-  Bot
+  Bot,
+  BookOpen
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { ShareMenuModal } from "../ShareMenuModal";
@@ -162,14 +163,34 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                         <Settings size={20} />
                         Minhas Lojas
                     </Link>
+                    <Link
+                        to="/manual"
+                        onClick={() => { if(window.innerWidth < 768) onClose() }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        isActive('/manual')
+                            ? "bg-brand-primary/10 text-brand-primary"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                    >
+                        <BookOpen size={20} />
+                        Manual / Ajuda
+                    </Link>
                     
-                    <div className="flex items-center justify-between px-4 py-3 mt-1 rounded-lg text-sm font-medium text-gray-400 bg-gray-50/50 cursor-not-allowed border border-dashed border-gray-200" title="Em desenvolvimento">
+                    <Link
+                        to="/atendimento-ia"
+                        onClick={() => { if(window.innerWidth < 768) onClose() }}
+                        className={`flex items-center justify-between px-4 py-3 mt-1 rounded-lg text-sm font-medium transition-colors ${
+                        isActive('/atendimento-ia')
+                            ? "bg-brand-primary/10 text-brand-primary"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }`}
+                    >
                         <div className="flex items-center gap-3">
-                            <Bot size={20} className="text-brand-primary/50" />
-                            <span>Atendimento com IA</span>
+                            <Bot size={20} />
+                            <span>Atendimento Automatizado</span>
                         </div>
-                        <span className="text-[9px] uppercase font-bold bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full">Em breve</span>
-                    </div>
+                        <span className="text-[9px] uppercase font-bold bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Beta</span>
+                    </Link>
                 </div>
                 )}
 

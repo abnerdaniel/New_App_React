@@ -17,15 +17,18 @@ namespace Controle.Application.Services
         private readonly AppDbContext _context;
         private readonly ILojaService _lojaService;
         private readonly IMesaService _mesaService;
+        private readonly IEvolutionApiService _evolutionApiService;
 
         public PedidoService(
             AppDbContext context,
             ILojaService lojaService,
-            IMesaService mesaService)
+            IMesaService mesaService,
+            IEvolutionApiService evolutionApiService)
         {
             _context = context;
             _lojaService = lojaService;
             _mesaService = mesaService;
+            _evolutionApiService = evolutionApiService;
         }
 
         public async Task<Pedido> RealizarPedidoAsync(RealizarPedidoDTO pedidoDto)
@@ -331,6 +334,62 @@ namespace Controle.Application.Services
                 
                 await transaction.CommitAsync();
 
+                // ======= ATENDIMENTO IA / WHATSAPP =======
+                Console.WriteLine($"[WHATSAPP-SUMMARY] Avaliando envio para Loja {loja.Id}. SendOrderSummary: {loja.SendOrderSummary}, InstanceName: '{loja.EvolutionInstanceName}'");
+                
+                if (loja.SendOrderSummary && !string.IsNullOrEmpty(loja.EvolutionInstanceName))
+                {
+                    try
+                    {
+                        string? telefoneDst = null;
+                        if (pedidoDto.ClienteId.HasValue)
+                        {
+                            var cliente = await _context.Set<ClienteFinal>().FindAsync(pedidoDto.ClienteId.Value);
+                            telefoneDst = cliente?.Telefone;
+                            Console.WriteLine($"[WHATSAPP-SUMMARY] Cliente {cliente?.Id} encontrado com telefone Original DB: '{telefoneDst}'");
+                        }
+                        else 
+                        {
+                            Console.WriteLine($"[WHATSAPP-SUMMARY] Pedido não possui ClienteId vinculado.");
+                        }
+
+                        var numLimpo = CleanWhatsAppNumber(telefoneDst);
+                        Console.WriteLine($"[WHATSAPP-SUMMARY] Número formatado resultante: '{numLimpo}'");
+
+                        if (!string.IsNullOrEmpty(numLimpo))
+                        {
+                            var resumoBuilder = new System.Text.StringBuilder();
+                            resumoBuilder.AppendLine($"🍔 *Resumo do seu Pedido #{pedido.Id}*");
+                            resumoBuilder.AppendLine($"Status: *{pedido.Status}*\n");
+                            foreach (var item in pedido.Sacola.Where(i => i.ParentPedidoItemId == null))
+                            {
+                                resumoBuilder.AppendLine($"🔹 {item.Quantidade}x {item.NomeProduto}");
+                            }
+                            
+                            var valorBrl = (pedido.ValorTotal ?? 0) / 100.0m;
+                            if (pedido.ValorTotal != null && pedido.ValorTotal < 1000 && valorBrl < 1) valorBrl = pedido.ValorTotal.Value; // Fallback se não for centavos.
+                            resumoBuilder.AppendLine($"\n💵 *Total: R$ {valorBrl:F2}*");
+                            
+                            Console.WriteLine($"[WHATSAPP-SUMMARY] Enviando mensagem final... Instância: {loja.EvolutionInstanceName}");
+                            var resEvo = await _evolutionApiService.SendTextAsync(loja.EvolutionInstanceName, numLimpo, resumoBuilder.ToString());
+                            Console.WriteLine($"[WHATSAPP-SUMMARY] Resultado do Envio: " + (resEvo ? "SUCESSO" : "FALHA"));
+                        }
+                        else 
+                        {
+                            Console.WriteLine($"[WHATSAPP-SUMMARY] Falha: O número limpo retornou vazio ou nulo! Não será possível enviar.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[WHATSAPP-SUMMARY-ERROR] {ex.Message}");
+                    }
+                }
+                else 
+                {
+                    Console.WriteLine($"[WHATSAPP-SUMMARY] Condições não atendidas. Pulando disparo.");
+                }
+                // =========================================
+
                 return pedido;
             }
             catch (Exception ex)
@@ -485,6 +544,48 @@ namespace Controle.Application.Services
 
             _context.Pedidos.Update(pedido);
             await _context.SaveChangesAsync();
+
+            // ======= ATENDIMENTO IA / WHATSAPP - ORDER UPDATES =======
+            Console.WriteLine($"[WHATSAPP-UPDATE] Avaliando envio de atualização para pedido {pedido.Id}. OrderUpdates: {pedido.Loja?.OrderUpdates}, InstanceName: '{pedido.Loja?.EvolutionInstanceName}'");
+            
+            if (pedido.Loja != null && pedido.Loja.OrderUpdates && !string.IsNullOrEmpty(pedido.Loja.EvolutionInstanceName))
+            {
+                try
+                {
+                    string? telefoneDst = null;
+                    if (pedido.ClienteId.HasValue)
+                    {
+                        var cliente = await _context.Set<ClienteFinal>().FindAsync(pedido.ClienteId.Value);
+                        telefoneDst = cliente?.Telefone;
+                        Console.WriteLine($"[WHATSAPP-UPDATE] Telefone Original do cliente {cliente?.Id}: '{telefoneDst}'");
+                    }
+
+                    var numLimpo = CleanWhatsAppNumber(telefoneDst);
+                    Console.WriteLine($"[WHATSAPP-UPDATE] Número formatado: '{numLimpo}'");
+                    
+                    if (!string.IsNullOrEmpty(numLimpo))
+                    {
+                        var statusMsg = $"📢 *Atualização do seu Pedido #{pedido.Id}*\nO status do seu pedido foi atualizado para: *{pedido.Status}*";
+                        
+                        Console.WriteLine($"[WHATSAPP-UPDATE] Disparando msg... Instância: {pedido.Loja.EvolutionInstanceName}");
+                        var resEvo = await _evolutionApiService.SendTextAsync(pedido.Loja.EvolutionInstanceName, numLimpo, statusMsg);
+                        Console.WriteLine($"[WHATSAPP-UPDATE] Resultado do Envio: " + (resEvo ? "SUCESSO" : "FALHA"));
+                    }
+                    else 
+                    {
+                        Console.WriteLine($"[WHATSAPP-UPDATE] Falha: O número limpo retornou vazio ou nulo!");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[WHATSAPP-UPDATE-ERROR] {ex.Message}");
+                }
+            }
+            else 
+            {
+                Console.WriteLine($"[WHATSAPP-UPDATE] Condições não atendidas. Pulando envio de atualização.");
+            }
+            // =========================================
 
             return pedido;
         }
@@ -660,6 +761,25 @@ namespace Controle.Application.Services
             if (dto.NumeroMesa.HasValue && dto.NumeroMesa > 0) return "Em Preparo";
 
             return loja.AceiteAutomatico ? "Em Preparo" : "Aguardando Aceitação";
+        }
+
+        private string? CleanWhatsAppNumber(string? telefone)
+        {
+            if (string.IsNullOrWhiteSpace(telefone)) return null;
+
+            // Remove non-digit characters
+            var numLimpo = new string(telefone.Where(char.IsDigit).ToArray());
+            
+            // Remove leading zeros that might have been typed incorrectly (e.g., "0119...")
+            numLimpo = numLimpo.TrimStart('0');
+            
+            // If the number is 10 or 11 digits (e.g., 11999999999), add Brazil country code '55'
+            if (numLimpo.Length == 10 || numLimpo.Length == 11) 
+            {
+                numLimpo = "55" + numLimpo;
+            }
+            
+            return numLimpo;
         }
 
         public async Task<Pedido> AdicionarItensAsync(int pedidoId, List<ItemPedidoDTO> itens)

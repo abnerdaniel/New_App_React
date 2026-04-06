@@ -10,6 +10,8 @@ namespace Controle.Domain.Interfaces
     {
         Task<IEnumerable<Pedido>> GetAllAsync();
         Task<Pedido?> GetByIdAsync(int id);
+        Task<IEnumerable<Pedido>> GetByLojaIdAsync(Guid lojaId);
+        Task<IEnumerable<Pedido>> GetByLojaIdAndDateAsync(Guid lojaId, DateTime date);
         Task AddAsync(Pedido pedido);
         Task UpdateAsync(Pedido pedido);
         Task DeleteAsync(int id);

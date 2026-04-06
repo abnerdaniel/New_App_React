@@ -20,7 +20,16 @@ export const lojaService = {
         categoria: loja.categoria || 'Diversos',
         aberto: loja.aberta ?? true,
         licencaValidaAte: loja.licencaValidaAte,
-        bloqueadaPorFaltaDePagamento: loja.bloqueadaPorFaltaDePagamento
+        bloqueadaPorFaltaDePagamento: loja.bloqueadaPorFaltaDePagamento,
+        logradouro: loja.logradouro,
+        numero: loja.numero,
+        bairro: loja.bairro,
+        cidade: loja.cidade,
+        estado: loja.estado,
+        cep: loja.cep,
+        complemento: loja.complemento,
+        telefone: loja.telefone,
+        whatsapp: loja.whatsApp || loja.whatsapp
       }));
     } catch (error) {
       console.error('Erro ao buscar lojas:', error);
@@ -49,7 +58,16 @@ export const lojaService = {
         categoria: data.categoria || 'Diversos',
         aberto: data.aberta ?? true,
         licencaValidaAte: data.licencaValidaAte,
-        bloqueadaPorFaltaDePagamento: data.bloqueadaPorFaltaDePagamento
+        bloqueadaPorFaltaDePagamento: data.bloqueadaPorFaltaDePagamento,
+        logradouro: data.logradouro,
+        numero: data.numero,
+        bairro: data.bairro,
+        cidade: data.cidade,
+        estado: data.estado,
+        cep: data.cep,
+        complemento: data.complemento,
+        telefone: data.telefone,
+        whatsapp: data.whatsApp || data.whatsapp
       };
     } catch (error) {
        console.error('Erro ao buscar loja:', error);

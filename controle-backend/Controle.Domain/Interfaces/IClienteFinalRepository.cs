@@ -12,5 +12,6 @@ namespace Controle.Domain.Interfaces
         Task AddAsync(ClienteFinal clienteFinal);
         Task UpdateAsync(ClienteFinal clienteFinal);
         Task DeleteAsync(int id);
+        Task<ClienteFinal?> GetByPhoneAsync(string phone);
     }
 }

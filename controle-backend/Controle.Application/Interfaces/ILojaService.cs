@@ -7,6 +7,7 @@ namespace Controle.Application.Interfaces
     public interface ILojaService
     {
         Task<Loja> AtualizarConfiguracoesAsync(Guid lojaId, LojaConfiguracaoDTO dto);
+        Task<Loja> AtualizarAtendimentoIAConfiguracoesAsync(Guid lojaId, AtendimentoIAConfigsDTO dto);
         Task<Loja> GerirTaxasEntregaAsync(Guid lojaId, TaxaEntregaDTO dto);
         Task<Loja> AbrirFecharLojaAsync(Guid lojaId, bool? aberta);
         Task<Loja> CriarLojaAsync(CreateLojaDTO dto);

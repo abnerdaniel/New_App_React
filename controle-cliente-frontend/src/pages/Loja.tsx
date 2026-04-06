@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom'; // Import Link
-import { Star, Clock, MapPin, User, LogOut, Search } from 'lucide-react';
+import { Star, Clock, MapPin, User, LogOut, Search, MessageCircle } from 'lucide-react';
 import type { Loja, Categoria, Combo } from '../types';
 import { lojaService } from '../services/loja.service';
 
@@ -257,15 +257,36 @@ export function LojaPage() {
                     </div>
                 </div>
                 
-                <div className="flex items-center gap-4 mt-4 text-sm text-gray-600 border-t pt-4 border-gray-100">
-                    <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 text-sm text-gray-600 border-t pt-4 border-gray-100">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span>{loja.tempoEntregaMin}-{loja.tempoEntregaMax} min</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        <span>2.4 km (Entrega R$ {loja.taxaEntrega.toFixed(2)})</span>
-                    </div>
+                    {loja.logradouro && (
+                        <div className="flex items-center gap-1.5">
+                            <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                            <span className="line-clamp-1">
+                                {loja.logradouro}{loja.numero ? `, ${loja.numero}` : ''}{loja.bairro ? ` - ${loja.bairro}` : ''}{loja.cidade ? `, ${loja.cidade}` : ''}
+                            </span>
+                        </div>
+                    )}
+                    {!loja.logradouro && (
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                            <span>Entrega: R$ {loja.taxaEntrega.toFixed(2)}</span>
+                        </div>
+                    )}
+                    {(loja.whatsapp || loja.telefone) && (
+                        <a 
+                            href={`https://wa.me/55${(loja.whatsapp || loja.telefone)?.replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="flex items-center gap-1.5 text-green-600 hover:text-green-700 font-medium transition-colors shrink-0 ml-auto sm:ml-0"
+                        >
+                            <MessageCircle className="w-4 h-4" />
+                            <span>WhatsApp</span>
+                        </a>
+                    )}
                 </div>
             </div>
           </div>

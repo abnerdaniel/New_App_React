@@ -18,7 +18,7 @@ export function DeliveryPage() {
   // Dispatch States
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
-  const [motoboys, setMotoboys] = useState<{id: number, nome: string, telefone?: string}[]>([]);
+  const [motoboys, setMotoboys] = useState<{id: number, nome: string, telefone?: string, cargo?: string}[]>([]);
   const [loadingMotoboys, setLoadingMotoboys] = useState(false);
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export function DeliveryPage() {
     try {
         const response = await api.get(`/api/funcionarios/loja/${activeLoja.id}`);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const drivers = response.data.filter((f: any) => f.cargo?.toLowerCase().includes('entregador') && f.ativo);
+        const drivers = response.data.filter((f: any) => f.ativo);
         setMotoboys(drivers);
     } catch (error) {
         console.error("Erro ao buscar entregadores", error);
@@ -394,14 +394,14 @@ export function DeliveryPage() {
                 
                 <div className="p-6">
                     <p className="text-sm text-gray-500 mb-4">
-                        Escolha um motoboy disponível para o pedido <strong>#{selectedPedido?.id}</strong>.
+                        Escolha um funcionário disponível para despachar o pedido <strong>#{selectedPedido?.id}</strong>.
                     </p>
                     
                     {loadingMotoboys ? (
                         <div className="text-center py-8 text-gray-400">Carregando entregadores...</div>
                     ) : motoboys.length === 0 ? (
                         <div className="text-center py-6 text-red-500 bg-red-50 rounded-lg border border-red-100">
-                            Nenhum entregador "Entregador" ativo encontrado.
+                            Nenhum funcionário ativo encontrado.
                         </div>
                     ) : (
                         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
@@ -414,6 +414,7 @@ export function DeliveryPage() {
                                     <div>
                                         <p className="font-bold text-gray-800">{motoboy.nome}</p>
                                         <p className="text-xs text-gray-500 flex items-center gap-1">
+                                            {motoboy.cargo && <span className="bg-gray-100 px-1 rounded font-medium">{motoboy.cargo}</span>}
                                             {motoboy.telefone || 'Sem telefone'}
                                         </p>
                                     </div>

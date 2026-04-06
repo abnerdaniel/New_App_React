@@ -98,6 +98,17 @@ namespace Controle.API.Controllers
         }
 
         /// <summary>
+        /// Atualiza as configurações de IA e Relacionamento via WhatsApp da loja.
+        /// </summary>
+        [HttpPut("{lojaId}/atendimento-ia/config")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> AtualizarAtendimentoIAConfiguracoes(Guid lojaId, [FromBody] AtendimentoIAConfigsDTO dto)
+        {
+            var loja = await _lojaService.AtualizarAtendimentoIAConfiguracoesAsync(lojaId, dto);
+            return Ok(loja);
+        }
+
+        /// <summary>
         /// Gerencia as taxas de entrega da loja.
         /// </summary>
 

@@ -23,7 +23,7 @@ export function LoginPage() {
       login(response);
       const isEmployee = response.funcionarios && response.funcionarios.length > 0;
       const hasStores = response.lojas.length > 0 && response.lojas[0].nome !== "Nova Loja";
-      if (!hasStores && !isEmployee) navigate("/setup");
+      if (!hasStores && !isEmployee) navigate("/manual");
       else navigate("/dashboard");
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };

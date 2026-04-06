@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Menu, Store } from "lucide-react";
+import { Menu, Store, MessageCircle } from "lucide-react";
 import { api } from "../../api/axios";
+import { whatsappService } from "../../services/whatsapp.service";
 
 interface HeaderProps {
   onMobileMenuClick?: () => void;
@@ -14,8 +15,19 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showStoreMenu, setShowStoreMenu] = useState(false);
   const storeMenuRef = useRef<HTMLDivElement>(null);
+  const [waStatus, setWaStatus] = useState<string>("DISCONNECTED");
 
   const hasActiveLoja = !!activeLoja;
+
+  // Fetch WhatsApp Status when active store changes
+  useEffect(() => {
+    if (activeLoja?.id) {
+        whatsappService.getStatus(activeLoja.id)
+            .then(res => setWaStatus(res.status))
+            .catch(() => setWaStatus('DISCONNECTED'));
+    }
+  }, [activeLoja?.id]);
+
 
   // Effect to change Favicon and Title based on active store
   useEffect(() => {
@@ -107,7 +119,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
                 <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" />
             )}
          </div>
-         <h1 className="text-xl font-bold tracking-tight hidden md:block">
+         <h1 className="text-xl font-bold tracking-tight hidden md:block truncate max-w-[150px] lg:max-w-[250px]" title={hasActiveLoja ? activeLoja?.nome : "OpenFood"}>
             {hasActiveLoja ? activeLoja?.nome : "OpenFood"}
          </h1>
       </div>
@@ -173,6 +185,21 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
             </div>
         )}
 
+        {/* WhatsApp IA Icon */}
+        {activeLoja && (
+            <button 
+                onClick={() => navigate('/atendimento-ia')}
+                className={`flex items-center justify-center p-1.5 md:p-2 rounded-full md:rounded-lg transition-colors border ${
+                    waStatus === 'CONNECTED' 
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30' 
+                    : 'bg-white/10 text-white/60 border-white/20 hover:bg-white/20 hover:text-white/90'
+                }`}
+                title={waStatus === 'CONNECTED' ? 'IA Conectada' : 'IA Desconectada'}
+            >
+                <MessageCircle size={20} />
+            </button>
+        )}
+
           <div className="relative">
             <button 
               onClick={() => setShowMenu(!showMenu)} 
@@ -215,7 +242,7 @@ export function Header({ onMobileMenuClick }: HeaderProps) {
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right hidden md:block">
-                <span className="block text-sm font-semibold text-white">{user.nome}</span>
+                <span className="block text-sm font-semibold text-white truncate max-w-[150px]" title={user.nome}>{user.nome}</span>
                 <span className="block text-xs text-white/80">Administrador</span>
             </div>
             <button 

@@ -4,6 +4,7 @@ import { listarProdutosLoja, type ProdutoLojaItem } from '../../api/mesas.api';
 import { api } from '../../api/axios';
 import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote,  User, CheckCircle, Package, ArrowLeft } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { printReceipt } from '../../utils/printReceipt';
 
 interface CartItem {
   produtoId: number; // ProdutoLojaId
@@ -42,6 +43,15 @@ export function PDVPage() {
   const [enviarParaEntrega, setEnviarParaEntrega] = useState(false); 
   const [submitting, setSubmitting] = useState(false);
   const [isDesktopCartOpen, setIsDesktopCartOpen] = useState(true);
+
+  // Client Search State
+  const [telefoneBusca, setTelefoneBusca] = useState('');
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
+  const [clienteEncontrado, setClienteEncontrado] = useState<any>(null);
+  const [enderecosCliente, setEnderecosCliente] = useState<any[]>([]);
+  const [enderecoSelecionadoId, setEnderecoSelecionadoId] = useState<number | null>(null);
+  const [enderecoManual, setEnderecoManual] = useState('');
+  const [emailCliente, setEmailCliente] = useState(''); // Estado para E-mail opcional
 
   useEffect(() => {
     if (activeLoja?.id) {
@@ -128,6 +138,26 @@ export function PDVPage() {
     setValorRecebido(amount.toFixed(2).replace('.', ','));
   };
 
+  const buscarClientePorTelefone = async () => {
+    if (!telefoneBusca) return;
+    try {
+        setBuscandoCliente(true);
+        const { data } = await api.get(`/api/clientes/buscar-telefone/${telefoneBusca.replace(/\D/g, '')}`);
+        setClienteEncontrado(data);
+        setEnderecosCliente(data.enderecos || []);
+        setNomeCliente(data.nome);
+        if (data.enderecos?.length === 1) {
+            setEnderecoSelecionadoId(data.enderecos[0].id);
+        }
+    } catch (error) {
+        alert('Cliente não encontrado.');
+        setClienteEncontrado(null);
+        setEnderecosCliente([]);
+    } finally {
+        setBuscandoCliente(false);
+    }
+  };
+
   const handleFinalizar = async () => {
     if (cart.length === 0) return;
     if (!activeLoja?.id) return;
@@ -135,14 +165,39 @@ export function PDVPage() {
     try {
         setSubmitting(true);
         
+        let finalClienteId = clienteEncontrado ? clienteEncontrado.id : null;
+
+        // Omni-Channel: Pré-Registro de Visitante no PDV
+        if (enviarParaEntrega && !clienteEncontrado && telefoneBusca && nomeCliente && enderecoManual) {
+            try {
+                const regPayload = {
+                    nome: nomeCliente,
+                    telefone: telefoneBusca,
+                    email: emailCliente || null,
+                    endereco: {
+                       logradouro: enderecoManual,
+                       numero: "S/N",
+                       bairro: "Não informado",
+                       cidade: "Não informada",
+                       estado: "XX"
+                    }
+                };
+                const regRes = await api.post('/api/clientes/pre-registro-pdv', regPayload);
+                finalClienteId = regRes.data.clienteId;
+            } catch (err: any) {
+                console.error("Erro ao pré-registrar cliente", err);
+                throw new Error("Falha ao salvar Perfil Rápido do cliente: " + (err.response?.data?.message || err.message));
+            }
+        }
+
         const payload = {
             lojaId: activeLoja.id,
-            clienteId: null,
-            enderecoEntregaId: null,
+            clienteId: finalClienteId,
+            enderecoEntregaId: enderecoSelecionadoId,
             isRetirada: !enviarParaEntrega,
             metodoPagamento: isMesaOrder ? 'Dinheiro' : metodoPagamento, 
             trocoPara: valorRecebidoNum > 0 ? valorRecebidoNum : null,
-            observacao: `[PDV] ${observacaoPedido} ${nomeCliente ? `- Cliente: ${nomeCliente}` : ''} ${cpfCliente ? `- CPF: ${cpfCliente}` : ''}`,
+            observacao: `[PDV] ${observacaoPedido} ${nomeCliente ? `- Cliente: ${nomeCliente}` : ''} ${cpfCliente ? `- CPF: ${cpfCliente}` : ''} ${enviarParaEntrega && enderecoManual ? `\nEndereço Dig.: ${enderecoManual}` : ''}`,
             NomeCliente: nomeCliente,
             enviarParaCozinha: enviarParaCozinha, 
             numeroMesa: mesaState?.numeroMesa || null,
@@ -154,13 +209,18 @@ export function PDVPage() {
             }))
         };
         
-        await api.post('/api/pedidos', payload); 
+        const response = await api.post('/api/pedidos', payload); 
         
         alert(isMesaOrder ? 'Pedido enviado para a mesa!' : 'Venda realizada com sucesso!');
         
         if (isMesaOrder) {
             navigate('/garcom'); 
             return;
+        }
+
+        // Imprimir nota usando a função mapeada
+        if (response.data) {
+            printReceipt(response.data, activeLoja as any);
         }
 
         setCart([]);
@@ -173,6 +233,12 @@ export function PDVPage() {
         setDesconto('');
         setEnviarParaCozinha(false);
         setEnviarParaEntrega(false);
+        setTelefoneBusca('');
+        setClienteEncontrado(null);
+        setEnderecosCliente([]);
+        setEnderecoSelecionadoId(null);
+        setEnderecoManual('');
+        setEmailCliente('');
 
     } catch (error: any) {
         console.error('Erro ao finalizar venda', error);
@@ -435,6 +501,93 @@ export function PDVPage() {
                                 >
                                     Entrega
                                 </button>
+                              </div>
+                          </div>
+                      )}
+
+                      {!isMesaOrder && enviarParaEntrega && (
+                          <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Buscar Cliente por Telefone</label>
+                              <div className="flex gap-2 mb-3">
+                                  <input 
+                                      type="text"
+                                      value={telefoneBusca}
+                                      onChange={e => setTelefoneBusca(e.target.value)}
+                                      placeholder="(00) 00000-0000"
+                                      className="flex-1 border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                                      onKeyDown={e => e.key === 'Enter' && buscarClientePorTelefone()}
+                                  />
+                                  <button 
+                                      onClick={buscarClientePorTelefone}
+                                      disabled={buscandoCliente}
+                                      className="bg-blue-600 text-white px-3 py-2 rounded font-medium hover:bg-blue-700 disabled:opacity-50 text-sm"
+                                  >
+                                      {buscandoCliente ? '...' : 'Buscar'}
+                                  </button>
+                              </div>
+
+                              {clienteEncontrado && (
+                                  <div className="mb-3 text-sm">
+                                      <div className="font-bold text-gray-800">Cliente: {clienteEncontrado.nome}</div>
+                                      {enderecosCliente.length > 0 && (
+                                          <div className="mt-2">
+                                              <label className="block text-xs font-medium text-gray-600 mb-1">Selecione o Endereço:</label>
+                                              <select 
+                                                  value={enderecoSelecionadoId || ''} 
+                                                  onChange={e => setEnderecoSelecionadoId(Number(e.target.value) || null)}
+                                                  className="w-full border p-2 rounded text-sm bg-white"
+                                              >
+                                                  <option value="">Selecione um endereço...</option>
+                                                  {enderecosCliente.map(end => (
+                                                      <option key={end.id} value={end.id}>
+                                                          {end.logradouro}, {end.numero} {end.complemento ? ` - ${end.complemento}` : ''} ({end.bairro})
+                                                      </option>
+                                                  ))}
+                                              </select>
+                                          </div>
+                                      )}
+                                  </div>
+                              )}
+
+                              {!clienteEncontrado && telefoneBusca && !buscandoCliente && (
+                                  <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                                      <p className="font-bold mb-2">Cliente não encontrado.</p>
+                                      <p className="mb-2">Preencha os dados abaixo para criar um Perfil Rápido (isso facilitará próximas vendas e unificará com o App!).</p>
+                                      
+                                      <div className="space-y-2 mt-3">
+                                          <div>
+                                              <label className="block text-xs font-medium text-gray-700 mb-1">Nome Completo *</label>
+                                              <input 
+                                                  type="text"
+                                                  value={nomeCliente}
+                                                  onChange={e => setNomeCliente(e.target.value)}
+                                                  className="w-full border p-2 rounded outline-none"
+                                                  placeholder="Ex: João Silva"
+                                              />
+                                          </div>
+                                          <div>
+                                              <label className="block text-xs font-medium text-gray-700 mb-1">E-mail (Opcional)</label>
+                                              <input 
+                                                  type="email"
+                                                  value={emailCliente}
+                                                  onChange={e => setEmailCliente(e.target.value)}
+                                                  className="w-full border p-2 rounded outline-none"
+                                                  placeholder="Ex: joao@email.com"
+                                              />
+                                          </div>
+                                      </div>
+                                  </div>
+                              )}
+
+                              <div className="mt-2">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Endereço de Entrega (Manual)</label>
+                                  <textarea 
+                                      value={enderecoManual}
+                                      onChange={e => setEnderecoManual(e.target.value)}
+                                      rows={2}
+                                      className="w-full border p-2 rounded outline-none resize-none text-sm"
+                                      placeholder={clienteEncontrado && enderecosCliente.length > 0 ? "Ou digite um novo endereço..." : "Digite o endereço de entrega completo..."}
+                                  />
                               </div>
                           </div>
                       )}

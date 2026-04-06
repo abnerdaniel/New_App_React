@@ -61,6 +61,7 @@ interface Entregador {
     id: number;
     nome: string;
     telefone?: string;
+    cargo?: string;
 }
 
 export function MonitorPedidos() {
@@ -129,10 +130,9 @@ export function MonitorPedidos() {
           // Fetch Funcionarios and Filter by Role 'Entregador'
           const response = await api.get(`/api/funcionarios/loja/${activeLoja?.id}`);
           const allStaff = response.data;
-          // Filter: Role 'Entregador' AND Active
-          // Note: Backend DTO must return 'cargo'.
+          // Filter: Active staff
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const drivers = allStaff.filter((f: any) => f.cargo === 'Entregador' && f.ativo);
+          const drivers = allStaff.filter((f: any) => f.ativo);
           setMotoboys(drivers);
       } catch (error) {
           console.error("Erro ao buscar entregadores", error);
@@ -219,11 +219,11 @@ export function MonitorPedidos() {
             <p className="text-sm text-gray-500">Gerencie a fila de produção e entregas</p>
           </div>
           
-          <div className="flex bg-gray-100 p-1 rounded-lg">
-              <button onClick={() => setFilterType('todos')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${filterType === 'todos' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Todos Activos</button>
-              <button onClick={() => setFilterType('local')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${filterType === 'local' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Local / Mesa</button>
-              <button onClick={() => setFilterType('delivery')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${filterType === 'delivery' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Delivery</button>
-              <button onClick={() => setFilterType('historico')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${filterType === 'historico' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}>Histórico Hoje</button>
+          <div className="flex flex-wrap bg-gray-100 p-1 rounded-lg gap-1">
+              <button onClick={() => setFilterType('todos')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${filterType === 'todos' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Todos Activos</button>
+              <button onClick={() => setFilterType('local')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${filterType === 'local' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Local / Mesa</button>
+              <button onClick={() => setFilterType('delivery')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${filterType === 'delivery' ? 'bg-white shadow-sm text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}>Delivery</button>
+              <button onClick={() => setFilterType('historico')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex-1 md:flex-none whitespace-nowrap ${filterType === 'historico' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}>Histórico Hoje</button>
           </div>
       </div>
 
@@ -286,9 +286,9 @@ export function MonitorPedidos() {
                                      <div className="flex items-start gap-2 text-gray-700">
                                          <User size={16} className="text-gray-400 shrink-0 mt-0.5" />
                                          <div className="w-full">
-                                             <p className="font-bold">{pedido.cliente.nome}</p>
+                                             <p className="font-bold truncate" title={pedido.cliente.nome}>{pedido.cliente.nome}</p>
                                              {pedido.cliente.telefone && (
-                                            <div className="flex items-center gap-2 text-blue-600 font-medium flex-wrap">
+                                            <div className="flex items-center gap-2 text-blue-600 font-medium flex-wrap mt-0.5">
                                                 <div className="flex items-center gap-1">
                                                     <Phone size={12} />
                                                     <a href={`tel:${pedido.cliente.telefone}`} className="hover:underline">{pedido.cliente.telefone}</a>
@@ -310,7 +310,7 @@ export function MonitorPedidos() {
                                  ) : (
                                      <div className="flex items-center gap-2 text-gray-700">
                                          <User size={16} className="text-brand-primary" />
-                                         <span className="font-bold">{pedido.descricao || "Cliente não identificado"}</span>
+                                         <span className="font-bold truncate">{pedido.descricao || "Cliente não identificado"}</span>
                                      </div>
                                  )}
 
@@ -318,9 +318,9 @@ export function MonitorPedidos() {
                                  {pedido.entregador && (
                                      <div className="flex items-center gap-2 text-purple-700 text-xs bg-purple-50 p-2 rounded mt-2 border border-purple-100">
                                          <Bike size={14} className="shrink-0" />
-                                         <div>
-                                            <p className="font-bold">Motoboy: {pedido.entregador.nome}</p>
-                                            {pedido.entregador.telefone && <p className="text-gray-500">{pedido.entregador.telefone}</p>}
+                                         <div className="min-w-0">
+                                            <p className="font-bold truncate" title={pedido.entregador.nome}>Motoboy: {pedido.entregador.nome}</p>
+                                            {pedido.entregador.telefone && <p className="text-gray-500 truncate">{pedido.entregador.telefone}</p>}
                                          </div>
                                      </div>
                                  )}
@@ -350,10 +350,10 @@ export function MonitorPedidos() {
                              <div className="border-t pt-2 space-y-2">
                                  {pedido.sacola.map((item, idx) => (
                                      <div key={idx} className="flex gap-2 text-sm items-start group">
-                                         <span className="font-bold text-gray-700 w-5 text-right mt-0.5">{item.quantidade}x</span>
-                                         <div className="flex-1">
-                                             <div className="flex justify-between items-start">
-                                                 <p className="text-gray-800 leading-tight font-medium">
+                                         <span className="font-bold text-gray-700 w-5 text-right mt-0.5 shrink-0">{item.quantidade}x</span>
+                                         <div className="flex-1 min-w-0">
+                                             <div className="flex justify-between items-start gap-1">
+                                                 <p className="text-gray-800 leading-tight font-medium wrap-break-word">
                                                      {item.nomeProduto || item.produtoLoja?.produto?.nome || item.produtoLoja?.descricao || "Produto sem nome"}
                                                  </p>
                                                  
@@ -399,8 +399,8 @@ export function MonitorPedidos() {
                          </div>
 
                          {/* Card Actions */}
-                         <div className="p-3 border-t bg-gray-50 rounded-b-xl flex flex-col gap-2">
-                             <div className="flex gap-2">
+                         <div className="p-3 border-t bg-gray-50 rounded-b-xl flex flex-col gap-2 shrink-0">
+                             <div className="flex gap-2 flex-wrap">
                                  <select 
                                      value={pedido.status || PedidoStatus.Pendente}
                                      onChange={(e) => updateStatus(pedido.id, e.target.value)}
@@ -451,8 +451,8 @@ export function MonitorPedidos() {
       {/* Dispatch Modal */}
       {showDispatchModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-              <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-                  <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-[90%] md:max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+                  <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50 shrink-0">
                       <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                           <Bike className="text-brand-primary" />
                           Selecionar Entregador
@@ -460,8 +460,8 @@ export function MonitorPedidos() {
                       <button onClick={() => setShowDispatchModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
                   </div>
                   
-                  <div className="p-6">
-                      <p className="text-sm text-gray-500 mb-4">Escolha um motoboy disponível para levar o pedido #{selectedPedido?.id}.</p>
+                  <div className="p-6 overflow-y-auto custom-scrollbar">
+                      <p className="text-sm text-gray-500 mb-4">Escolha um funcionário disponível para levar o pedido #{selectedPedido?.id}.</p>
                       
                       {loadingMotoboys ? (
                           <div className="text-center py-8 text-gray-400">Carregando entregadores...</div>
@@ -470,20 +470,21 @@ export function MonitorPedidos() {
                               Nenhum entregador disponível/ativo encontrado.
                           </div>
                       ) : (
-                          <div className="space-y-2 max-h-60 overflow-y-auto">
+                          <div className="space-y-2 overflow-y-auto pr-1 flex-1">
                               {motoboys.map(motoboy => (
                                   <button
                                       key={motoboy.id}
                                       onClick={() => handleDispatch(motoboy.id)}
                                       className="w-full flex items-center justify-between p-3 rounded-lg border hover:border-brand-primary hover:bg-brand-primary/5 transition-all text-left group"
                                   >
-                                      <div>
-                                          <p className="font-bold text-gray-800">{motoboy.nome}</p>
-                                          <p className="text-xs text-gray-500 flex items-center gap-1">
-                                              {motoboy.telefone ? <><Phone size={10}/> {motoboy.telefone}</> : 'Sem telefone'}
+                                      <div className="min-w-0 pr-2">
+                                          <p className="font-bold text-gray-800 truncate" title={motoboy.nome}>{motoboy.nome}</p>
+                                          <p className="text-xs text-gray-500 flex items-center gap-1 truncate">
+                                              {motoboy.cargo && <span className="bg-gray-100 px-1 rounded font-medium">{motoboy.cargo}</span>}
+                                              {motoboy.telefone ? <><Phone size={10} className="shrink-0"/> {motoboy.telefone}</> : 'Sem telefone'}
                                           </p>
                                       </div>
-                                      <div className="opacity-0 group-hover:opacity-100 text-brand-primary">
+                                      <div className="opacity-0 group-hover:opacity-100 text-brand-primary shrink-0">
                                           <CheckCircle size={20} />
                                       </div>
                                   </button>

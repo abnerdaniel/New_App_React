@@ -4,6 +4,7 @@ import { AxiosError } from "axios";
 import { cloudinaryService } from "../../services/cloudinary.service";
 import { useAuth } from "../../contexts/AuthContext";
 import { Plus, Search, Edit2, Trash2, X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { CustomToggle } from "../../components/ui/CustomToggle";
 
 interface ProdutoEstoqueDTO {
   produtoId: number;
@@ -460,12 +461,12 @@ export function EstoquePage() {
                                 </span>
                             </td>
                             <td className="p-4 text-center">
-                                <button 
-                                    onClick={() => handleToggleDisponibilidade(prod)}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-primary/50 ${prod.disponivel !== false ? 'bg-green-500' : 'bg-gray-300'}`}
-                                >
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${prod.disponivel !== false ? 'translate-x-6' : 'translate-x-1'}`} />
-                                </button>
+                                <div className="flex justify-center">
+                                    <CustomToggle 
+                                        active={prod.disponivel !== false} 
+                                        onClick={() => handleToggleDisponibilidade(prod)} 
+                                    />
+                                </div>
                             </td>
                             <td className="p-4 text-right">
                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -663,30 +664,24 @@ export function EstoquePage() {
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-center gap-2 pt-2">
-                                        <input 
-                                            type="checkbox"
-                                            id="disponivel"
-                                            className="w-4 h-4 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
-                                            checked={formData.disponivel}
-                                            onChange={e => setFormData({...formData, disponivel: e.target.checked})}
-                                        />
-                                        <label htmlFor="disponivel" className="text-sm font-medium text-gray-700 select-none">
+                                    <div className="flex items-center justify-between pt-4 pb-2">
+                                        <label className="text-sm font-medium text-gray-700 select-none cursor-pointer" onClick={() => setFormData({...formData, disponivel: !formData.disponivel})}>
                                             Produto Disponível para venda?
                                         </label>
+                                        <CustomToggle 
+                                            active={formData.disponivel} 
+                                            onClick={() => setFormData({...formData, disponivel: !formData.disponivel})} 
+                                        />
                                     </div>
 
-                                    <div className="flex items-center gap-2 pt-2">
-                                        <input 
-                                            type="checkbox"
-                                            id="isAdicional"
-                                            className="w-4 h-4 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
-                                            checked={formData.isAdicional}
-                                            onChange={e => setFormData({...formData, isAdicional: e.target.checked})}
-                                        />
-                                        <label htmlFor="isAdicional" className="text-sm font-medium text-gray-700 select-none">
+                                    <div className="flex items-center justify-between py-2 mb-2">
+                                        <label className="text-sm font-medium text-gray-700 select-none cursor-pointer" onClick={() => setFormData({...formData, isAdicional: !formData.isAdicional})}>
                                             Este produto é um Adicional/Extra?
                                         </label>
+                                        <CustomToggle 
+                                            active={formData.isAdicional} 
+                                            onClick={() => setFormData({...formData, isAdicional: !formData.isAdicional})} 
+                                        />
                                     </div>
 
                                     {/* CARDÁPIO E CATEGORIA */}

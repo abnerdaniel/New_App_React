@@ -138,7 +138,16 @@ namespace Controle.Application.Services
                 Categoria = loja.Categoria ?? "Diversos",
                 Aberta = loja.AbertaManualmente ?? (cardapioSelecionado != null),
                 LicencaValidaAte = loja.LicencaValidaAte,
-                BloqueadaPorFaltaDePagamento = loja.BloqueadaPorFaltaDePagamento
+                BloqueadaPorFaltaDePagamento = loja.BloqueadaPorFaltaDePagamento,
+                Telefone = loja.Telefone,
+                WhatsApp = loja.WhatsApp,
+                Logradouro = loja.Logradouro,
+                Numero = loja.Numero,
+                Bairro = loja.Bairro,
+                Cidade = loja.Cidade,
+                Estado = loja.Estado,
+                Cep = loja.Cep,
+                Complemento = loja.Complemento
             };
 
             if (cardapioSelecionado != null)
@@ -232,7 +241,16 @@ namespace Controle.Application.Services
                     Categoria = l.Categoria ?? "Diversos",
                     Aberta = l.AbertaManualmente ?? true,
                     LicencaValidaAte = l.LicencaValidaAte,
-                    BloqueadaPorFaltaDePagamento = l.BloqueadaPorFaltaDePagamento
+                    BloqueadaPorFaltaDePagamento = l.BloqueadaPorFaltaDePagamento,
+                    Telefone = l.Telefone,
+                    WhatsApp = l.WhatsApp,
+                    Logradouro = l.Logradouro,
+                    Numero = l.Numero,
+                    Bairro = l.Bairro,
+                    Cidade = l.Cidade,
+                    Estado = l.Estado,
+                    Cep = l.Cep,
+                    Complemento = l.Complemento
                 })
                 .ToListAsync();
 
