@@ -98,8 +98,15 @@ export function PedidoStatus() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-gray-500 mb-4">Pedido não encontrado.</p>
-        <button onClick={() => navigate('/')} className="text-red-600 font-bold hover:underline">
-          Voltar para Início
+        <button 
+          onClick={() => {
+            const lojaSlug = localStorage.getItem('lojaSlug');
+            if (lojaSlug) navigate(`/${lojaSlug}`);
+            else navigate(-1);
+          }} 
+          className="text-red-600 font-bold hover:underline"
+        >
+          Voltar para a Loja
         </button>
       </div>
     );

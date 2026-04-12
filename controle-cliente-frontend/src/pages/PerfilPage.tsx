@@ -29,7 +29,12 @@ export function PerfilPage() {
         setTelefone(cliente.telefone || '');
         loadEnderecos();
     } else {
-        navigate('/');
+        const lojaSlug = localStorage.getItem('lojaSlug');
+        if (lojaSlug) {
+            navigate(`/${lojaSlug}`);
+        } else {
+            navigate(-1);
+        }
     }
   }, [cliente, navigate]);
 

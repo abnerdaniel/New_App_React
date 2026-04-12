@@ -28,7 +28,7 @@ export function PedidoSucesso() {
                 // Fallback priorities: Slug > ID > Home
                 if (lojaSlug) navigate(`/${lojaSlug}`);
                 else if (lojaId) navigate(`/${lojaId}`);
-                else navigate('/');
+                else navigate(-1);
             }}
             className="w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 mt-3"
           >

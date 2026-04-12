@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Minus, Plus } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useClientAuth } from '../context/ClientAuthContext';
@@ -25,9 +25,16 @@ export function CartPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Sua sacola está vazia</h1>
         <p className="text-gray-500 mb-8">Adicione itens deliciosos para começar.</p>
-        <Link to="/" className="text-red-600 font-semibold hover:text-red-700">
-          Voltar para a Home
-        </Link>
+        <button 
+          onClick={() => {
+            const lojaSlug = localStorage.getItem('lojaSlug');
+            if (lojaSlug) navigate(`/${lojaSlug}`);
+            else navigate(-1);
+          }} 
+          className="text-red-600 font-semibold hover:text-red-700"
+        >
+          Voltar para a Loja
+        </button>
       </div>
     );
   }
