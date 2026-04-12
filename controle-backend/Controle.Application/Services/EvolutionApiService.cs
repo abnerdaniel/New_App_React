@@ -212,7 +212,8 @@ namespace Controle.Application.Services
                 var payload = new
                 {
                     number = number,
-                    text = text
+                    text = text,
+                    delay = 5000
                 };
 
                 var response = await _httpClient.PostAsJsonAsync($"/message/sendText/{instanceName}", payload);

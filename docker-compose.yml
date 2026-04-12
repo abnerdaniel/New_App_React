@@ -39,7 +39,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=traefik_public"
-        - "traefik.http.routers.controle-admin.rule=Host(`admin.food.meajudaaqui.com.br`)"
+        - "traefik.http.routers.controle-admin.rule=Host(`admin.food.meajudaaqui.com.br`) || Host(`admin.minhaescolha.shop`)"
         - "traefik.http.routers.controle-admin.entrypoints=websecure"
         - "traefik.http.routers.controle-admin.tls.certresolver=le"
         - "traefik.http.services.controle-admin.loadbalancer.server.port=80"
@@ -60,7 +60,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=traefik_public"
-        - "traefik.http.routers.controle-app.rule=Host(`food.meajudaaqui.com.br`)"
+        - "traefik.http.routers.controle-app.rule=Host(`food.meajudaaqui.com.br`) || Host(`minhaescolha.shop`)"
         - "traefik.http.routers.controle-app.entrypoints=websecure"
         - "traefik.http.routers.controle-app.tls.certresolver=le"
         - "traefik.http.services.controle-app.loadbalancer.server.port=80"

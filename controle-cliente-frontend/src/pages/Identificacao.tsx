@@ -69,15 +69,15 @@ export function Identificacao() {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-gray-900">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="bg-brand-primary p-6 text-white text-center relative">
+        <div className="bg-brand-primary p-6 text-black text-center relative">
           <button 
             onClick={() => navigate(-1)} 
-            className="absolute left-4 top-6 text-white hover:text-gray-200"
+            className="absolute left-4 top-6 text-black hover:text-gray-200"
           >
             <ArrowLeft size={24} />
           </button>
           <h2 className="text-2xl font-bold">Identifique-se</h2>
-          <p className="text-sm opacity-90 mt-1">
+          <p className="text-sm text-black/80 mt-1">
             Para finalizar seu pedido, precisamos saber quem é você.
           </p>
         </div>
@@ -188,7 +188,7 @@ export function Identificacao() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-primary text-white py-3 rounded-lg font-bold hover:bg-brand-secondary transition-colors disabled:opacity-50"
+            className="w-full bg-brand-primary text-black py-3 rounded-lg font-bold hover:bg-brand-secondary transition-colors disabled:opacity-50"
           >
             {loading ? 'Processando...' : (isLogin ? 'Entrar' : 'Cadastrar e Continuar')}
           </button>
