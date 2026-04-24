@@ -20,5 +20,7 @@ public class PedidoItem
     public ICollection<PedidoItem> SubItens { get; set; } = new List<PedidoItem>(); // Lista de Itens do Combo
 
     public string Status { get; set; } = "Pendente"; // Pendente, Preparando, Entregue, Cancelado
+    public int? ProdutoVarianteId { get; set; } // Variante de varejo selecionada (SKU composto)
     public ICollection<PedidoItemAdicional> Adicionais { get; set; } = new List<PedidoItemAdicional>();
+    public ICollection<PedidoItemOpcao> Opcoes { get; set; } = new List<PedidoItemOpcao>(); // Opções de produto configurável
 }

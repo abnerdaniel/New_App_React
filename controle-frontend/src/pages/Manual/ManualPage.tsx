@@ -232,7 +232,7 @@ export function ManualPage() {
               </div>
               <div className="space-y-3 text-gray-600 text-sm leading-relaxed">
                 <p>
-                  O <strong className="text-gray-800">Help me Here</strong> é uma solução de Ponto de Venda (PDV) completa e integrada, desenvolvida para devolver ao restaurador a autonomia sobre sua operação e assegurar sua <strong>independência digital</strong>.
+                  O <strong className="text-gray-800">Help me Here</strong> é uma solução de Ponto de Venda (PDV) completa e integrada, desenvolvida para devolver ao empreendedor a autonomia sobre sua operação e assegurar sua <strong>independência digital</strong> na Loja ou Restaurante.
                 </p>
                 <p>
                   Em um mercado dominado por agregadores como iFood e 99 Food — que cobram taxas de até <strong>27%</strong> sobre o faturamento — nossa plataforma posiciona-se como vantagem estratégica decisiva. Com <strong className="text-brand-primary">taxas de 0%</strong> sobre as vendas, o foco é a preservação da margem de lucro.
@@ -570,7 +570,7 @@ export function ManualPage() {
                 <h2 className="text-xl font-bold text-gray-800">10. Suporte Técnico e Roadmap de Evolução</h2>
               </div>
               <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
-                <p>O Help me Here é um sistema vivo, em constante aprimoramento. Nosso compromisso é com o crescimento sustentável do seu restaurante.</p>
+                <p>O Help me Here é um sistema vivo, em constante aprimoramento. Nosso compromisso é com o crescimento sustentável do seu negócio <strong>(Loja ou Restaurante)</strong>.</p>
 
                 <div className="bg-white border border-brand-primary/20 rounded-xl p-4">
                   <p className="font-semibold text-gray-800 mb-2">📞 Suporte Direto</p>
@@ -614,7 +614,7 @@ export function ManualPage() {
             <p className="text-sm text-gray-400">
               Manual Operacional — <span className="font-semibold text-brand-primary">Help me Here</span>
             </p>
-            <p className="text-xs text-gray-400 mt-1">Sistema Integrado de Gestão para Restaurantes</p>
+            <p className="text-xs text-gray-400 mt-1">Sistema Integrado de Gestão para Lojas e Restaurantes</p>
           </div>
 
         </div>

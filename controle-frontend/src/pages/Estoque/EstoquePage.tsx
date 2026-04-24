@@ -3,8 +3,13 @@ import { api } from "../../api/axios";
 import { AxiosError } from "axios";
 import { cloudinaryService } from "../../services/cloudinary.service";
 import { useAuth } from "../../contexts/AuthContext";
-import { Plus, Search, Edit2, Trash2, X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, Upload, Loader2, Tag } from "lucide-react";
 import { CustomToggle } from "../../components/ui/CustomToggle";
+import { CardPreview } from "../../components/CardPreview";
+import { TiposProdutoModal } from "../../components/TiposProdutoModal";
+import type { TipoProduto } from "../../hooks/useTiposProduto";
+import { VariantesManager } from "../../components/VariantesManager";
+import { GrupoOpcaoManager } from "../../components/GrupoOpcaoManager";
 
 interface ProdutoEstoqueDTO {
   produtoId: number;
@@ -16,9 +21,14 @@ interface ProdutoEstoqueDTO {
   imagemUrl?: string;
   isAdicional?: boolean;
   adicionaisIds?: number[];
+  tipoProdutoId?: number | null;
+  tipoProdutoNome?: string | null;
+  modoCardapio?: string;
   categoriaId?: number;
   disponivel?: boolean;
   descricao?: string;
+  adicionaisDetalhes?: { produtoFilhoId: number, quantidadeMinima: number, quantidadeMaxima: number, precoOverride: number | null }[];
+  imagens?: { id: number, url: string, ordem: number }[];
 }
 
 
@@ -53,17 +63,22 @@ interface CreateProdutoLojaPayload {
     nome: string;
     descricao: string;
     tipo: string;
-    imagemUrl: string;
+    imagemUrl?: string; // Legado para compatibilidade, o componente usará listagem
     isAdicional: boolean;
     adicionaisIds: number[];
   };
+  adicionais?: { produtoFilhoId: number, quantidadeMinima: number, quantidadeMaxima: number, precoOverride: number | null }[];
+  tipoProdutoId?: number | null;
+  modoCardapio?: string;
 }
 
 
 
-const PRODUTO_TIPOS = [
-  "Pratos", "Lanches", "Porções/Petiscos", "Bebidas", "Sobremesas", 
-  "Adicionais", "Combos", "Infantil", "Especiais"
+// Modos de cardápio (substituem o enum interno)
+const MODOS_CARDAPIO = [
+  { value: 'Simples',      label: '🛒 Simples' },
+  { value: 'Configuravel', label: '🧩 Personalizável' },
+  { value: 'Kg',          label: '⚖️ Venda por Peso' },
 ];
 
 // Componente auxiliar para busca de adicionais
@@ -150,21 +165,26 @@ export function EstoquePage() {
   const [searchCatalogo, setSearchCatalogo] = useState("");
   const [selectedCatalogoItem, setSelectedCatalogoItem] = useState<ProdutoCatalogoDTO | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [activeModalTab, setActiveModalTab] = useState<'detalhes' | 'variantes' | 'opcoes'>('detalhes');
 
   // Form State
   const [formData, setFormData] = useState({
     nome: "",
     descricao: "",
-    tipo: PRODUTO_TIPOS[0],
+    modoCardapio: 'Simples',
     preco: "",
     estoque: "",
     imagemUrl: "",
     isAdicional: false,
     adicionaisIds: [] as number[],
+    adicionais: [] as { produtoFilhoId: number, quantidadeMinima: number, quantidadeMaxima: number, precoOverride: number | null }[],
+    imagens: [] as { id?: number, url: string, ordem: number }[],
     cardapioId: "",
     categoriaId: "",
     disponivel: true
   });
+  const [tipoProdutoSelecionado, setTipoProdutoSelecionado] = useState<TipoProduto | null>(null);
+  const [showTiposModal, setShowTiposModal] = useState(false);
 
   // Load data when activeLoja changes
   const loadEstoque = useCallback(async () => {
@@ -254,15 +274,52 @@ export function EstoquePage() {
       if (editingProduto) {
         // Update Logic
         await api.put(`/api/produto-loja/${editingProduto.produtoLojaId}`, {
+          nome: formData.nome,
           preco: precoCentavos,
           estoque: Number(formData.estoque),
           isAdicional: formData.isAdicional,
           adicionaisIds: formData.adicionaisIds,
+          adicionais: formData.adicionais.map(a => ({
+            ...a,
+            precoOverride: a.precoOverride != null ? Math.round(a.precoOverride) : null
+          })),
           categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
           disponivel: formData.disponivel,
           imagemUrl: formData.imagemUrl,
-          descricao: formData.descricao 
+          descricao: formData.descricao,
+          tipoProdutoId: tipoProdutoSelecionado?.id || null,
+          modoCardapio: formData.modoCardapio
         });
+
+        // Sincronizando imagens se for edição (muito simplificado: manda ordem e cria novas)
+        const imagensAtuais = formData.imagens;
+        const imagensAnteriores = editingProduto.imagens || [];
+        
+        // 1. Remover as imagens deletadas pelo usuário
+        const deletadas = imagensAnteriores.filter(imgAntiga => !imagensAtuais.some(i => i.id === imgAntiga.id));
+        for (const imgDel of deletadas) {
+            try { await api.delete(`/api/produto-loja/${editingProduto.produtoLojaId}/imagens/${imgDel.id}`); } catch (e) { console.error(e) }
+        }
+
+        // 2. Adicionar as novas (sem ID) resgatando do upload do cloudinary
+        const novasImagens = imagensAtuais.filter(img => !img.id);
+        for (let i = 0; i < novasImagens.length; i++) {
+            try { 
+                await api.post(`/api/produto-loja/${editingProduto.produtoLojaId}/imagens`, {
+                    url: novasImagens[i].url,
+                    ordem: imagensAtuais.indexOf(novasImagens[i])
+                }); 
+            } catch (e) { console.error(e) }
+        }
+
+        // 3. Atualizar ordem (a API que criamos aceita o envio de todas as imagens que restaram)
+        const imagensOrdens = imagensAtuais.filter(img => img.id).map(img => ({ imagemId: img.id, ordem: imagensAtuais.indexOf(img) }));
+        if (imagensOrdens.length > 0) {
+            try {
+                await api.put(`/api/produto-loja/${editingProduto.produtoLojaId}/imagens/ordem`, imagensOrdens);
+            } catch (e) { console.error(e) }
+        }
+
         alert("Produto atualizado!");
       } else {
         // Create Logic
@@ -271,7 +328,9 @@ export function EstoquePage() {
           preco: precoCentavos,
           estoque: Number(formData.estoque),
           categoriaId: formData.categoriaId ? Number(formData.categoriaId) : null,
-          disponivel: formData.disponivel
+          disponivel: formData.disponivel,
+          tipoProdutoId: tipoProdutoSelecionado?.id || null,
+          modoCardapio: formData.modoCardapio
         };
 
         if (selectedCatalogoItem && !isCreatingNew) {
@@ -282,14 +341,30 @@ export function EstoquePage() {
             payload.novoProduto = {
                 nome: formData.nome,
                 descricao: formData.descricao,
-                tipo: formData.tipo,
+                tipo: tipoProdutoSelecionado?.nome || 'Produto',
                 imagemUrl: formData.imagemUrl,
                 isAdicional: formData.isAdicional,
                 adicionaisIds: formData.adicionaisIds
             };
         }
 
-        await api.post("/api/produto-loja", payload);
+        const res = await api.post("/api/produto-loja", payload);
+        const newProdutoLojaId = res.data?.id || res.data?.produtoLojaId;
+
+        // Upando imagens em lote (novas imagens)
+        if (newProdutoLojaId && formData.imagens.length > 0) {
+            for (let i = 0; i < formData.imagens.length; i++) {
+                try {
+                    await api.post(`/api/produto-loja/${newProdutoLojaId}/imagens`, {
+                        url: formData.imagens[i].url,
+                        ordem: i
+                    });
+                } catch (e) {
+                    console.error("Erro ao fazer upload de imagem", e);
+                }
+            }
+        }
+
         alert("Produto adicionado!");
       }
       
@@ -306,18 +381,29 @@ export function EstoquePage() {
 
   const handleEdit = (prod: ProdutoEstoqueDTO) => {
     setEditingProduto(prod);
+    setActiveModalTab('detalhes');
+    
+    // Se veio com ID do TipoProduto, procura ele na lista carregada para preencher o combobox
+    if (prod.tipoProdutoId && prod.tipoProdutoNome) {
+      setTipoProdutoSelecionado({ id: prod.tipoProdutoId, nome: prod.tipoProdutoNome, ativo: true });
+    } else {
+      setTipoProdutoSelecionado(null);
+    }
+
     setFormData({
       nome: prod.nome,
-      descricao: prod.descricao || "", 
-      tipo: prod.tipo,
-      preco: (prod.preco / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 }), // Formata para 0,00
+      descricao: prod.descricao || "",
+      modoCardapio: prod.modoCardapio || 'Simples',
+      preco: (prod.preco / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 }),
       estoque: prod.estoque.toString(),
       imagemUrl: prod.imagemUrl || "",
       isAdicional: prod.isAdicional || false,
       adicionaisIds: prod.adicionaisIds || [],
-      cardapioId: "", // Reset menu selection on edit
+      adicionais: prod.adicionaisDetalhes?.length ? [...prod.adicionaisDetalhes] : (prod.adicionaisIds || []).map(id => ({ produtoFilhoId: id, quantidadeMinima: 1, quantidadeMaxima: 1, precoOverride: null })),
+      imagens: prod.imagens || [],
+      cardapioId: "",
       categoriaId: prod.categoriaId ? prod.categoriaId.toString() : "",
-      disponivel: prod.disponivel !== false // Default true if undefined
+      disponivel: prod.disponivel !== false
     });
     setIsModalOpen(true);
   };
@@ -355,7 +441,9 @@ export function EstoquePage() {
     setSelectedCatalogoItem(null);
     setIsCreatingNew(false);
     setSearchCatalogo("");
-    setFormData({ nome: "", descricao: "", tipo: PRODUTO_TIPOS[0], preco: "", estoque: "", imagemUrl: "", isAdicional: false, adicionaisIds: [], cardapioId: "", categoriaId: "", disponivel: true });
+    setActiveModalTab('detalhes');
+    setTipoProdutoSelecionado(null);
+    setFormData({ nome: "", descricao: "", modoCardapio: 'Simples', preco: "", estoque: "", imagemUrl: "", isAdicional: false, adicionaisIds: [], adicionais: [], imagens: [], cardapioId: "", categoriaId: "", disponivel: true });
   };
 
   const handleSelectCatalogo = (item: ProdutoCatalogoDTO) => {
@@ -366,10 +454,11 @@ export function EstoquePage() {
       setFormData(prev => ({ 
            ...prev, 
           nome: item.nome, 
-          tipo: item.tipo || PRODUTO_TIPOS[0],
           imagemUrl: item.imagemUrl || "",
           isAdicional: item.isAdicional || false,
-          adicionaisIds: [] // Reset extras when selecting from catalog
+          adicionaisIds: [],
+          adicionais: [],
+          imagens: []
       }));
   }
 
@@ -379,9 +468,8 @@ export function EstoquePage() {
       !produtos.some(p => p.produtoId === c.id)
   ).slice(0, 5); // Limit suggestions
 
-  const filteredProdutos = produtos.filter(p => 
-    p.nome.toLowerCase().includes(filterTerm.toLowerCase()) || 
-    p.tipo.toLowerCase().includes(filterTerm.toLowerCase())
+  const filteredProdutos = produtos.filter(p =>
+    p.nome.toLowerCase().includes(filterTerm.toLowerCase())
   );
 
   return (
@@ -449,7 +537,7 @@ export function EstoquePage() {
                             </td>
                             <td className="p-4">
                                 <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-600">
-                                    {prod.tipo}
+                                    {prod.tipoProdutoNome || prod.tipo}
                                 </span>
                             </td>
                             <td className="p-4 text-right font-mono text-gray-700">
@@ -493,21 +581,82 @@ export function EstoquePage() {
         </table>
       </div>
 
-      {/* Modal */}
+      {/* TiposProduto Modal */}
+      {showTiposModal && activeLoja && (
+        <TiposProdutoModal
+          lojaId={activeLoja.id}
+          onClose={() => setShowTiposModal(false)}
+          onSelect={(tipo) => {
+            setTipoProdutoSelecionado(tipo);
+            setShowTiposModal(false);
+          }}
+        />
+      )}
+
+      {/* Produto Modal */}
         {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
-                    <h3 className="text-xl font-bold text-gray-800">
-                        {editingProduto ? 'Editar Produto' : 'Adicionar Produto'}
-                    </h3>
-                    <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
-                        <X size={24} />
-                    </button>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[92vh]">
+            {/* Grid: Form + Preview */}
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+              {/* LEFT: Form */}
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex flex-col shrink-0">
+                    <div className="flex justify-between items-center w-full">
+                        <h3 className="text-xl font-bold text-gray-800">
+                            {editingProduto ? 'Editar Produto' : 'Adicionar Produto'}
+                        </h3>
+                        <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
+                            <X size={24} />
+                        </button>
+                    </div>
+                    {(!formData.isAdicional && (editingProduto || isCreatingNew || selectedCatalogoItem)) && (
+                      <div className="flex gap-4 mt-4 text-sm font-medium">
+                        <button
+                          type="button"
+                          className={`pb-2 px-1 border-b-2 transition-colors ${activeModalTab === 'detalhes' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                          onClick={() => setActiveModalTab('detalhes')}
+                        >
+                          Detalhes e Adicionais
+                        </button>
+                        <button
+                          type="button"
+                          className={`pb-2 px-1 border-b-2 transition-colors ${activeModalTab === 'variantes' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                          onClick={() => setActiveModalTab('variantes')}
+                        >
+                          Variantes e Estoque
+                        </button>
+                        <button
+                          type="button"
+                          className={`pb-2 px-1 border-b-2 transition-colors ${activeModalTab === 'opcoes' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                          onClick={() => setActiveModalTab('opcoes')}
+                        >
+                          Grupos de Opção
+                        </button>
+                      </div>
+                    )}
                 </div>
                 
                 <div className="overflow-y-auto flex-1 p-6">
-                    {/* BUSCA DE PRODUTOS (Somente na Criação) */}
+                    {activeModalTab === 'variantes' ? (
+                       editingProduto && activeLoja ? (
+                           <VariantesManager produtoLojaId={editingProduto.produtoLojaId} lojaId={activeLoja.id} />
+                       ) : (
+                           <div className="flex flex-col items-center justify-center p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                               <p>Você precisa <strong>Salvar</strong> o novo produto primeiro para liberar a configuração de suas Variantes e grade de Estoque.</p>
+                           </div>
+                       )
+                    ) : activeModalTab === 'opcoes' ? (
+                       editingProduto ? (
+                           <GrupoOpcaoManager produtoLojaId={editingProduto.produtoLojaId} />
+                       ) : (
+                           <div className="flex flex-col items-center justify-center p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                               <p>Você precisa <strong>Salvar</strong> o produto primeiro para configurar os grupos de opção.</p>
+                           </div>
+                       )
+                    ) : (
+                      <>
+                        {/* BUSCA DE PRODUTOS (Somente na Criação) */}
                     {!editingProduto && (
                         <div className="mb-6 space-y-2 relative">
                             <label className="text-xs font-bold text-gray-500 uppercase">Buscar Produto Existente</label>
@@ -515,7 +664,7 @@ export function EstoquePage() {
                                 <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                                 <input 
                                     className="w-full h-10 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
-                                    placeholder="Comece a digitar o nome..."
+                                    placeholder="   Comece a digitar o nome..."
                                     value={searchCatalogo}
                                     onChange={e => {
                                         setSearchCatalogo(e.target.value);
@@ -577,19 +726,27 @@ export function EstoquePage() {
                                             className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none"
                                             value={formData.nome}
                                             onChange={e => setFormData({...formData, nome: e.target.value})}
-                                            disabled={!!editingProduto && !isCreatingNew}
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-gray-500 uppercase">Tipo</label>
-                                        <select 
-                                            className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none bg-white"
-                                            value={formData.tipo}
-                                            onChange={e => setFormData({...formData, tipo: e.target.value})}
-                                            disabled={!!editingProduto} 
+                                        <label className="text-xs font-bold text-gray-500 uppercase">Tipo do Produto</label>
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowTiposModal(true)}
+                                          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-left text-sm flex items-center justify-between hover:border-brand-primary/50 transition-colors bg-white"
                                         >
-                                            {PRODUTO_TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
-                                        </select>
+                                          <span className={tipoProdutoSelecionado ? 'text-gray-800' : 'text-gray-400'}>
+                                            {tipoProdutoSelecionado
+                                              ? <>{tipoProdutoSelecionado.icone} {tipoProdutoSelecionado.nome}</>
+                                              : '+ Selecionar tipo...'}
+                                          </span>
+                                          <Tag size={14} className="text-gray-400" />
+                                        </button>
+                                        {tipoProdutoSelecionado && (
+                                          <button type="button" onClick={() => setTipoProdutoSelecionado(null)} className="text-xs text-gray-400 hover:text-red-500">
+                                            ✕ Remover tipo
+                                          </button>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="space-y-1">
@@ -604,63 +761,81 @@ export function EstoquePage() {
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-gray-500 uppercase">Imagem do Produto</label>
                                         
-                                        <div className="flex items-start gap-4">
-                                            {/* Preview */}
-                                            <div className="w-24 h-24 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden relative group">
-                                                {formData.imagemUrl ? (
-                                                    <>
-                                                        <img src={formData.imagemUrl} alt="Preview" className="w-full h-full object-cover" />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setFormData(prev => ({ ...prev, imagemUrl: "" }))}
-                                                            className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                                                        >
-                                                            <Trash2 size={20} />
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    <ImageIcon className="text-gray-400" size={32} />
-                                                )}
-                                                {uploading && (
-                                                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                                                        <Loader2 className="animate-spin text-brand-primary" size={24} />
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="flex-1 space-y-2">
-                                                {/* Upload Button */}
-                                                <div>
-                                                    <input
-                                                        type="file"
-                                                        id="imageUpload"
-                                                        className="hidden"
-                                                        accept="image/*"
-                                                        onChange={async (e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (!file) return;
-                                                            
-                                                            setUploading(true);
-                                                            try {
-                                                                const url = await cloudinaryService.uploadImage(file);
-                                                                setFormData(prev => ({ ...prev, imagemUrl: url }));
-                                                            } catch {
-                                                                alert("Erro ao fazer upload da imagem.");
-                                                            } finally {
-                                                                setUploading(false);
-                                                            }
-                                                        }}
-                                                    />
-                                                    <label 
-                                                        htmlFor="imageUpload"
-                                                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
-                                                    >
-                                                        <Upload size={16} />
-                                                        {uploading ? "Enviando..." : "Carregar Foto"}
-                                                    </label>
+                                        <div className="flex flex-col gap-4">
+                                            {/* Previews das miniaturas */}
+                                            {formData.imagens.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {formData.imagens.sort((a,b) => a.ordem - b.ordem).map((img, idx) => (
+                                                        <div key={idx} className="w-20 h-20 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden relative group">
+                                                            <img src={img.url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+                                                            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setFormData(prev => ({ 
+                                                                        ...prev, 
+                                                                        imagens: prev.imagens.filter((_, i) => i !== idx).map((im, i) => ({...im, ordem: i}))
+                                                                    }))}
+                                                                    className="p-1 hover:text-red-400"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                                {idx > 0 && (
+                                                                    <button type="button" className="text-xs absolute left-1 bottom-1 text-gray-200 hover:text-white"
+                                                                            onClick={() => {
+                                                                                const newImgs = [...formData.imagens];
+                                                                                [newImgs[idx-1].ordem, newImgs[idx].ordem] = [newImgs[idx].ordem, newImgs[idx-1].ordem];
+                                                                                setFormData(prev => ({...prev, imagens: [...newImgs]}));
+                                                                            }}>
+                                                                        ←
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            {idx === 0 && <span className="absolute top-0 right-0 bg-brand-primary text-white text-[10px] px-1 rounded-bl">Capa</span>}
+                                                        </div>
+                                                    ))}
                                                 </div>
+                                            )}
 
-                                            </div>
+                                            {/* Uploader (Max 6) */}
+                                            {formData.imagens.length < 6 && (
+                                                <div className="flex-1 space-y-2">
+                                                    <div>
+                                                        <input
+                                                            type="file"
+                                                            id="imageUpload"
+                                                            className="hidden"
+                                                            accept="image/*"
+                                                            multiple
+                                                            onChange={async (e) => {
+                                                                const files = e.target.files;
+                                                                if (!files || files.length === 0) return;
+                                                                
+                                                                setUploading(true);
+                                                                try {
+                                                                    const newImages: { url: string, ordem: number }[] = [];
+                                                                    for (let i = 0; i < files.length; i++) {
+                                                                        if (formData.imagens.length + i >= 6) break;
+                                                                        const url = await cloudinaryService.uploadImage(files[i]);
+                                                                        newImages.push({ url, ordem: formData.imagens.length + i });
+                                                                    }
+                                                                    setFormData(prev => ({ ...prev, imagens: [...prev.imagens, ...newImages] }));
+                                                                } catch {
+                                                                    alert("Erro ao fazer upload da(s) imagem(ns).");
+                                                                } finally {
+                                                                    setUploading(false);
+                                                                }
+                                                            }}
+                                                        />
+                                                        <label 
+                                                            htmlFor="imageUpload"
+                                                            className={`inline-flex items-center justify-center w-full min-h-[60px] gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-brand-primary cursor-pointer transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+                                                        >
+                                                            {uploading ? <Loader2 size={24} className="animate-spin text-brand-primary" /> : <Upload size={24} className="text-gray-400" />}
+                                                            {uploading ? "Enviando..." : "Arraste fotos ou clique (Máx 6)"}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     
@@ -720,33 +895,84 @@ export function EstoquePage() {
                                     <p className="text-xs text-gray-500">Selecione quais extras o cliente pode adicionar a este produto.</p>
                                     
                                     {/* Lista de selecionados */}
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                        {formData.adicionaisIds.map(id => {
-                                            const prod = catalogo.find(p => p.id === id); // Tenta achar no catalogo
-                                            const nome = prod ? prod.nome : `Adicional #${id}`;
+                                    <div className="flex flex-col gap-3 mb-2">
+                                        {formData.adicionais.map((adicional, index) => {
+                                            const prod = catalogo.find(p => p.id === adicional.produtoFilhoId);
+                                            const nome = prod ? prod.nome : `Adicional #${adicional.produtoFilhoId}`;
                                             return (
-                                                <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-50 text-yellow-700 text-xs rounded-full border border-yellow-200">
-                                                    {nome}
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => setFormData(prev => ({ ...prev, adicionaisIds: prev.adicionaisIds.filter(x => x !== id) }))}
-                                                        className="hover:text-red-500"
-                                                    >
-                                                        <X size={12} />
-                                                    </button>
-                                                </span>
+                                                <div key={adicional.produtoFilhoId} className="flex flex-col gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                                    <div className="flex justify-between items-center">
+                                                      <span className="font-bold text-gray-700 flex items-center gap-2">
+                                                          <span className="w-2 h-2 bg-brand-primary rounded-full"></span>
+                                                          {nome}
+                                                      </span>
+                                                      <button 
+                                                          type="button" 
+                                                          onClick={() => setFormData(prev => ({ 
+                                                              ...prev, 
+                                                              adicionais: prev.adicionais.filter(x => x.produtoFilhoId !== adicional.produtoFilhoId),
+                                                              adicionaisIds: prev.adicionaisIds.filter(x => x !== adicional.produtoFilhoId)
+                                                          }))}
+                                                          className="text-gray-400 hover:text-red-500"
+                                                      >
+                                                          <Trash2 size={16} />
+                                                      </button>
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-3 gap-2 mt-1">
+                                                        <div>
+                                                            <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Qtd. Mínima</label>
+                                                            <input type="number" min={0} value={adicional.quantidadeMinima} 
+                                                                onChange={e => {
+                                                                    const val = parseInt(e.target.value) || 0;
+                                                                    const newAds = [...formData.adicionais];
+                                                                    newAds[index].quantidadeMinima = val;
+                                                                    setFormData({...formData, adicionais: newAds});
+                                                                }}
+                                                                className="w-full text-sm p-1.5 border border-gray-300 rounded outline-none" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Qtd. Máxima</label>
+                                                            <input type="number" min={1} value={adicional.quantidadeMaxima} 
+                                                                onChange={e => {
+                                                                    const val = parseInt(e.target.value) || 1;
+                                                                    const newAds = [...formData.adicionais];
+                                                                    newAds[index].quantidadeMaxima = val;
+                                                                    setFormData({...formData, adicionais: newAds});
+                                                                }}
+                                                                className="w-full text-sm p-1.5 border border-gray-300 rounded outline-none" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Preço Fixo (R$)</label>
+                                                            <input type="number" step="0.01" 
+                                                                value={adicional.precoOverride !== null ? (adicional.precoOverride / 100).toFixed(2) : ""} 
+                                                                placeholder="Do item"
+                                                                onChange={e => {
+                                                                    const val = e.target.value ? parseFloat(e.target.value) * 100 : null;
+                                                                    const newAds = [...formData.adicionais];
+                                                                    newAds[index].precoOverride = val;
+                                                                    setFormData({...formData, adicionais: newAds});
+                                                                }}
+                                                                className="w-full text-sm p-1.5 border border-gray-300 rounded outline-none" />
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             );
                                         })}
-                                        {formData.adicionaisIds.length === 0 && (
-                                            <span className="text-xs text-gray-400 italic">Nenhum adicional vinculado.</span>
+                                        {formData.adicionais.length === 0 && (
+                                            <span className="text-xs text-gray-400 italic">Nenhum adicional vinculado. Use a busca abaixo para adicionar.</span>
                                         )}
                                     </div>
 
                                     {/* Busca para adicionar novo */}
                                     <AdicionaisSearch 
                                         catalogo={catalogo} 
-                                        currentIds={formData.adicionaisIds}
-                                        onAdd={(id) => setFormData(prev => ({ ...prev, adicionaisIds: [...prev.adicionaisIds, id] }))}
+                                        currentIds={formData.adicionais.map(x => x.produtoFilhoId)}
+                                        onAdd={(id) => setFormData(prev => ({ 
+                                            ...prev, 
+                                            adicionaisIds: [...prev.adicionaisIds, id],
+                                            adicionais: [...prev.adicionais, { produtoFilhoId: id, quantidadeMinima: 0, quantidadeMaxima: 1, precoOverride: null }] 
+                                        }))}
                                         onCreateNew={async (nome) => {
                                             if(!window.confirm(`Deseja criar um novo adicional "${nome}"?`)) return;
                                             try {
@@ -801,6 +1027,23 @@ export function EstoquePage() {
                             </div>
                         </div>
 
+                        {/* Modo cardápio */}
+                        <div className="space-y-1 pt-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Modo de Exibição</label>
+                            <div className="flex gap-2">
+                                {MODOS_CARDAPIO.map(m => (
+                                  <button
+                                    key={m.value}
+                                    type="button"
+                                    onClick={() => setFormData({...formData, modoCardapio: m.value})}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-colors ${formData.modoCardapio === m.value ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-gray-600 border-gray-300 hover:border-brand-primary/40'}`}
+                                  >
+                                    {m.label}
+                                  </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="pt-4 flex gap-3">
                             <button 
                                 type="button" 
@@ -818,8 +1061,26 @@ export function EstoquePage() {
                             </button>
                         </div>
                     </form>
+                      </>
+                    )}
                 </div>
+              </div>{/* /LEFT form */}
+
+              {/* RIGHT: Card Preview */}
+              <div className="hidden md:flex flex-col w-72 bg-gray-50 border-l border-gray-100 p-6 shrink-0 overflow-y-auto">
+                <CardPreview
+                  nome={formData.nome || undefined}
+                  descricao={formData.descricao || undefined}
+                  preco={formData.preco ? Number(formData.preco.replace(/\D/g, '')) : undefined}
+                  imagemUrl={formData.imagemUrl || undefined}
+                  tipoProdutoNome={tipoProdutoSelecionado?.nome}
+                  tipoProdutoIcone={tipoProdutoSelecionado?.icone}
+                  modoCardapio={formData.modoCardapio}
+                  disponivel={formData.disponivel}
+                />
+              </div>
             </div>
+          </div>
         </div>
         )}
     </div>

@@ -6,11 +6,11 @@ export function ProductFeatures() {
       <div className="mb-10 lg:mb-12 mt-8 lg:mt-0">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4 leading-tight text-slate-900">
           Gestão <span className="text-brand-primary">Inteligente</span> <br />
-          para o seu Restaurante
+          para a sua Loja e Restaurante
         </h2>
         <p className="text-lg text-slate-500 max-w-lg leading-relaxed font-medium">
           O MenuTech é a plataforma completa para revolucionar o atendimento, 
-          otimizar a cozinha e fornecer visão 360º da sua operação.
+          otimizar a operação e fornecer visão 360º de suas vendas.
         </p>
       </div>
 

@@ -17,7 +17,7 @@ public interface IMesaService
     Task RemoverItemPedidoAsync(int pedidoItemId);
     Task AplicarDescontoAsync(int pedidoId, int desconto);
     Task<IEnumerable<Controle.Application.DTOs.ProdutoLojaDto>> ListarProdutosLojaAsync(Guid lojaId);
-    Task AdicionarItemPedidoAsync(int pedidoId, int? produtoLojaId, int? comboId, int quantidade);
+    Task AdicionarItemPedidoAsync(int pedidoId, int? produtoLojaId, int? comboId, int quantidade, int? varianteId = null, List<int>? opcoesIds = null);
     Task<Pedido> AtualizarStatusItemPedidoAsync(int pedidoItemId, string status);
     Task RecalcularStatusMesaAsync(int mesaId);
 }

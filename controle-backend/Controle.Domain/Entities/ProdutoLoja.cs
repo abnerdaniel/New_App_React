@@ -22,4 +22,17 @@ public class ProdutoLoja
     public Produto? Produto { get; set; }
     
     public ICollection<ProdutoCategoria> ProdutoCategorias { get; set; } = new List<ProdutoCategoria>();
-}
+    public ICollection<ProdutoImagem> Imagens { get; set; } = new List<ProdutoImagem>();
+
+    public int? TipoProdutoId { get; set; }
+    public TipoProduto? TipoProduto { get; set; }
+
+    // Modo de exibição no cardápio
+    public string ModoCardapio { get; set; } = "Simples"; // Simples | Configuravel | Kg
+    
+    // Variantes de varejo (SKU composto)
+    public ICollection<ProdutoVariante> Variantes { get; set; } = new List<ProdutoVariante>();
+
+    // Grupos de opção para produto configurável (pizza, lanche montado, etc.)
+    public ICollection<GrupoOpcao> GruposOpcao { get; set; } = new List<GrupoOpcao>();
+}

@@ -59,6 +59,11 @@ namespace Controle.Application.DTOs
         public Guid LojaId { get; set; }
         public bool IsAdicional { get; set; }
         public bool Disponivel { get; set; }
-        public List<ProdutoLojaDTO> Adicionais { get; set; } = new(); // Lista de produtos extras disponíveis
+        public List<ProdutoLojaDTO> Adicionais { get; set; } = new(); // Produtos correspondentes
+        public List<CreateProdutoAdicionalDTO> AdicionaisDetalhes { get; set; } = new(); // Regras de adicionais
+        public List<ProdutoImagemDTO> Imagens { get; set; } = new();
+        public List<ProdutoVarianteDTO> Variantes { get; set; } = new();
+        public List<GrupoOpcaoDTO> GruposOpcao { get; set; } = new();
+        public string ModoCardapio { get; set; } = "Simples";
     }
 }

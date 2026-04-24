@@ -63,7 +63,9 @@ export function AppRoutes() {
       <Route path="/pdv" element={<PrivateRoute><PDVPage /></PrivateRoute>} />
       <Route path="/delivery" element={<PrivateRoute><DeliveryPage /></PrivateRoute>} />
       <Route path="/cardapio" element={<PrivateRoute><CardapioPage /></PrivateRoute>} />
+      <Route path="/vitrine" element={<PrivateRoute><CardapioPage /></PrivateRoute>} />
       <Route path="/cardapio/:id/detalhes" element={<PrivateRoute><CardapioDetalhes /></PrivateRoute>} />
+      <Route path="/vitrine/:id/detalhes" element={<PrivateRoute><CardapioDetalhes /></PrivateRoute>} />
       <Route path="/estoque" element={<PrivateRoute><EstoquePage /></PrivateRoute>} />
       <Route path="/monitor-pedidos" element={<PrivateRoute><MonitorPedidos /></PrivateRoute>} />
       <Route path="/financeiro" element={<PrivateRoute><FinanceiroPage /></PrivateRoute>} />

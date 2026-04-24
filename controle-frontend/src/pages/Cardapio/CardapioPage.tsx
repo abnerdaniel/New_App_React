@@ -32,6 +32,7 @@ interface Combo {
   ativo: boolean;
   imagemUrl?: string;
   itens: ComboItem[];
+  etapas: ComboEtapa[];
   categoriaId?: number | null; 
 }
 
@@ -45,6 +46,24 @@ interface ComboItem {
       descricao?: string;
       produto?: { nome: string }
   };
+}
+
+interface ComboEtapa {
+  id?: number;
+  titulo: string;
+  ordem: number;
+  minEscolhas: number;
+  maxEscolhas: number;
+  obrigatorio: boolean;
+  opcoes: ComboEtapaOpcao[];
+}
+
+interface ComboEtapaOpcao {
+  id?: number;
+  produtoLojaId: number;
+  nomeProduto?: string;
+  precoAdicional: number;
+  imagemUrl?: string;
 }
 
 interface ProdutoEstoqueDTO {
@@ -347,6 +366,7 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
     const [selectedCardapioId, setSelectedCardapioId] = useState<string>('');
     const [selectedCategoriaId, setSelectedCategoriaId] = useState<string>('');
     const [editingComboId, setEditingComboId] = useState<number | null>(null);
+    const [etapas, setEtapas] = useState<ComboEtapa[]>([]);
 
   useEffect(() => {
         if(activeLojaId) {
@@ -434,6 +454,17 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
             itens: selectedProducts.map(p => ({
                 produtoLojaId: p.product.produtoLojaId,
                 quantidade: p.qtd
+            })),
+            etapas: etapas.map(e => ({
+                titulo: e.titulo,
+                ordem: e.ordem,
+                minEscolhas: e.minEscolhas,
+                maxEscolhas: e.maxEscolhas,
+                obrigatorio: e.obrigatorio,
+                opcoes: e.opcoes.map(o => ({
+                    produtoLojaId: o.produtoLojaId,
+                    precoAdicional: o.precoAdicional
+                }))
             }))
         };
 
@@ -470,6 +501,7 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
         setEditingComboId(null);
         setNome(''); setDescricao(''); setPreco(''); setImagemUrl(''); 
         setSelectedProducts([]);
+        setEtapas([]);
         setSelectedCardapioId(''); setSelectedCategoriaId('');
     }
 
@@ -502,6 +534,7 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
             if(cardapioFound) setSelectedCardapioId(cardapioFound.id.toString());
         }
 
+        setEtapas(c.etapas || []);
         setIsCreating(true);
     }
 
@@ -706,15 +739,159 @@ function CombosTab({ activeLojaId }: { activeLojaId?: string }) {
                                                      <button type="button" onClick={() => removeProductFromCombo(item.product.produtoLojaId)} className="ml-2 text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
                                                  </div>
                                             </div>
-                                        ))
+                                         ))
                                     )}
+                                </div>
+                            </div>
+
+                            {/* Etapas de Escolha (Novo) */}
+                            <div className="col-span-1 md:col-span-2 mt-4">
+                                <div className="flex justify-between items-center border-b border-gray-200 pb-2 mb-4">
+                                    <h4 className="font-bold text-gray-700 flex items-center gap-2">
+                                        <Plus size={18} className="text-brand-primary" /> Etapas de Escolha (Dinamismo)
+                                    </h4>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setEtapas([...etapas, { titulo: 'Nova Etapa', ordem: etapas.length, minEscolhas: 1, maxEscolhas: 1, obrigatorio: true, opcoes: [] }])}
+                                        className="text-xs bg-brand-primary text-white px-3 py-1.5 rounded hover:bg-brand-hover font-bold shadow-sm transition-all"
+                                    >
+                                        + Adicionar Etapa
+                                    </button>
+                                </div>
+
+                                {etapas.length === 0 && (
+                                    <div className="text-center py-6 border-2 border-dashed rounded-xl bg-gray-50 text-gray-400 text-sm">
+                                        Nenhuma etapa configurada. Adicione etapas para criar um combo dinâmico (ex: Monte seu prato).
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    {etapas.map((etapa, eIdx) => (
+                                        <div key={eIdx} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
+                                            <div className="bg-gray-50 p-3 flex justify-between items-center border-b">
+                                                <div className="flex flex-col gap-1 flex-1">
+                                                    <input 
+                                                        value={etapa.titulo}
+                                                        onChange={e => {
+                                                            const newEtapas = [...etapas];
+                                                            newEtapas[eIdx].titulo = e.target.value;
+                                                            setEtapas(newEtapas);
+                                                        }}
+                                                        className="bg-transparent border-b border-transparent hover:border-gray-300 font-bold outline-none focus:border-brand-primary text-gray-800"
+                                                        placeholder="Título da Etapa..."
+                                                    />
+                                                    <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase">
+                                                        <label className="flex items-center gap-1">
+                                                            Min: 
+                                                            <input type="number" value={etapa.minEscolhas} onChange={e => {
+                                                                const newEtapas = [...etapas];
+                                                                newEtapas[eIdx].minEscolhas = Number(e.target.value);
+                                                                setEtapas(newEtapas);
+                                                            }} className="w-10 border-b bg-transparent outline-none text-center focus:border-brand-primary" />
+                                                        </label>
+                                                        <label className="flex items-center gap-1">
+                                                            Max:
+                                                            <input type="number" value={etapa.maxEscolhas} onChange={e => {
+                                                                const newEtapas = [...etapas];
+                                                                newEtapas[eIdx].maxEscolhas = Number(e.target.value);
+                                                                setEtapas(newEtapas);
+                                                            }} className="w-10 border-b bg-transparent outline-none text-center focus:border-brand-primary" />
+                                                        </label>
+                                                        <label className="flex items-center gap-1 cursor-pointer">
+                                                            <input type="checkbox" checked={etapa.obrigatorio} onChange={e => {
+                                                                const newEtapas = [...etapas];
+                                                                newEtapas[eIdx].obrigatorio = e.target.checked;
+                                                                setEtapas(newEtapas);
+                                                            }} />
+                                                            Obrigatório
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => setEtapas(etapas.filter((_, i) => i !== eIdx))}
+                                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+
+                                            <div className="p-3 flex-1 flex flex-col gap-3">
+                                                {/* Adicionar Produto à Etapa */}
+                                                <div className="relative group">
+                                                    <select
+                                                        className="w-full px-3 py-2 text-xs border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-brand-primary/10 outline-none transition-all cursor-pointer"
+                                                        defaultValue=""
+                                                        onChange={e => {
+                                                            const term = e.target.value;
+                                                            const prod = availableProducts.find(p => p.produtoLojaId === Number(term));
+                                                            if (prod) {
+                                                                const newEtapas = [...etapas];
+                                                                if (!newEtapas[eIdx].opcoes.some(o => o.produtoLojaId === prod.produtoLojaId)) {
+                                                                    newEtapas[eIdx].opcoes.push({
+                                                                        produtoLojaId: prod.produtoLojaId,
+                                                                        nomeProduto: prod.nome,
+                                                                        precoAdicional: 0
+                                                                    });
+                                                                    setEtapas(newEtapas);
+                                                                }
+                                                            }
+                                                            e.target.value = ""; // reset after add
+                                                        }}
+                                                    >
+                                                        <option value="" disabled>Selecione um produto para adicionar...</option>
+                                                        {availableProducts.map(p => (
+                                                            <option key={p.produtoLojaId} value={p.produtoLojaId}>{p.nome}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                <div className="space-y-2 overflow-y-auto max-h-40 pr-1 text-gray-800">
+                                                    {etapa.opcoes.map((opcao, oIdx) => (
+                                                        <div key={oIdx} className="flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-100 group">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-bold">{opcao.nomeProduto}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex items-center gap-1 bg-white border rounded px-2 py-1">
+                                                                    <span className="text-[9px] font-bold text-gray-400">+ R$</span>
+                                                                    <input 
+                                                                        value={(opcao.precoAdicional / 100).toFixed(2).replace('.', ',')}
+                                                                        onChange={e => {
+                                                                            const val = e.target.value.replace(/[^0-9]/g, "");
+                                                                            const numVal = parseInt(val || "0");
+                                                                            const newEtapas = [...etapas];
+                                                                            newEtapas[eIdx].opcoes[oIdx].precoAdicional = numVal;
+                                                                            setEtapas(newEtapas);
+                                                                        }}
+                                                                        className="w-12 text-[10px] font-bold text-green-600 outline-none text-right"
+                                                                    />
+                                                                </div>
+                                                                <button 
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newEtapas = [...etapas];
+                                                                        newEtapas[eIdx].opcoes = newEtapas[eIdx].opcoes.filter((_, i) => i !== oIdx);
+                                                                        setEtapas(newEtapas);
+                                                                    }}
+                                                                    className="p-1 text-gray-300 hover:text-red-500 rounded transition-colors"
+                                                                >
+                                                                    <X size={14} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-6 flex justify-end gap-3">
                             <button type="button" onClick={() => setIsCreating(false)} className="px-5 py-2 border rounded font-medium text-gray-600 hover:bg-gray-50">Cancelar</button>
-                            <button type="submit" className="px-5 py-2 bg-brand-primary text-white font-bold rounded shadow hover:bg-brand-hover disabled:opacity-50" disabled={selectedProducts.length === 0}>Criar Oferta</button>
+                            <button type="submit" className="px-5 py-2 bg-brand-primary text-white font-bold rounded shadow hover:bg-brand-hover disabled:opacity-50" disabled={selectedProducts.length === 0 && etapas.length === 0}>{editingComboId ? 'Atualizar Oferta' : 'Criar Oferta'}</button>
                         </div>
                     </form>
                 </div>

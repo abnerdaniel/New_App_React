@@ -92,6 +92,17 @@ export const lojaService = {
               tipo: prod.tipo,
               preco: prod.preco / 100, // Convertendo centavos para reais
               imagemUrl: prod.urlImagem, 
+              imagens: prod.imagens ? prod.imagens.map((img: any) => ({
+                  id: img.id,
+                  url: img.url,
+                  ordem: img.ordem
+              })) : [],
+              adicionaisDetalhes: prod.adicionaisDetalhes ? prod.adicionaisDetalhes.map((det: any) => ({
+                  produtoFilhoId: det.produtoFilhoId,
+                  quantidadeMinima: det.quantidadeMinima ?? 0,
+                  quantidadeMaxima: det.quantidadeMaxima ?? 99,
+                  precoOverride: det.precoOverride != null ? det.precoOverride / 100 : null
+              })) : [],
               categoriaId: cat.id.toString(),
               lojaId: id,
               disponivel: prod.disponivel,
@@ -102,7 +113,39 @@ export const lojaService = {
                   preco: extra.preco / 100,
                   imagemUrl: extra.urlImagem,
                   lojaId: id
-              })) : []
+              })) : [],
+              variantes: prod.variantes ? prod.variantes.map((v: any) => ({
+                  id: v.id,
+                  sku: v.sku,
+                  preco: v.preco,
+                  estoque: v.estoque,
+                  disponivel: v.disponivel,
+                  imagemUrl: v.imagemUrl,
+                  atributos: v.atributos ? v.atributos.map((a: any) => ({
+                      valorId: a.valorId,
+                      nomeAtributo: a.nomeAtributo,
+                      valor: a.valor,
+                      codigoHex: a.codigoHex
+                  })) : []
+              })) : [],
+              gruposOpcao: prod.gruposOpcao ? prod.gruposOpcao.map((g: any) => ({
+                  id: g.id,
+                  produtoLojaId: g.produtoLojaId,
+                  nome: g.nome,
+                  ordem: g.ordem,
+                  minSelecao: g.minSelecao,
+                  maxSelecao: g.maxSelecao,
+                  obrigatorio: g.obrigatorio,
+                  itens: g.itens ? g.itens.map((i: any) => ({
+                      id: i.id,
+                      grupoOpcaoId: i.grupoOpcaoId,
+                      nome: i.nome,
+                      preco: i.preco,
+                      ordem: i.ordem,
+                      ativo: i.ativo
+                  })) : []
+              })) : [],
+              modoCardapio: prod.modoCardapio || 'Simples'
           })),
           combos: cat.combos ? cat.combos.map((combo: any) => ({
               id: combo.id.toString(),
@@ -116,6 +159,20 @@ export const lojaService = {
                   produtoLojaId: item.produtoLojaId,
                   nomeProduto: item.nomeProduto,
                   quantidade: item.quantidade
+              })) : [],
+              etapas: combo.etapas ? combo.etapas.map((etapa: any) => ({
+                  id: etapa.id,
+                  titulo: etapa.titulo,
+                  ordem: etapa.ordem,
+                  minEscolhas: etapa.minEscolhas,
+                  maxEscolhas: etapa.maxEscolhas,
+                  obrigatorio: etapa.obrigatorio,
+                  opcoes: etapa.opcoes ? etapa.opcoes.map((opcao: any) => ({
+                      id: opcao.id,
+                      produtoLojaId: opcao.produtoLojaId,
+                      nomeProduto: opcao.nomeProduto,
+                      precoAdicional: opcao.precoAdicional
+                  })) : []
               })) : []
           })) : []
       }));

@@ -14,6 +14,7 @@ public class Combo
     public bool Ativo { get; set; }
 
     public List<ComboItem> Itens { get; set; } = new();
+    public List<ComboEtapa> Etapas { get; set; } = new();
     
     // Relação opcional com Categoria (se quisermos categorizar combos)
     public int? CategoriaId { get; set; }

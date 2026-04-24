@@ -102,9 +102,58 @@ export interface ProdutoLojaItem {
   nome: string;
   preco: number;
   descricao: string;
-  categoriaNome: string; // Added from backend
-  imagemUrl?: string; // Added from backend DTO
+  categoriaNome: string;
+  imagemUrl?: string;
   isCombo?: boolean;
+  modoCardapio?: 'Simples' | 'Configuravel' | 'Kg';
+  gruposOpcao?: GrupoOpcao[];
+  variantes?: ProdutoVariante[];
+  etapas?: ComboEtapa[];
+}
+
+export interface ComboEtapa {
+  id: number;
+  titulo: string;
+  ordem: number;
+  minEscolhas: number;
+  maxEscolhas: number;
+  obrigatorio: boolean;
+  opcoes: ComboEtapaOpcao[];
+}
+
+export interface ComboEtapaOpcao {
+  id: number;
+  produtoLojaId: number;
+  nomeProduto: string;
+  precoAdicional: number;
+}
+
+export interface GrupoOpcao {
+  id: number;
+  nome: string;
+  obrigatorio: boolean;
+  minSelecao: number;
+  maxSelecao: number;
+  itens: OpcaoItem[];
+}
+
+export interface OpcaoItem {
+  id: number;
+  nome: string;
+  preco: number;
+  ativo: boolean;
+}
+
+export interface ProdutoVariante {
+  id: number;
+  sku: string;
+  preco: number;
+  estoque: number;
+  disponivel: boolean;
+  atributos: {
+    nomeAtributo: string;
+    valor: string;
+  }[];
 }
 
 export const listarProdutosLoja = async (lojaId: string): Promise<ProdutoLojaItem[]> => {
@@ -112,11 +161,20 @@ export const listarProdutosLoja = async (lojaId: string): Promise<ProdutoLojaIte
   return response.data;
 };
 
-export const adicionarItemPedido = async (pedidoId: number, itemId: number, isCombo: boolean, quantidade: number = 1): Promise<void> => {
+export const adicionarItemPedido = async (
+  pedidoId: number, 
+  itemId: number, 
+  isCombo: boolean, 
+  quantidade: number = 1,
+  varianteId?: number,
+  opcoesIds?: number[]
+): Promise<void> => {
   const payload = {
     produtoLojaId: !isCombo ? itemId : null,
     comboId: isCombo ? itemId : null,
-    quantidade
+    quantidade,
+    produtoVarianteId: varianteId,
+    opcoesAdicionaisIds: opcoesIds || []
   };
   await api.post(`/api/mesas/pedido/${pedidoId}/item`, payload);
 };

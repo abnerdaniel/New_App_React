@@ -82,24 +82,67 @@ namespace Controle.API.Controllers
         /// <response code="401">Não autorizado.</response>
         /// <response code="500">Erro interno.</response>
         [HttpDelete("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> RemoverProdutoLoja(int id)
+        public async Task<IActionResult> ExcluirProdutoLoja(int id)
         {
             try
             {
                 await _produtoLojaService.DeleteProdutoLojaAsync(id);
-                return NoContent();
+                return Ok(new { message = "Produto removido da loja com sucesso." });
             }
-            catch (DomainException ex)
+            catch (Exception ex)
+            {
+                var errorMsg = ex.InnerException?.Message ?? ex.Message;
+                Console.WriteLine($"ERRO AO EXCLUIR: {errorMsg}");
+                return BadRequest(new { message = errorMsg });
+            }
+        }
+
+        [HttpPost("{id}/imagens")]
+        [ProducesResponseType(typeof(ProdutoImagemDTO), StatusCodes.Status201Created)]
+        public async Task<IActionResult> UploadImagem(int id, [FromBody] AddProdutoImagemDTO dto)
+        {
+            try
+            {
+                var imagem = await _produtoLojaService.AdicionarImagemAsync(id, dto);
+                return CreatedAtAction(nameof(UploadImagem), new { id = imagem.Id }, imagem);
+            }
+            catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
-            catch (Exception)
+        }
+
+        [HttpDelete("{id}/imagens/{imagemId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> RemoverImagem(int id, int imagemId)
+        {
+            try
             {
-                return StatusCode(500, new { message = "Erro interno ao remover produto da loja." });
+                await _produtoLojaService.RemoverImagemAsync(id, imagemId);
+                return Ok(new { message = "Imagem removida com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}/imagens/ordem")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> ReordenarImagens(int id, [FromBody] List<ImagemOrdemDTO> dto)
+        {
+            try
+            {
+                await _produtoLojaService.ReordenarImagensAsync(id, dto);
+                return Ok(new { message = "Ordem das imagens atualizada com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
 

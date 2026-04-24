@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../api/axios';
-import { Clock, User, CheckCircle, Truck, UtensilsCrossed, AlertCircle, ChefHat, MapPin, Bike, Phone, X, MessageCircle, Printer } from 'lucide-react';
+import { Clock, User, CheckCircle, Truck, UtensilsCrossed, ShoppingBag, AlertCircle, ChefHat, MapPin, Bike, Phone, X, MessageCircle, Printer } from 'lucide-react';
 import { formatPhoneForWhatsapp } from '../../utils/formatters';
 import { printReceipt } from '../../utils/printReceipt';
 import { PedidoStatus } from '../../constants/pedidoStatus';
@@ -213,7 +213,7 @@ export function MonitorPedidos() {
       <div className="bg-white border-b px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <UtensilsCrossed className="text-brand-primary" />
+                <ShoppingBag className="text-brand-primary" />
                 Monitor de Pedidos
             </h1>
             <p className="text-sm text-gray-500">Gerencie a fila de produção e entregas</p>

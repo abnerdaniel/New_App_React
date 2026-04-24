@@ -69,11 +69,25 @@ namespace Controle.Application.Services
                 .ThenInclude(pl => pl.Produto)
                 .ThenInclude(p => p.Adicionais)
                 .ThenInclude(pa => pa.ProdutoFilho)
-                // Keep original Includes for safety if needed, or replace. 
-                // The original "ThenInclude(cat => cat.Produtos)" might still be useful if someone uses direct FK, 
-                // but we are switching to ProdutoCategorias. Let's keep both or just add the new chain.
-                // EF Core requires separate Include chains for different paths.
                 
+                // Include Imagens e Variantes do ProdutoLoja
+                .Include(c => c.Categorias)
+                .ThenInclude(cat => cat.ProdutoCategorias)
+                .ThenInclude(pc => pc.ProdutoLoja)
+                .ThenInclude(pl => pl.Imagens)
+                .Include(c => c.Categorias)
+                .ThenInclude(cat => cat.ProdutoCategorias)
+                .ThenInclude(pc => pc.ProdutoLoja)
+                .ThenInclude(pl => pl.Variantes)
+                .ThenInclude(v => v.Atributos)
+                .ThenInclude(pa => pa.VarianteAtributoValor)
+                .ThenInclude(vav => vav.VarianteAtributo)
+                .Include(c => c.Categorias)
+                .ThenInclude(cat => cat.ProdutoCategorias)
+                .ThenInclude(pc => pc.ProdutoLoja)
+                .ThenInclude(pl => pl.GruposOpcao)
+                .ThenInclude(g => g.Itens)
+
                 // Chain 1: Categoria -> ProdutoCategorias -> ProdutoLoja -> Produto -> Adicionais
                 .Include(c => c.Categorias)
                 .ThenInclude(cat => cat.Produtos) 
@@ -82,7 +96,13 @@ namespace Controle.Application.Services
                 .ThenInclude(cat => cat.Combos)
                 .ThenInclude(cb => cb.Itens)
                 .ThenInclude(cbi => cbi.ProdutoLoja)
-                .ThenInclude(pl => pl.Produto) 
+                .ThenInclude(pl => pl.Produto)
+                .Include(c => c.Categorias)
+                .ThenInclude(cat => cat.Combos)
+                .ThenInclude(cb => cb.Etapas)
+                .ThenInclude(e => e.Opcoes)
+                .ThenInclude(o => o.ProdutoLoja)
+                .ThenInclude(pl => pl.Produto)
                 .ToListAsync();
 
             // 4. Lógica de Seleção de Cardápio:
@@ -177,6 +197,19 @@ namespace Controle.Application.Services
                                     Esgotado = p.Estoque <= 0,
                                     LojaId = loja.Id,
                                     Disponivel = p.Disponivel,
+                                    AdicionaisDetalhes = p.Produto?.Adicionais?
+                                        .Where(pa => todosProdutosLoja.ContainsKey(pa.ProdutoFilhoId))
+                                        .Select(pa => new CreateProdutoAdicionalDTO {
+                                            ProdutoFilhoId = todosProdutosLoja[pa.ProdutoFilhoId].Id,
+                                            QuantidadeMinima = pa.QuantidadeMinima,
+                                            QuantidadeMaxima = pa.QuantidadeMaxima,
+                                            PrecoOverride = pa.PrecoOverride
+                                        }).ToList() ?? new List<CreateProdutoAdicionalDTO>(),
+                                    Imagens = p.Imagens?.Select(img => new ProdutoImagemDTO {
+                                        Id = img.Id,
+                                        Url = img.Url,
+                                        Ordem = img.Ordem
+                                    }).OrderBy(x => x.Ordem).ToList() ?? new List<ProdutoImagemDTO>(),
                                     Adicionais = p.Produto?.Adicionais?
                                         .Where(pa => todosProdutosLoja.ContainsKey(pa.ProdutoFilhoId)) 
                                         .Select(pa => {
@@ -191,7 +224,45 @@ namespace Controle.Application.Services
                                             };
                                         })
                                         .Where(ex => !ex.Esgotado) 
-                                        .ToList() ?? new List<ProdutoLojaDTO>()
+                                        .ToList() ?? new List<ProdutoLojaDTO>(),
+                                    Variantes = p.Variantes?.Select(v => new ProdutoVarianteDTO
+                                    {
+                                        Id = v.Id,
+                                        SKU = v.SKU,
+                                        Preco = v.Preco / 100m,
+                                        Estoque = v.Estoque,
+                                        Disponivel = v.Disponivel,
+                                        ImagemUrl = v.ImagemUrl,
+                                        Atributos = v.Atributos
+                                            .Where(a => a.VarianteAtributoValor != null && a.VarianteAtributoValor.VarianteAtributo != null)
+                                            .Select(a => new ProdutoVarianteAtributoDTO
+                                        {
+                                            ValorId = a.VarianteAtributoValorId,
+                                            NomeAtributo = a.VarianteAtributoValor.VarianteAtributo.Nome,
+                                            Valor = a.VarianteAtributoValor.Valor,
+                                            CodigoHex = a.VarianteAtributoValor.CodigoHex
+                                        }).ToList()
+                                    }).ToList() ?? new List<ProdutoVarianteDTO>(),
+                                    GruposOpcao = p.GruposOpcao?.OrderBy(g => g.Ordem).Select(g => new GrupoOpcaoDTO
+                                    {
+                                        Id = g.Id,
+                                        ProdutoLojaId = g.ProdutoLojaId,
+                                        Nome = g.Nome,
+                                        Ordem = g.Ordem,
+                                        MinSelecao = g.MinSelecao,
+                                        MaxSelecao = g.MaxSelecao,
+                                        Obrigatorio = g.Obrigatorio,
+                                        Itens = g.Itens?.Where(i => i.Ativo).OrderBy(i => i.Ordem).Select(i => new OpcaoItemDTO
+                                        {
+                                            Id = i.Id,
+                                            GrupoOpcaoId = i.GrupoOpcaoId,
+                                            Nome = i.Nome,
+                                            Preco = i.Preco,
+                                            Ordem = i.Ordem,
+                                            Ativo = i.Ativo
+                                        }).ToList() ?? new()
+                                    }).ToList() ?? new(),
+                                    ModoCardapio = p.ModoCardapio
                                 };
                                 return prodDto;
                             }).ToList(),
@@ -210,6 +281,23 @@ namespace Controle.Application.Services
                                 ProdutoLojaId = i.ProdutoLojaId,
                                 NomeProduto = i.ProdutoLoja?.Produto?.Nome ?? i.ProdutoLoja?.Descricao ?? "Item",
                                 Quantidade = i.Quantidade
+                            }).ToList(),
+                            Etapas = cb.Etapas.OrderBy(e => e.Ordem).Select(e => new ComboEtapaDTO
+                            {
+                                Id = e.Id,
+                                Titulo = e.Titulo,
+                                Ordem = e.Ordem,
+                                MinEscolhas = e.MinEscolhas,
+                                MaxEscolhas = e.MaxEscolhas,
+                                Obrigatorio = e.Obrigatorio,
+                                Opcoes = e.Opcoes.Select(o => new ComboEtapaOpcaoDTO
+                                {
+                                    Id = o.Id,
+                                    ProdutoLojaId = o.ProdutoLojaId,
+                                    NomeProduto = o.ProdutoLoja?.Produto?.Nome ?? o.ProdutoLoja?.Descricao ?? "Opção",
+                                    PrecoAdicional = o.PrecoAdicional,
+                                    ImagemUrl = o.ProdutoLoja?.ImagemUrl ?? o.ProdutoLoja?.Produto?.URL_Imagem
+                                }).ToList()
                             }).ToList()
                         }).ToList()
                     }).ToList()
@@ -228,6 +316,7 @@ namespace Controle.Application.Services
                 {
                     Id = l.Id,
                     Nome = l.Nome,
+                    Segmento = l.Segmento,
                     Slug = l.Slug,
                     Descricao = l.Categoria, // Mapping Categoria to Descricao for now as Loja has no Descricao
                     LogoUrl = l.LogoUrl,

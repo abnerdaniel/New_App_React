@@ -8,7 +8,7 @@ import { lojaService } from '../services/loja.service';
 import { ProductModal } from '../components/ProductModal';
 import { useCart } from '../context/CartContext';
 import { useClientAuth } from '../context/ClientAuthContext';
-import type { Produto } from '../types';
+import type { Produto, OpcaoItemCliente, ComboEtapaEscolha } from '../types';
 
 import { ComboModal } from '../components/ComboModal';
 
@@ -87,37 +87,58 @@ export function LojaPage() {
       setIsComboModalOpen(true);
   }
 
-  const handleAddToCart = (produto: Produto, quantidade: number, observacao: string, extras: Produto[]) => {
-    addItem(produto, quantidade, observacao, extras);
+  const handleAddToCart = (produto: Produto, quantidade: number, observacao: string, extras: Produto[], opcoesSelecionadas?: OpcaoItemCliente[]) => {
+    addItem(produto, quantidade, observacao, extras, opcoesSelecionadas);
     setIsModalOpen(false);
   };
 
-  const handleAddComboToCart = (combo: Combo, quantidade: number, extrasMap: { [itemId: number]: Produto[] }, observacao: string) => {
+  const handleAddComboToCart = (combo: Combo, quantidade: number, extrasMap: { [itemId: number]: Produto[] }, observacao: string, etapasSelecionadas?: ComboEtapaEscolha[]) => {
       // Calculando preço total dos extras
       const totalExtras = Object.values(extrasMap).flat().reduce((acc, e) => acc + e.preco, 0);
       
+      // Calculando preço das etapas iterando pelo combo de props
+      let totalEtapas = 0;
+      let textoEtapas = "";
+      if (etapasSelecionadas && combo.etapas) {
+          etapasSelecionadas.forEach(es => {
+              const etapaBase = combo.etapas?.find(e => e.id === es.comboEtapaId);
+              if (etapaBase) {
+                  es.opcoes.forEach((op: { produtoLojaId: number; quantidade: number }) => {
+                      const optFull = etapaBase.opcoes.find(o => o.produtoLojaId === op.produtoLojaId);
+                      if (optFull) {
+                          totalEtapas += (optFull.precoAdicional * op.quantidade);
+                          textoEtapas += `\n[${etapaBase.titulo}] 1x ${optFull.nomeProduto}`;
+                          if (optFull.precoAdicional > 0) {
+                              textoEtapas += ` (+ R$ ${(optFull.precoAdicional/100).toFixed(2)})`;
+                          }
+                      }
+                  });
+              }
+          });
+      }
+      
       // Cria uma descrição detalhada do combo
       const detalheItens = combo.itens.map((item) => {
-          // Extraindo extras para este item (usando type assertion se necessário ou assumindo que extrasMap usa number)
-          // O ComboModal passa extrasMap com chaves numéricas (IDs dos itens)
           const itemExtras = extrasMap[Number(item.id)] || [];
           const extraText = itemExtras.length > 0 ? ` (+ ${itemExtras.map(e => e.nome).join(', ')})` : '';
           return `${item.quantidade}x ${item.nomeProduto}${extraText}`;
       }).join('\n');
 
-      const fullObservacao = `[COMBO: ${combo.nome}]\n${detalheItens}${observacao ? `\nObs: ${observacao}` : ''}`;
+      const fullObservacao = `[COMBO: ${combo.nome}]\n${detalheItens}${textoEtapas}${observacao ? `\nObs: ${observacao}` : ''}`;
 
       // Produto "fictício" representando o Combo no carrinho
       const produtoCombo: Produto = {
           id: `combo-${combo.id}-${Date.now()}`, 
           nome: `Combo: ${combo.nome}`,
           descricao: combo.descricao,
-          preco: combo.preco + totalExtras, 
+          preco: combo.preco + totalExtras + totalEtapas, 
           imagemUrl: combo.imagemUrl,
           categoriaId: combo.categoriaId?.toString() || '', 
           lojaId: loja?.id || '',
           adicionais: [], 
-          isAdicional: false
+          isAdicional: false,
+          isCombo: true,
+          comboEtapas: etapasSelecionadas
       };
 
       // Adiciona ao carrinho
@@ -320,20 +341,16 @@ export function LojaPage() {
        {/* Cardápio */}
       <div className="max-w-4xl mx-auto px-4 mt-4">
         {filteredCategories.length === 0 && searchQuery && (
+
             <div className="text-center py-10 text-gray-500">
                 Nehum item encontrado para "{searchQuery}"
             </div>
         )}
 
         {filteredCategories.map(categoria => {
-            // Flatten products (ignore subcategories for now per rollback)
             const products = categoria.produtos;
             const combos = categoria.combos || [];
             
-            // "Show More" Logic
-            // We need a state for each category to know if it's expanded. 
-            // Since we are mapping, we can't easily use a simple useState hook for each *inside* the map unless we extract a component.
-            // Let's extract a CategorySection component to handle this state cleanly.
             return (
                 <CategorySection 
                     key={categoria.id} 
@@ -348,6 +365,7 @@ export function LojaPage() {
       </div>
 
       <ProductModal 
+        key={selectedProduct?.id || 'empty'}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         produto={selectedProduct}
@@ -368,8 +386,6 @@ export function LojaPage() {
     </div>
   );
 }
-
-
 
 function CategorySection({ 
     categoria, 
@@ -427,6 +443,30 @@ function CategorySection({
 // Sub-components to keep clean
 function ProductCard({ produto, onClick }: { produto: Produto, onClick: (p: Produto) => void }) {
     const indisponivel = produto.disponivel === false;
+    const cardImageUrl = produto.imagemUrl || (produto.imagens && produto.imagens.length > 0 ? produto.imagens[0].url : undefined);
+
+    let displayPrice = produto.preco;
+    let isFrom = false;
+    const isConfigurable = produto.modoCardapio === 'Configuravel' || (produto.gruposOpcao && produto.gruposOpcao.length > 0);
+
+    if (produto.variantes && produto.variantes.length > 0) {
+        const minVariantePreco = Math.min(...produto.variantes.map(v => v.preco));
+        isFrom = true;
+        if (minVariantePreco < displayPrice || displayPrice === 0) {
+            displayPrice = minVariantePreco;
+        }
+    } else if (isConfigurable) {
+        isFrom = true;
+        let base = produto.preco || 0;
+        produto.gruposOpcao?.forEach(g => {
+            if (g.obrigatorio && g.minSelecao > 0 && g.itens.length > 0) {
+                 const minOpcao = Math.min(...g.itens.map(i => i.preco));
+                 base += (minOpcao * g.minSelecao);
+            }
+        });
+        displayPrice = base;
+    }
+
     return (
         <div 
             className={`relative rounded-xl overflow-hidden shadow-sm aspect-square transition-all duration-200 
@@ -435,7 +475,7 @@ function ProductCard({ produto, onClick }: { produto: Produto, onClick: (p: Prod
             onClick={() => !indisponivel && onClick(produto)}
         >
             <ProductImage 
-                src={produto.imagemUrl} 
+                src={cardImageUrl} 
                 alt={produto.nome} 
                 className="absolute inset-0 w-full h-full object-cover bg-gray-200"
                 productType={produto.tipo}
@@ -443,10 +483,12 @@ function ProductCard({ produto, onClick }: { produto: Produto, onClick: (p: Prod
             <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-3">
                 <h3 className="font-bold text-white leading-tight line-clamp-2">{produto.nome}</h3>
                 <div className="flex items-center justify-between mt-1">
-                    <span className="text-white font-semibold">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(produto.preco)}
+                    <span className="text-white font-semibold flex items-center flex-wrap gap-1">
+                        {isFrom && <span className="text-[10px] uppercase font-normal opacity-90">A partir de</span>}
+                        {isConfigurable && !isFrom && <span className="text-[10px] uppercase font-normal opacity-90">Personalizável</span>}
+                        <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(displayPrice / 100)}</span>
                     </span>
-                    {indisponivel && <span className="text-[10px] font-bold text-black border-white bg-white/90 px-1.5 py-0.5 rounded uppercase">Esgotado</span>}
+                    {indisponivel && <span className="text-[10px] font-bold text-black border-white bg-white/90 px-1.5 py-0.5 rounded uppercase shrink-0">Esgotado</span>}
                 </div>
             </div>
         </div>
@@ -455,6 +497,18 @@ function ProductCard({ produto, onClick }: { produto: Produto, onClick: (p: Prod
 
 function ComboCard({ combo, onClick }: { combo: Combo, onClick: (c: Combo) => void }) {
     const indisponivel = combo.ativo === false;
+    
+    let displayPrice = combo.preco;
+    const hasDynamicStages = combo.etapas && combo.etapas.length > 0;
+    
+    if (hasDynamicStages) {
+        combo.etapas?.filter((e) => e.obrigatorio).forEach((e) => {
+            if (e.opcoes.length > 0) {
+                 displayPrice += Math.min(...e.opcoes.map((o) => o.precoAdicional));
+            }
+        });
+    }
+
     return (
         <div 
             className={`relative rounded-xl overflow-hidden shadow-sm aspect-square transition-all duration-200 border-2 border-orange-400
@@ -468,26 +522,20 @@ function ComboCard({ combo, onClick }: { combo: Combo, onClick: (c: Combo) => vo
                 className="absolute inset-0 w-full h-full object-cover bg-orange-100"
                 isCombo={true}
             />
-            <div className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-10">
-                Combo
-            </div>
-            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-3">
-                <h3 className="font-bold text-white leading-tight line-clamp-2">{combo.nome}</h3>
+            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-end p-3">
+                <span className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">
+                    PROMOÇÃO
+                </span>
                 
-                {combo.itens && combo.itens.length > 0 && (
-                    <p className="text-[10px] text-gray-300 line-clamp-1 mt-0.5">
-                        {combo.itens.map(i => `${i.quantidade}x ${i.nomeProduto}`).join(', ')}
-                    </p>
-                )}
-
-                <div className="flex items-center justify-between mt-1.5">
-                    <span className="text-orange-400 font-bold text-sm">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(combo.preco)}
+                <h3 className="font-bold text-white leading-tight line-clamp-2">{combo.nome}</h3>
+                <div className="flex items-center justify-between mt-1">
+                    <span className="text-white font-semibold flex items-center flex-wrap gap-1">
+                        {hasDynamicStages && <span className="text-[10px] uppercase font-normal opacity-90">A partir de</span>}
+                        <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(displayPrice / 100)}</span>
                     </span>
-                    {indisponivel && <span className="text-[10px] font-bold text-black border-white bg-white/90 px-1.5 py-0.5 rounded uppercase">Esgotado</span>}
+                    {indisponivel && <span className="text-[10px] font-bold text-black border-white bg-white/90 px-1.5 py-0.5 rounded uppercase shrink-0">Esgotado</span>}
                 </div>
             </div>
         </div>
     );
 }
-

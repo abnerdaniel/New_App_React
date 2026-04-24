@@ -18,17 +18,20 @@ namespace Controle.Application.Services
         private readonly ILojaService _lojaService;
         private readonly IMesaService _mesaService;
         private readonly IEvolutionApiService _evolutionApiService;
+        private readonly ProdutoVarianteService _varianteService;
 
         public PedidoService(
             AppDbContext context,
             ILojaService lojaService,
             IMesaService mesaService,
-            IEvolutionApiService evolutionApiService)
+            IEvolutionApiService evolutionApiService,
+            ProdutoVarianteService varianteService)
         {
             _context = context;
             _lojaService = lojaService;
             _mesaService = mesaService;
             _evolutionApiService = evolutionApiService;
+            _varianteService = varianteService;
         }
 
         public async Task<Pedido> RealizarPedidoAsync(RealizarPedidoDTO pedidoDto)
@@ -205,6 +208,63 @@ namespace Controle.Application.Services
                             }
                         }
 
+                        // LÓGICA DE ETAPAS DO COMBO (SE HOUVER)
+                        if (itemDto.ComboEtapas != null && itemDto.ComboEtapas.Any())
+                        {
+                            var comboEtapasDb = await _context.ComboEtapas
+                                .Include(e => e.Opcoes)
+                                .Where(e => e.ComboId == combo.Id)
+                                .ToListAsync();
+
+                            foreach (var escolhaEtapa in itemDto.ComboEtapas)
+                            {
+                                var etapaDb = comboEtapasDb.FirstOrDefault(e => e.Id == escolhaEtapa.ComboEtapaId);
+                                if (etapaDb == null) continue;
+
+                                foreach (var escolhaOpcao in escolhaEtapa.Opcoes)
+                                {
+                                    var opcaoDb = etapaDb.Opcoes.FirstOrDefault(o => o.ProdutoLojaId == escolhaOpcao.ProdutoLojaId);
+                                    if (opcaoDb == null) continue;
+
+                                    // Buscar ProdutoLoja atualizado (estoque)
+                                    var prodLoja = await _context.ProdutosLojas
+                                        .Include(pl => pl.Produto)
+                                        .FirstOrDefaultAsync(pl => pl.Id == escolhaOpcao.ProdutoLojaId);
+
+                                    if (prodLoja == null) continue;
+
+                                    // Validar Estoque
+                                    int qtdNecessaria = escolhaOpcao.Quantidade * itemDto.Qtd;
+                                    var currentStock = prodLoja.Estoque ?? 0;
+                                    if (currentStock < qtdNecessaria)
+                                    {
+                                        throw new DomainException($"Estoque insuficiente para {prodLoja.Produto?.Nome ?? prodLoja.Descricao} na etapa {etapaDb.Titulo}. Disponível: {currentStock}, Requerido: {qtdNecessaria}");
+                                    }
+
+                                    // Baixar estoque
+                                    prodLoja.Estoque = currentStock - qtdNecessaria;
+                                    prodLoja.Vendas += qtdNecessaria;
+                                    _context.ProdutosLojas.Update(prodLoja);
+
+                                    // Adicionar subitem ao pedido
+                                    var subItem = new PedidoItem
+                                    {
+                                        ProdutoLojaId = prodLoja.Id,
+                                        NomeProduto = $"(Etapa: {etapaDb.Titulo}) {prodLoja.Produto?.Nome ?? prodLoja.Descricao}",
+                                        PrecoVenda = 0, // Preço base já no combo
+                                        Quantidade = escolhaOpcao.Quantidade * itemDto.Qtd,
+                                        ParentPedidoItem = pedidoItem,
+                                        Status = DetermineStatus(loja, pedidoDto)
+                                    };
+                                    pedidoItem.SubItens.Add(subItem);
+                                    pedido.Sacola.Add(subItem);
+
+                                    // Somar Preço Adicional ao valor do item principal do combo
+                                    pedidoItem.PrecoVenda += opcaoDb.PrecoAdicional;
+                                }
+                            }
+                        }
+
                         pedido.Sacola.Add(pedidoItem);
                         valorTotal += (decimal)pedidoItem.PrecoVenda * pedidoItem.Quantidade;
                     }
@@ -250,48 +310,102 @@ namespace Controle.Application.Services
                             NomeProduto = produtoLoja.Produto?.Nome ?? produtoLoja.Descricao ?? "Produto sem nome",
                             PrecoVenda = produtoLoja.Preco,
                             Quantidade = itemDto.Qtd,
-                            Adicionais = new List<PedidoItemAdicional>()
+                            Adicionais = new List<PedidoItemAdicional>(),
+                            Opcoes = new List<PedidoItemOpcao>(),
+                            ProdutoVarianteId = itemDto.ProdutoVarianteId
                         };
 
-                        // LÓGICA DE ADICIONAIS
-                        if (itemDto.AdicionaisIds != null && itemDto.AdicionaisIds.Any())
+                        // Validar e decrementar estoque da variante (se selecionada)
+                        if (itemDto.ProdutoVarianteId.HasValue)
                         {
+                            var variante = await _context.ProdutoVariantes
+                                .FindAsync(itemDto.ProdutoVarianteId.Value)
+                                ?? throw new DomainException("Variante de produto não encontrada.");
+
+                            if (variante.Estoque < itemDto.Qtd)
+                                throw new DomainException(
+                                    $"Estoque insuficiente para a variante '{variante.SKU}'. Disponível: {variante.Estoque}.");
+
+                            variante.Estoque -= itemDto.Qtd;
+                            if (variante.Estoque <= 0) variante.Disponivel = false;
+                            // O nome da variante complementa o nome do produto
+                            pedidoItem.NomeProduto += $" ({variante.SKU})";
+                        }
+
+                        // LÓGICA DE ADICIONAIS
+                        // Convert legacy AdicionaisIds to new Adicionais structure if new one is not present
+                        var reqAdicionais = itemDto.Adicionais ?? 
+                                            (itemDto.AdicionaisIds?.Select(id => new PedidoAdicionalRequestDTO { ProdutoLojaId = id, Quantidade = 1 }).ToList() ?? new List<PedidoAdicionalRequestDTO>());
+
+                        if (reqAdicionais.Any())
+                        {
+                            var idsAdicionais = reqAdicionais.Select(a => a.ProdutoLojaId).ToList();
                             // Buscar os produtosloja dos adicionais para pegar preço e estoque atual
                             var adicionaisLojas = await _context.ProdutosLojas
-                                .Where(pl => itemDto.AdicionaisIds.Contains(pl.Id))
+                                .Where(pl => idsAdicionais.Contains(pl.Id))
                                 .ToListAsync();
 
-                            foreach (var idAdicional in itemDto.AdicionaisIds)
+                            foreach (var addReq in reqAdicionais)
                             {
-                                var adicionalLoja = adicionaisLojas.FirstOrDefault(pl => pl.Id == idAdicional);
+                                var adicionalLoja = adicionaisLojas.FirstOrDefault(pl => pl.Id == addReq.ProdutoLojaId);
                                 if (adicionalLoja == null) continue; // Ou lançar erro
 
-                                // Validar Estoque do Adicional (Considerando que cada unidade do item principal leva 1 do adicional)
-                                int qtdAdicionalNecessaria = itemDto.Qtd; 
-                                var stockAdicional = adicionalLoja.Estoque ?? 0; // Usa Estoque
+                                // Validar Estoque do Adicional 
+                                int qtdTotalAdicionalNecessaria = addReq.Quantidade * itemDto.Qtd; 
+                                var stockAdicional = adicionalLoja.Estoque ?? 0;
 
-                                if (stockAdicional < qtdAdicionalNecessaria)
+                                // Verifica PrecoOverride no Produto (Se cadastrado, o Preco unitario muda)
+                                // Pra isso precisaríamos consultar o link no bd. Por hora, usamos o preço base do Adicional.
+                                // Ideal: O front enviar o override, ou backend carregar ProdutoAdicional
+                                var precoBaseAdicional = adicionalLoja.Preco;
+
+                                if (stockAdicional < qtdTotalAdicionalNecessaria)
                                 {
-                                     throw new DomainException($"Estoque insuficiente para o adicional {adicionalLoja.Descricao}.");
+                                     throw new DomainException($"Estoque insuficiente para o adicional {adicionalLoja.Descricao ?? adicionalLoja.Produto?.Nome}.");
                                 }
 
                                 // Baixar Estoque do Adicional
-                                adicionalLoja.Estoque = stockAdicional - qtdAdicionalNecessaria;
-                                adicionalLoja.Vendas += qtdAdicionalNecessaria;
+                                adicionalLoja.Estoque = stockAdicional - qtdTotalAdicionalNecessaria;
+                                adicionalLoja.Vendas += qtdTotalAdicionalNecessaria;
 
                                 // Adicionar ao PedidoItem
                                 pedidoItem.Adicionais.Add(new PedidoItemAdicional
                                 {
                                     ProdutoLojaId = adicionalLoja.Id,
-                                    PrecoVenda = adicionalLoja.Preco
+                                    PrecoVenda = 0, // Deprecated
+                                    PrecoUnitario = (int)precoBaseAdicional,
+                                    Quantidade = addReq.Quantidade,
+                                    Nome = adicionalLoja.Produto?.Nome ?? adicionalLoja.Descricao ?? "Adicional"
                                 });
 
-                                // Somar ao total do item (ou do pedido?)
-                                // O PreçoVenda do PedidoItem geralmente é unitário ou total? 
-                                // No modelo atual: pedidoItem.PrecoVenda é unitário do produto principal.
-                                // O valorTotal do pedido soma (PrecoItem + PrecoAdicionais) * Quantidade?
-                                // Vamos somar o valor dos adicionais ao valorTotal do pedido diretamente.
-                                valorTotal += (decimal)adicionalLoja.Preco * itemDto.Qtd;
+                                // Somar ao valor total: preco unitario * quantidade desse extra * quantidade de itens do carrinho
+                                valorTotal += precoBaseAdicional * qtdTotalAdicionalNecessaria;
+                            }
+                        }
+
+                        // LÓGICA DE OPÇÕES CONFIGURÁVEIS (FASE 4)
+                        if (itemDto.OpcoesAdicionaisIds != null && itemDto.OpcoesAdicionaisIds.Any())
+                        {
+                            var opcoesDb = await _context.OpcaoItens
+                                .Include(o => o.GrupoOpcao)
+                                .Where(o => itemDto.OpcoesAdicionaisIds.Contains(o.Id) && o.Ativo)
+                                .ToListAsync();
+
+                            foreach (var op in opcoesDb)
+                            {
+                                int qtdTotalOpcaoNecessaria = itemDto.Qtd; // Geralmente opção segue a qtd do item (ex: qtd 2 Hamburguers = 2 opções duplicadas)
+
+                                pedidoItem.Opcoes.Add(new PedidoItemOpcao
+                                {
+                                    OpcaoItemId = op.Id,
+                                    NomeGrupo = op.GrupoOpcao?.Nome ?? "Grupo",
+                                    NomeOpcao = op.Nome,
+                                    PrecoUnitario = op.Preco,
+                                    Quantidade = 1 // ou proporção exata enviada pelo front se fosse editável
+                                });
+
+                                // Somar ao valor total: preco da opcao * qtd do lanche
+                                valorTotal += op.Preco * qtdTotalOpcaoNecessaria;
                             }
                         }
 
@@ -1175,6 +1289,8 @@ namespace Controle.Application.Services
                 .Include(p => p.Loja)
                 .Include(p => p.Sacola)
                     .ThenInclude(s => s.Adicionais)
+                .Include(p => p.Sacola)
+                    .ThenInclude(s => s.Opcoes) // Carrega também as opções configuráveis para calculo
                 .FirstOrDefaultAsync(p => p.Id == pedidoId);
 
             if (pedido != null)
@@ -1194,15 +1310,26 @@ namespace Controle.Application.Services
             {
                 foreach (var item in pedido.Sacola)
                 {
-                    if (item.Status == "Cancelado") continue;
+                    if (item.Status == "Cancelado" || item.ParentPedidoItemId != null) continue;
 
                     decimal itemTotal = (decimal)item.PrecoVenda * item.Quantidade;
 
-                    if (item.Adicionais != null)
+                    if (item.Adicionais != null && item.Adicionais.Any())
                     {
                         foreach (var ad in item.Adicionais)
                         {
-                            itemTotal += (decimal)ad.PrecoVenda * item.Quantidade;
+                            var addQty = ad.Quantidade > 0 ? ad.Quantidade : 1; 
+                            var currPrice = ad.PrecoUnitario > 0 ? ad.PrecoUnitario : ad.PrecoVenda;
+                            itemTotal += (decimal)(currPrice * addQty) * item.Quantidade;
+                        }
+                    }
+
+                    if (item.Opcoes != null && item.Opcoes.Any())
+                    {
+                        foreach (var op in item.Opcoes)
+                        {
+                            var opQty = op.Quantidade > 0 ? op.Quantidade : 1;
+                            itemTotal += (decimal)(op.PrecoUnitario * opQty) * item.Quantidade;
                         }
                     }
 
@@ -1219,7 +1346,7 @@ namespace Controle.Application.Services
                 total += taxa;
             }
 
-            // Desconto
+            // Desconto (mantendo fallback legado)
             if (pedido.Desconto.HasValue)
             {
                 total -= pedido.Desconto.Value;

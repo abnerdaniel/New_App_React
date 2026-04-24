@@ -6,7 +6,7 @@ import { lojaService } from '../services/loja.service';
 import { StoreCard } from '../components/StoreCard';
 import { useClientAuth } from '../context/ClientAuthContext';
 
-export function Home() {
+export function Parceiros() {
   const navigate = useNavigate();
   const { cliente } = useClientAuth();
   const [lojas, setLojas] = useState<Loja[]>([]);

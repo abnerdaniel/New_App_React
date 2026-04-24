@@ -3,6 +3,7 @@ namespace Controle.Application.DTOs
     public class UpdateLojaDTO
     {
         public string? Nome { get; set; }
+        public string? Segmento { get; set; }
         public string? CpfCnpj { get; set; }
         public string? Telefone { get; set; }
         public string? Email { get; set; }

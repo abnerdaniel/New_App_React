@@ -1,10 +1,19 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { listarMesas, configurarMesas, atualizarApelido, abrirMesa, liberarMesa, removerItemPedido, aplicarDesconto, listarProdutosLoja, adicionarItemPedido, atualizarStatusItem, atualizarStatusMesa, type Mesa, type ProdutoLojaItem } from '../../api/mesas.api';
 import { Settings, User, CheckCircle, XCircle, Clock, ChefHat, Eye, Unlock, Trash2, Percent, Plus, Search, UtensilsCrossed } from 'lucide-react';
 
 export function MesasPage() {
   const { activeLoja } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (activeLoja?.segmento === 'Varejo') {
+      navigate('/dashboard');
+    }
+  }, [activeLoja, navigate]);
+
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'map' | 'config'>('map');

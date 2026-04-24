@@ -21,5 +21,6 @@ namespace Controle.Application.Interfaces
         Task<Result> AlterarSenhaComValidacaoAsync(Guid usuarioId, string senhaAtual, string novaSenha);
         Task<Result<UsuarioResponse>> AtualizarPerfilAsync(Guid usuarioId, string novoNome);
         Task<Result<AuthResponse>> ImpersonateAsync(Guid lojaId);
+        Task<Result<AuthResponse>> RefreshSessionAsync(Guid usuarioId);
     }
 }

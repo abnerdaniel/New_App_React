@@ -47,6 +47,29 @@ namespace Controle.API.Controllers
                 });
             }
 
+            foreach (var etapaDto in dto.Etapas)
+            {
+                var etapa = new ComboEtapa
+                {
+                    Titulo = etapaDto.Titulo,
+                    Ordem = etapaDto.Ordem,
+                    MinEscolhas = etapaDto.MinEscolhas,
+                    MaxEscolhas = etapaDto.MaxEscolhas,
+                    Obrigatorio = etapaDto.Obrigatorio
+                };
+
+                foreach (var opcaoDto in etapaDto.Opcoes)
+                {
+                    etapa.Opcoes.Add(new ComboEtapaOpcao
+                    {
+                        ProdutoLojaId = opcaoDto.ProdutoLojaId,
+                        PrecoAdicional = opcaoDto.PrecoAdicional
+                    });
+                }
+
+                combo.Etapas.Add(etapa);
+            }
+
             _context.Combos.Add(combo);
             await _context.SaveChangesAsync();
 
@@ -60,8 +83,10 @@ namespace Controle.API.Controllers
                 .Include(c => c.Itens)
                 .ThenInclude(i => i.ProdutoLoja)
                 .ThenInclude(pl => pl.Produto)
-                .ThenInclude(p => p.Adicionais)
-                .ThenInclude(pa => pa.ProdutoFilho)
+                .Include(c => c.Etapas)
+                .ThenInclude(e => e.Opcoes)
+                .ThenInclude(o => o.ProdutoLoja)
+                .ThenInclude(pl => pl.Produto)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (combo == null) return NotFound();
@@ -92,16 +117,25 @@ namespace Controle.API.Controllers
                     Id = i.Id,
                     ProdutoLojaId = i.ProdutoLojaId,
                     Quantidade = i.Quantidade,
-                    NomeProduto = !string.IsNullOrEmpty(i.ProdutoLoja?.Produto?.Nome)
-                        ? i.ProdutoLoja.Produto.Nome
-                        : (i.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível"),
-                    AdicionaisDisponiveis = i.ProdutoLoja?.Produto?.Adicionais?.Select(pa => new ProdutoDTO
+                    NomeProduto = i.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível"
+                }).ToList(),
+                Etapas = combo.Etapas.Select(e => new ComboEtapaDTO
+                {
+                    Id = e.Id,
+                    Titulo = e.Titulo,
+                    Ordem = e.Ordem,
+                    MinEscolhas = e.MinEscolhas,
+                    MaxEscolhas = e.MaxEscolhas,
+                    Obrigatorio = e.Obrigatorio,
+                    Opcoes = e.Opcoes.Select(o => new ComboEtapaOpcaoDTO
                     {
-                        Id = pa.ProdutoFilhoId,
-                        Nome = pa.ProdutoFilho?.Nome ?? "Adicional",
-                        Preco = precosAdicionais.ContainsKey(pa.ProdutoFilhoId) ? precosAdicionais[pa.ProdutoFilhoId] : 0
-                    }).ToList() ?? new List<ProdutoDTO>()
-                }).ToList()
+                        Id = o.Id,
+                        ProdutoLojaId = o.ProdutoLojaId,
+                        NomeProduto = o.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível",
+                        PrecoAdicional = o.PrecoAdicional,
+                        ImagemUrl = o.ProdutoLoja?.ImagemUrl
+                    }).ToList()
+                }).OrderBy(e => e.Ordem).ToList()
             };
 
             return Ok(dto);
@@ -115,22 +149,11 @@ namespace Controle.API.Controllers
                 .Include(c => c.Itens)
                 .ThenInclude(i => i.ProdutoLoja)
                 .ThenInclude(pl => pl.Produto)
-                .ThenInclude(p => p.Adicionais)
-                .ThenInclude(pa => pa.ProdutoFilho)
+                .Include(c => c.Etapas)
+                .ThenInclude(e => e.Opcoes)
+                .ThenInclude(o => o.ProdutoLoja)
+                .ThenInclude(pl => pl.Produto)
                 .ToListAsync();
-
-             // Buscar preços dos adicionais para ESTA loja
-             var adicionalIds = combos
-                .SelectMany(c => c.Itens)
-                .Where(i => i.ProdutoLoja?.Produto?.Adicionais != null)
-                .SelectMany(i => i.ProdutoLoja.Produto.Adicionais)
-                .Select(pa => pa.ProdutoFilhoId)
-                .Distinct()
-                .ToList();
-
-             var precosAdicionais = await _context.ProdutosLojas
-                .Where(pl => pl.LojaId == lojaId && adicionalIds.Contains(pl.ProdutoId))
-                .ToDictionaryAsync(pl => pl.ProdutoId, pl => pl.Preco);
 
              // Map to DTO
              var dtos = combos.Select(c => new ComboDTO
@@ -147,17 +170,25 @@ namespace Controle.API.Controllers
                      Id = i.Id,
                      ProdutoLojaId = i.ProdutoLojaId,
                      Quantidade = i.Quantidade,
-                     NomeProduto = !string.IsNullOrEmpty(i.ProdutoLoja?.Produto?.Nome) 
-                        ? i.ProdutoLoja.Produto.Nome 
-                        : (i.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível"),
-                     
-                     AdicionaisDisponiveis = i.ProdutoLoja?.Produto?.Adicionais?.Select(pa => new ProdutoDTO
+                     NomeProduto = i.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível"
+                 }).ToList(),
+                 Etapas = c.Etapas.Select(e => new ComboEtapaDTO
+                 {
+                     Id = e.Id,
+                     Titulo = e.Titulo,
+                     Ordem = e.Ordem,
+                     MinEscolhas = e.MinEscolhas,
+                     MaxEscolhas = e.MaxEscolhas,
+                     Obrigatorio = e.Obrigatorio,
+                     Opcoes = e.Opcoes.Select(o => new ComboEtapaOpcaoDTO
                      {
-                         Id = pa.ProdutoFilhoId,
-                         Nome = pa.ProdutoFilho?.Nome ?? "Adicional",
-                         Preco = precosAdicionais.ContainsKey(pa.ProdutoFilhoId) ? precosAdicionais[pa.ProdutoFilhoId] : 0
-                     }).ToList() ?? new List<ProdutoDTO>()
-                 }).ToList()
+                         Id = o.Id,
+                         ProdutoLojaId = o.ProdutoLojaId,
+                         NomeProduto = o.ProdutoLoja?.Produto?.Nome ?? "Produto Indisponível",
+                         PrecoAdicional = o.PrecoAdicional,
+                         ImagemUrl = o.ProdutoLoja?.ImagemUrl
+                     }).ToList()
+                 }).OrderBy(e => e.Ordem).ToList()
              });
                 
              return Ok(dtos);
@@ -191,6 +222,35 @@ namespace Controle.API.Controllers
                 });
             }
 
+            // Reset and Re-add Etapas
+            var etapasAntigas = await _context.ComboEtapas.Where(e => e.ComboId == combo.Id).ToListAsync();
+            _context.ComboEtapas.RemoveRange(etapasAntigas);
+            combo.Etapas.Clear();
+
+            foreach (var etapaDto in dto.Etapas)
+            {
+                var etapa = new ComboEtapa
+                {
+                    ComboId = combo.Id,
+                    Titulo = etapaDto.Titulo,
+                    Ordem = etapaDto.Ordem,
+                    MinEscolhas = etapaDto.MinEscolhas,
+                    MaxEscolhas = etapaDto.MaxEscolhas,
+                    Obrigatorio = etapaDto.Obrigatorio
+                };
+
+                foreach (var opcaoDto in etapaDto.Opcoes)
+                {
+                    etapa.Opcoes.Add(new ComboEtapaOpcao
+                    {
+                        ProdutoLojaId = opcaoDto.ProdutoLojaId,
+                        PrecoAdicional = opcaoDto.PrecoAdicional
+                    });
+                }
+
+                combo.Etapas.Add(etapa);
+            }
+
             await _context.SaveChangesAsync();
             return Ok(combo);
         }
@@ -222,7 +282,12 @@ namespace Controle.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> ExcluirCombo(int id)
         {
-            var combo = await _context.Combos.FindAsync(id);
+            var combo = await _context.Combos
+                .Include(c => c.Itens)
+                .Include(c => c.Etapas)
+                    .ThenInclude(e => e.Opcoes)
+                .FirstOrDefaultAsync(c => c.Id == id);
+            
             if (combo == null) return NotFound();
 
             _context.Combos.Remove(combo);

@@ -16,6 +16,7 @@ interface AuthContextData {
   impersonate: (authData: AuthResponse) => void;
   revertImpersonation: () => void;
   isImpersonating: boolean;
+  refreshUser: (switchToLojaId?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -154,6 +155,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const refreshUser = async (switchToLojaId?: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/refresh`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const authData: AuthResponse = await response.json();
+        
+        const userData: Usuario = {
+          id: authData.id,
+          nome: authData.nome,
+          email: authData.email,
+          lojas: authData.lojas,
+          funcionarios: authData.funcionarios
+        };
+
+        setUser(userData);
+        setToken(authData.token);
+        
+        let selectedLoja: LojaResumo | null = null;
+        let selectedFuncionario: FuncionarioResumo | null = null;
+
+        if (authData.lojas && authData.lojas.length > 0) {
+          if (switchToLojaId) {
+             selectedLoja = authData.lojas.find(l => l.id === switchToLojaId) || authData.lojas[0];
+          } else {
+             selectedLoja = authData.lojas.find(l => l.id === activeLoja?.id) || authData.lojas[0];
+          }
+          if (authData.funcionarios) {
+            selectedFuncionario = authData.funcionarios.find(f => f.lojaId === selectedLoja?.id) || null;
+          }
+        }
+
+        setActiveLoja(selectedLoja);
+        setActiveFuncionario(selectedFuncionario);
+
+        localStorage.setItem('@App:token', authData.token);
+        localStorage.setItem('@App:user', JSON.stringify(userData));
+        if (selectedLoja) localStorage.setItem('@App:activeLoja', JSON.stringify(selectedLoja));
+        if (selectedFuncionario) localStorage.setItem('@App:activeFuncionario', JSON.stringify(selectedFuncionario));
+      }
+    } catch(err) {
+      console.error("Error refreshing user session", err);
+    }
+  };
+
   const updateActiveLoja = (dados: Partial<LojaResumo>) => {
       if (!activeLoja) return;
   
@@ -196,6 +243,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         impersonate,
         revertImpersonation,
         isImpersonating,
+        refreshUser,
       }}
     >
       {children}

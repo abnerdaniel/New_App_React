@@ -9,6 +9,7 @@ public class Loja
 {
     public Guid Id { get; set; }
     public string Nome { get; set; } = string.Empty;
+    public string Segmento { get; set; } = "Food";
     public string Slug { get; set; } = string.Empty;
     public string CpfCnpj { get; set; } = string.Empty;
     public string Telefone { get; set; } = string.Empty;

@@ -15,6 +15,7 @@ import {
   ShieldAlert,
   Share2,
   Bot,
+  ShoppingBag,
   BookOpen
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -37,18 +38,31 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
   const isMotoboyRestricted = activeFuncionario?.cargo?.toLowerCase().includes("entregador") && !activeFuncionario?.acessoSistemaCompleto;
   const isSuperAdmin = user?.email === "abreu651@gmail.com" || user?.email === "eu@eu.com";
 
-  const menuItems = isMotoboyRestricted ? [
+  const isVarejo = activeLoja?.segmento === 'Varejo';
+
+  interface MenuItem {
+    icon: React.ElementType;
+    label: string;
+    path: string;
+    hideForVarejo?: boolean;
+  }
+
+  let menuItems: MenuItem[] = isMotoboyRestricted ? [
       { icon: Bike, label: "Minhas Entregas", path: "/minhas-entregas" }
   ] : [
     { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-    { icon: HandPlatter, label: "Controle de Mesas", path: "/mesas" },
+    { icon: HandPlatter, label: "Controle de Mesas", path: "/mesas", hideForVarejo: true },
     { icon: Store, label: "PDV / Balcão", path: "/pdv" },
-    { icon: UtensilsCrossed, label: "Monitor de Pedidos", path: "/monitor-pedidos" },
+    { icon: ShoppingBag, label: "Monitor de Pedidos", path: "/monitor-pedidos" },
     { icon: Bike, label: "Controle de Delivery", path: "/delivery" },
-    { icon: UtensilsCrossed, label: "Cardápio", path: "/cardapio" },
+    { icon: isVarejo ? Store : UtensilsCrossed, label: isVarejo ? "Vitrine" : "Cardápio", path: isVarejo ? "/vitrine" : "/cardapio" },
     { icon: Package, label: "Estoque", path: "/estoque" },
     { icon: DollarSign, label: "Faturamento", path: "/financeiro" },
   ];
+
+  if (isVarejo) {
+      menuItems = menuItems.filter(m => !m.hideForVarejo);
+  }
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -132,7 +146,7 @@ export function Sidebar({ isOpen, onClose, onToggle }: SidebarProps) {
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900`}
                     >
                         <Share2 size={20} />
-                        Divulgar Cardápio
+                        Divulgar {isVarejo ? "Vitrine" : "Cardápio"}
                     </button>
                 )}
 

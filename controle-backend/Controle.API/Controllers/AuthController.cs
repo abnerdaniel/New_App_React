@@ -261,5 +261,25 @@ namespace Controle.API.Controllers
 
             return Ok(new { message = "Usuário desativado com sucesso." });
         }
+
+        /// <summary>
+        /// Atualiza os dados da sessão do usuário atual.
+        /// </summary>
+        [HttpGet("refresh")]
+        [Authorize]
+        [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> RefreshSession()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var result = await _authService.RefreshSessionAsync(userId);
+            if (!result.Success) return BadRequest(new { message = result.Error });
+
+            return Ok(result.Data);
+        }
     }
 }

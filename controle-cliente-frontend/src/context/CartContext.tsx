@@ -1,17 +1,18 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { Produto } from '../types';
+import type { Produto, OpcaoItemCliente } from '../types';
 
 interface CartItem {
   produto: Produto;
   quantidade: number;
   observacao?: string;
   extras?: Produto[];
+  opcoesSelecionadas?: OpcaoItemCliente[];
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (produto: Produto, quantidade: number, observacao?: string, extras?: Produto[]) => void;
+  addItem: (produto: Produto, quantidade: number, observacao?: string, extras?: Produto[], opcoesSelecionadas?: OpcaoItemCliente[]) => void;
   removeItem: (itemId: string) => void;
   updateQuantity: (itemId: string, quantidade: number) => void;
   clearCart: () => void;
@@ -33,17 +34,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 
 
-  const addItem = (produto: Produto, quantidade: number, observacao?: string, extras: Produto[] = []) => {
+  const addItem = (produto: Produto, quantidade: number, observacao?: string, extras: Produto[] = [], opcoesSelecionadas: OpcaoItemCliente[] = []) => {
     setItems(current => {
-      // Logic for uniqueness based on Product ID AND Extras
+      // Logic for uniqueness based on Product ID AND Extras AND OpcoesSelecionadas
       // Since we don't have a unique Item ID, we verify contents.
-      // Better approach: Look for item with same product ID and same set of extras.
       
       const existingIndex = current.findIndex(item => {
          if (item.produto.id !== produto.id) return false;
+         if (item.produto.produtoVarianteId !== produto.produtoVarianteId) return false;
          const currentExtrasIds = (item.extras || []).map(e => e.id).sort().join(',');
          const newExtrasIds = extras.map(e => e.id).sort().join(',');
-         return currentExtrasIds === newExtrasIds;
+         if (currentExtrasIds !== newExtrasIds) return false;
+
+         const currentOpcoesIds = (item.opcoesSelecionadas || []).map(o => o.id).sort().join(',');
+         const newOpcoesIds = opcoesSelecionadas.map(o => o.id).sort().join(',');
+         return currentOpcoesIds === newOpcoesIds;
       });
 
       if (existingIndex >= 0) {
@@ -57,7 +62,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       
       // Add new item
-      return [...current, { produto, quantidade, observacao, extras }];
+      return [...current, { produto, quantidade, observacao, extras, opcoesSelecionadas }];
     });
   };
 
@@ -86,8 +91,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const total = items.reduce((acc, item) => {
       const extrasTotal = (item.extras || []).reduce((sum, extra) => sum + extra.preco, 0);
-      return acc + ((item.produto.preco + extrasTotal) * item.quantidade);
-  }, 0);
+      const opcoesTotal = (item.opcoesSelecionadas || []).reduce((sum, opcao) => sum + (opcao.preco || 0), 0);
+      return acc + ((item.produto.preco + extrasTotal + opcoesTotal) * item.quantidade);
+  }, 0) / 100;
   const count = items.reduce((acc, item) => acc + item.quantidade, 0);
 
   return (

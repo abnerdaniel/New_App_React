@@ -2,18 +2,44 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { listarProdutosLoja, type ProdutoLojaItem } from '../../api/mesas.api';
 import { api } from '../../api/axios';
-import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote,  User, CheckCircle, Package, ArrowLeft } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, CreditCard, Banknote, User, CheckCircle, Package, ArrowLeft, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { printReceipt } from '../../utils/printReceipt';
 
 interface CartItem {
+  cartItemId: string; // ID único para a instância no carrinho
   produtoId: number; // ProdutoLojaId
   nome: string;
-  preco: number;
+  preco: number; // Preço unitário total (base + extras)
   quantidade: number;
   observacao?: string;
   imagemUrl?: string;
   isCombo?: boolean;
+  produtoVarianteId?: number;
+  opcoesAdicionaisIds?: number[];
+  opcoesDetalhes?: Array<{ nome: string, preco: number }>; // Novo: detalhes com preço
+  comboEtapas?: ComboEtapaEscolha[];
+}
+
+interface ComboEtapaEscolha {
+  comboEtapaId: number;
+  opcoes: Array<{ produtoLojaId: number, quantidade: number }>;
+}
+
+interface ClientePDV {
+  id: number;
+  nome: string;
+  telefone: string;
+  email?: string;
+  enderecos?: EnderecoPDV[];
+}
+
+interface EnderecoPDV {
+  id: number;
+  logradouro: string;
+  numero: string;
+  complemento?: string;
+  bairro: string;
 }
 
 export function PDVPage() {
@@ -43,12 +69,16 @@ export function PDVPage() {
   const [enviarParaEntrega, setEnviarParaEntrega] = useState(false); 
   const [submitting, setSubmitting] = useState(false);
   const [isDesktopCartOpen, setIsDesktopCartOpen] = useState(true);
+  
+  // Selection Modal State
+  const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
+  const [selectedProductForOptions, setSelectedProductForOptions] = useState<ProdutoLojaItem | null>(null);
 
   // Client Search State
   const [telefoneBusca, setTelefoneBusca] = useState('');
   const [buscandoCliente, setBuscandoCliente] = useState(false);
-  const [clienteEncontrado, setClienteEncontrado] = useState<any>(null);
-  const [enderecosCliente, setEnderecosCliente] = useState<any[]>([]);
+  const [clienteEncontrado, setClienteEncontrado] = useState<ClientePDV | null>(null);
+  const [enderecosCliente, setEnderecosCliente] = useState<EnderecoPDV[]>([]);
   const [enderecoSelecionadoId, setEnderecoSelecionadoId] = useState<number | null>(null);
   const [enderecoManual, setEnderecoManual] = useState('');
   const [emailCliente, setEmailCliente] = useState(''); // Estado para E-mail opcional
@@ -91,14 +121,15 @@ export function PDVPage() {
 
   const addToCart = (produto: ProdutoLojaItem) => {
       setCart(prev => {
-          const existing = prev.find(item => item.produtoId === produto.id);
+          const existing = prev.find(item => item.produtoId === produto.id && !item.produtoVarianteId && (!item.opcoesAdicionaisIds || item.opcoesAdicionaisIds.length === 0));
           if (existing) {
-              return prev.map(item => item.produtoId === produto.id 
+              return prev.map(item => item.cartItemId === existing.cartItemId 
                   ? { ...item, quantidade: item.quantidade + 1 } 
                   : item
               );
           }
           return [...prev, {
+              cartItemId: `simple-${produto.id}-${Date.now()}`,
               produtoId: produto.id,
               nome: produto.nome,
               preco: produto.preco || 0,
@@ -112,13 +143,107 @@ export function PDVPage() {
       }
   };
 
-  const removeFromCart = (produtoId: number) => {
-      setCart(prev => prev.filter(item => item.produtoId !== produtoId));
+  const addToCartPDV = (produto: ProdutoLojaItem) => {
+    const isConfigurable = produto.modoCardapio === 'Configuravel' || 
+                           (produto.variantes && produto.variantes.length > 0) ||
+                           (produto.isCombo && produto.etapas && produto.etapas.length > 0);
+    
+    if (isConfigurable) {
+        setSelectedProductForOptions(produto);
+        setIsSelectionModalOpen(true);
+        return;
+    }
+    
+    addToCart(produto);
   };
 
-  const updateQuantity = (produtoId: number, delta: number) => {
+  const addConfigurableToCart = (
+    produto: ProdutoLojaItem, 
+    quantidade: number, 
+    varianteId?: number, 
+    opcoes?: Record<number, number[]>, 
+    precoFinal?: number,
+    comboEtapas?: ComboEtapaEscolha[]
+  ) => {
+    setCart(prev => {
+        const oIds = Object.values(opcoes || {}).flat();
+        const detalhes: Array<{ nome: string, preco: number }> = [];
+        
+        if (varianteId) {
+            const v = produto.variantes?.find(v => v.id === varianteId);
+            if (v) detalhes.push({ nome: `Tamanho: ${v.sku}`, preco: 0 }); // Preço da variante já é o base
+        }
+
+        oIds.forEach(id => {
+            produto.gruposOpcao?.forEach(g => {
+                const item = g.itens.find(i => i.id === id);
+                if (item) detalhes.push({ nome: item.nome, preco: item.preco });
+            });
+        });
+
+        // Adicionar detalhes das etapas do combo
+        if (comboEtapas && produto.etapas) {
+            comboEtapas.forEach(ce => {
+                const etapa = produto.etapas?.find(e => e.id === ce.comboEtapaId);
+                if (etapa) {
+                    ce.opcoes.forEach(o => {
+                        const opcaoRaw = etapa.opcoes.find(or => or.produtoLojaId === o.produtoLojaId);
+                        if (opcaoRaw) {
+                            detalhes.push({ 
+                                nome: `${etapa.titulo}: ${opcaoRaw.nomeProduto}`, 
+                                preco: opcaoRaw.precoAdicional 
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        const opcoesKey = (oIds || []).sort().join(',');
+        
+        const existing = prev.find(item => 
+            item.produtoId === produto.id && 
+            item.produtoVarianteId === varianteId && 
+            (item.opcoesAdicionaisIds || []).sort().join(',') === opcoesKey &&
+            (JSON.stringify(item.comboEtapas) === JSON.stringify(comboEtapas))
+        );
+
+        if (existing) {
+            return prev.map(item => 
+                (item.cartItemId === existing.cartItemId)
+                ? { ...item, quantidade: item.quantidade + quantidade }
+                : item
+            );
+        }
+
+        return [...prev, {
+            cartItemId: `config-${produto.id}-${Date.now()}`,
+            produtoId: produto.id,
+            nome: produto.nome,
+            preco: precoFinal ?? produto.preco,
+            quantidade,
+            imagemUrl: produto.imagemUrl,
+            isCombo: produto.isCombo,
+            produtoVarianteId: varianteId,
+            opcoesAdicionaisIds: oIds,
+            opcoesDetalhes: detalhes,
+            comboEtapas: comboEtapas
+        }];
+    });
+
+    setIsSelectionModalOpen(false);
+    if (window.innerWidth < 768) {
+        setIsCartOpen(true);
+    }
+  };
+
+  const removeFromCart = (cartItemId: string) => {
+      setCart(prev => prev.filter(item => item.cartItemId !== cartItemId));
+  };
+
+  const updateQuantity = (cartItemId: string, delta: number) => {
       setCart(prev => prev.map(item => {
-          if (item.produtoId === produtoId) {
+          if (item.cartItemId === cartItemId) {
               return { ...item, quantidade: Math.max(1, item.quantidade + delta) };
           }
           return item;
@@ -184,7 +309,7 @@ export function PDVPage() {
                 };
                 const regRes = await api.post('/api/clientes/pre-registro-pdv', regPayload);
                 finalClienteId = regRes.data.clienteId;
-            } catch (err: any) {
+            } catch (err: any) { // Erros de API costumam ser any ou AxiosError
                 console.error("Erro ao pré-registrar cliente", err);
                 throw new Error("Falha ao salvar Perfil Rápido do cliente: " + (err.response?.data?.message || err.message));
             }
@@ -205,7 +330,9 @@ export function PDVPage() {
                 idProduto: !item.isCombo ? item.produtoId : null,
                 idCombo: item.isCombo ? item.produtoId : null,
                 qtd: item.quantidade,
-                adicionaisIds: [] 
+                produtoVarianteId: item.produtoVarianteId,
+                opcoesAdicionaisIds: item.opcoesAdicionaisIds || [],
+                comboEtapas: item.comboEtapas || []
             }))
         };
         
@@ -254,6 +381,11 @@ export function PDVPage() {
       
       {/* Esquerda: Catálogo de Produtos */}
       <div className="flex-1 flex flex-col min-h-0 min-w-0">
+         {/* Banner de Versão para confirmação visual */}
+         <div className="bg-brand-primary text-white text-[10px] py-1 px-4 font-bold flex justify-between items-center shrink-0">
+             <span>🚀 PDV ATUALIZADO: SUPORTE A PRODUTOS CONFIGURÁVEIS ATIVO</span>
+             <span className="opacity-70">v2.1.0</span>
+         </div>
          {/* Barra de Busca e Header */}
          <div className="bg-white p-3 border-b flex items-center gap-2 shrink-0 z-20">
             {isMesaOrder && (
@@ -309,7 +441,7 @@ export function PDVPage() {
                                 {itens.map(produto => (
                                     <button 
                                         key={produto.id}
-                                        onClick={() => addToCart(produto)}
+                                        onClick={() => addToCartPDV(produto)}
                                         className="bg-white p-3 rounded-lg border hover:border-blue-500 hover:shadow-md transition-all text-left flex flex-row md:flex-col h-full group gap-3 md:gap-0 items-center md:items-stretch"
                                     >
                                         <div className="w-20 h-20 md:w-full md:h-32 shrink-0">
@@ -326,12 +458,48 @@ export function PDVPage() {
                                             <div className="md:mt-2">
                                                 <h3 className="font-bold text-gray-800 text-sm line-clamp-2 leading-tight mb-1">{produto.nome}</h3>
                                                 <p className="text-xs text-gray-500 line-clamp-2 md:mb-2">{produto.descricao}</p>
-                                            </div>
-                                            
-                                            <div className="mt-auto pt-2 flex justify-between items-center w-full">
-                                                <span className="font-bold text-brand-primary">{formatCurrency(produto.preco || 0)}</span>
-                                                <div className="bg-blue-50 text-blue-600 p-1 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                                    <Plus size={16} />
+                                                                         <div className="mt-auto pt-2 flex justify-between items-center w-full">
+                                                    <div className="flex flex-col">
+                                                    {(produto.modoCardapio === 'Configuravel' || (produto.variantes && produto.variantes.length > 0) || (produto.isCombo && produto.etapas && produto.etapas.length > 0)) && (
+                                                        <span className="text-[10px] text-gray-400 uppercase font-bold leading-none">A partir de</span>
+                                                    )}
+                                                    <span className="font-bold text-brand-primary">
+                                                        {formatCurrency(
+                                                            (() => {
+                                                                if (produto.variantes && produto.variantes.length > 0) {
+                                                                    return Math.min(...produto.variantes.map(v => v.preco));
+                                                                }
+                                                                // Se não tem variantes, soma o preço base + min das opções obrigatórias
+                                                                let minBase = produto.preco || 0;
+                                                                
+                                                                if (produto.isCombo && produto.etapas && produto.etapas.length > 0) {
+                                                                    produto.etapas.filter(e => e.obrigatorio).forEach(e => {
+                                                                        if (e.opcoes.length > 0) {
+                                                                            minBase += Math.min(...e.opcoes.map(o => o.precoAdicional));
+                                                                        }
+                                                                    });
+                                                                    return minBase;
+                                                                }
+
+                                                                produto.gruposOpcao?.filter(g => g.obrigatorio && g.minSelecao > 0).forEach(g => {
+                                                                    if (g.itens.length > 0) {
+                                                                        minBase += Math.min(...g.itens.map(i => i.preco));
+                                                                    }
+                                                                });
+                                                                return minBase;
+                                                            })()
+                                                        )}
+                                                    </span>
+                                                </div>                  </div>
+                                                <div className="flex items-center gap-1">
+                                                    {(produto.modoCardapio === 'Configuravel' || (produto.variantes && produto.variantes.length > 0) || (produto.isCombo && produto.etapas && produto.etapas.length > 0)) && (
+                                                        <div className="bg-orange-100 text-orange-600 p-1 rounded-md" title="Configurável">
+                                                            <Package size={14} />
+                                                        </div>
+                                                    )}
+                                                    <div className="bg-blue-50 text-blue-600 p-1 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                        <Plus size={16} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -410,41 +578,52 @@ export function PDVPage() {
                       <p>Nenhum item adicionado</p>
                   </div>
               ) : (
-                  cart.map(item => (
-                      <div key={item.produtoId} className="p-3 rounded-lg bg-gray-50 border group hover:border-brand-primary transition-colors">
+                   cart.map(item => (
+                      <div key={item.cartItemId} className="p-3 rounded-lg bg-gray-50 border group hover:border-brand-primary transition-colors">
                           {/* Top Row: Name and Remove */}
                           <div className="flex justify-between items-start gap-2 mb-2">
-                              <span className="text-sm font-bold text-gray-800 line-clamp-2 leading-tight">{item.nome}</span>
-                              <button 
-                                onClick={() => removeFromCart(item.produtoId)}
-                                className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors"
-                              >
-                                  <Trash2 size={16} />
-                              </button>
-                          </div>
+                               <div className="flex-1">
+                                    <span className="text-sm font-bold text-gray-800 line-clamp-2 leading-tight">{item.nome}</span>
+                                    {item.opcoesDetalhes && item.opcoesDetalhes.length > 0 && (
+                                        <div className="space-y-0.5 mt-1 border-l-2 border-gray-200 pl-2">
+                                            {item.opcoesDetalhes.map((opt, idx) => (
+                                                <p key={idx} className="text-[10px] text-gray-500 leading-tight">
+                                                    {opt.nome} {opt.preco > 0 && <span className="text-brand-primary ml-1">(+ {formatCurrency(opt.preco)})</span>}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    )}
+                               </div>
+                               <button 
+                                 onClick={() => removeFromCart(item.cartItemId)}
+                                 className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors shrink-0"
+                               >
+                                   <Trash2 size={16} />
+                               </button>
+                           </div>
                           
-                          {/* Bottom Row: Price and Controls */}
-                          <div className="flex justify-between items-center">
-                              <span className="text-sm text-brand-primary font-bold">{formatCurrency(item.preco * item.quantidade)}</span>
-                              
-                              <div className="flex items-center gap-1 bg-white rounded border shadow-sm">
-                                  <button 
-                                    onClick={() => updateQuantity(item.produtoId, -1)}
-                                    className="p-1.5 hover:bg-gray-100 text-gray-600 rounded-l"
-                                  >
-                                      <Minus size={14} />
-                                  </button>
-                                  <span className="text-sm font-bold w-8 text-center">{item.quantidade}</span>
-                                  <button 
-                                    onClick={() => updateQuantity(item.produtoId, 1)}
-                                    className="p-1.5 hover:bg-gray-100 text-gray-600 rounded-r"
-                                  >
-                                      <Plus size={14} />
-                                  </button>
-                              </div>
-                          </div>
-                      </div>
-                  ))
+                           {/* Bottom Row: Price and Controls */}
+                           <div className="flex justify-between items-center">
+                               <span className="text-sm text-brand-primary font-bold">{formatCurrency(item.preco * item.quantidade)}</span>
+                               
+                               <div className="flex items-center gap-1 bg-white rounded border shadow-sm">
+                                   <button 
+                                     onClick={() => updateQuantity(item.cartItemId, -1)}
+                                     className="p-1.5 hover:bg-gray-100 text-gray-600 rounded-l"
+                                   >
+                                       <Minus size={14} />
+                                   </button>
+                                   <span className="text-sm font-bold w-8 text-center">{item.quantidade}</span>
+                                   <button 
+                                     onClick={() => updateQuantity(item.cartItemId, 1)}
+                                     className="p-1.5 hover:bg-gray-100 text-gray-600 rounded-r"
+                                   >
+                                       <Plus size={14} />
+                                   </button>
+                               </div>
+                           </div>
+                       </div>
+                   ))
               )}
           </div>
 
@@ -474,6 +653,14 @@ export function PDVPage() {
               </button>
           </div>
       </div>
+
+      {isSelectionModalOpen && selectedProductForOptions && (
+          <ProductSelectionModal 
+            produto={selectedProductForOptions}
+            onClose={() => setIsSelectionModalOpen(false)}
+            onAdd={addConfigurableToCart}
+          />
+      )}
 
       {/* Modal Checkout */}
       {isCheckoutOpen && (
@@ -728,5 +915,269 @@ export function PDVPage() {
           </div>
       )}
     </div>
+  );
+}
+
+function ProductSelectionModal({ 
+  produto, 
+  onClose, 
+  onAdd 
+}: { 
+  produto: ProdutoLojaItem; 
+  onClose: () => void; 
+  onAdd: (produto: ProdutoLojaItem, qty: number, vId?: number, opcoes?: Record<number, number[]>, pFinal?: number, comboEtapas?: ComboEtapaEscolha[]) => void 
+}) {
+  const [quantidade, setQuantidade] = useState(1);
+  const [varianteSelecionada, setVarianteSelecionada] = useState<number | undefined>(
+      produto.variantes && produto.variantes.length > 0 ? produto.variantes[0].id : undefined
+  );
+  const [opcoesSelecionadas, setOpcoesSelecionadas] = useState<Record<number, number[]>>({});
+  const [etapasSelecionadas, setEtapasSelecionadas] = useState<Record<number, number[]>>({}); // EtapaId -> ProdutoLojaIds[]
+
+  const handleToggleOpcao = (grupoId: number, opcaoId: number, max: number) => {
+      setOpcoesSelecionadas(prev => {
+          const selecionadas = prev[grupoId] || [];
+          if (selecionadas.includes(opcaoId)) {
+              return { ...prev, [grupoId]: selecionadas.filter(id => id !== opcaoId) };
+          }
+          if (max === 1) {
+              return { ...prev, [grupoId]: [opcaoId] };
+          }
+          if (selecionadas.length < max) {
+              return { ...prev, [grupoId]: [...selecionadas, opcaoId] };
+          }
+          return prev;
+      });
+  };
+
+  const handleToggleEtapaOpcao = (etapaId: number, produtoLojaId: number, max: number) => {
+    setEtapasSelecionadas(prev => {
+        const selecionadas = prev[etapaId] || [];
+        if (selecionadas.includes(produtoLojaId)) {
+            return { ...prev, [etapaId]: selecionadas.filter(id => id !== produtoLojaId) };
+        }
+        if (max === 1) {
+            return { ...prev, [etapaId]: [produtoLojaId] };
+        }
+        if (selecionadas.length < max) {
+            return { ...prev, [etapaId]: [...selecionadas, produtoLojaId] };
+        }
+        return prev;
+    });
+  };
+
+  const getPrecoFinal = () => {
+      let total = produto.preco;
+      
+      // Se houver variante, usa o preço da variante
+      if (varianteSelecionada) {
+          const v = produto.variantes?.find(v => v.id === varianteSelecionada);
+          if (v) total = v.preco;
+      }
+
+      // Soma adicionais/opções
+      Object.values(opcoesSelecionadas).flat().forEach(id => {
+          produto.gruposOpcao?.forEach(g => {
+              const item = g.itens.find(i => i.id === id);
+              if (item) total += item.preco;
+          });
+      });
+
+      // Soma adicionais das etapas do combo
+      Object.entries(etapasSelecionadas).forEach(([eId, pIds]) => {
+          const etapa = produto.etapas?.find(e => e.id === Number(eId));
+          if (etapa) {
+              pIds.forEach(pId => {
+                  const opcao = etapa.opcoes.find(o => o.produtoLojaId === pId);
+                  if (opcao) total += opcao.precoAdicional;
+              });
+          }
+      });
+
+      return total;
+  };
+
+  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val / 100);
+
+  const handleConfirm = () => {
+      const oIds = Object.values(opcoesSelecionadas).flat();
+      const oNames: string[] = [];
+      
+      if (varianteSelecionada) {
+          const v = produto.variantes?.find(v => v.id === varianteSelecionada);
+          if (v) oNames.push(`Tamanho: ${v.sku}`);
+      }
+
+      oIds.forEach(id => {
+          produto.gruposOpcao?.forEach(g => {
+              const item = g.itens.find(i => i.id === id);
+              if (item) oNames.push(item.nome);
+          });
+      });
+
+      const comboEtapasPayload = Object.entries(etapasSelecionadas).map(([eId, pIds]) => ({
+          comboEtapaId: Number(eId),
+          opcoes: pIds.map(pId => ({ produtoLojaId: pId, quantidade: 1 }))
+      }));
+
+      onAdd(produto, quantidade, varianteSelecionada, opcoesSelecionadas, getPrecoFinal(), comboEtapasPayload);
+  };
+
+  return (
+      <div className="fixed inset-0 z-70 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                  <div>
+                    <h2 className="font-bold text-gray-800">{produto.nome}</h2>
+                    <p className="text-xs text-gray-500">Configure as opções para o PDV</p>
+                  </div>
+                  <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                      <X size={20} className="text-gray-500" />
+                  </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                  {/* Variantes */}
+                  {produto.variantes && produto.variantes.length > 0 && (
+                       <div>
+                           <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                               <Package size={16} className="text-brand-primary" />
+                               Escolha o Tamanho/Variante
+                           </h3>
+                           <div className="grid grid-cols-2 gap-2">
+                               {produto.variantes.map(v => (
+                                   <button
+                                     key={v.id}
+                                     onClick={() => setVarianteSelecionada(v.id)}
+                                     className={`p-3 rounded-xl border-2 text-left transition-all ${varianteSelecionada === v.id ? 'border-brand-primary bg-blue-50' : 'border-gray-100 hover:border-gray-200'}`}
+                                   >
+                                       <div className="text-xs font-bold text-gray-800">{v.sku}</div>
+                                       <div className="text-sm text-brand-primary font-black">{formatCurrency(v.preco)}</div>
+                                   </button>
+                               ))}
+                           </div>
+                       </div>
+                  )}
+
+                  {/* Grupos de Opções */}
+                  {produto.gruposOpcao?.map(grupo => (
+                      <div key={grupo.id}>
+                          <div className="flex justify-between items-end mb-3">
+                              <div>
+                                  <h3 className="text-sm font-bold text-gray-800">{grupo.nome}</h3>
+                                  <p className="text-[10px] text-gray-500">
+                                      {grupo.minSelecao > 0 ? `Obrigatório • Min: ${grupo.minSelecao} ` : ''}
+                                      {`Máx: ${grupo.maxSelecao}`}
+                                  </p>
+                              </div>
+                              {grupo.minSelecao > 0 && !(opcoesSelecionadas[grupo.id]?.length >= grupo.minSelecao) && (
+                                  <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">Pendente</span>
+                              )}
+                          </div>
+                          <div className="space-y-2">
+                              {grupo.itens.filter(i => i.ativo).map(item => {
+                                  const isSelected = opcoesSelecionadas[grupo.id]?.includes(item.id);
+                                  return (
+                                      <button
+                                        key={item.id}
+                                        onClick={() => handleToggleOpcao(grupo.id, item.id, grupo.maxSelecao)}
+                                        className={`w-full flex justify-between items-center p-3 rounded-xl border transition-all ${isSelected ? 'border-brand-primary bg-blue-50 ring-1 ring-brand-primary' : 'border-gray-100 hover:bg-gray-50'}`}
+                                      >
+                                          <div className="flex items-center gap-3">
+                                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-brand-primary border-brand-primary' : 'border-gray-300'}`}>
+                                                  {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                                              </div>
+                                              <span className="text-sm font-medium text-gray-700">{item.nome}</span>
+                                          </div>
+                                          {item.preco > 0 && (
+                                              <span className="text-xs font-bold text-brand-primary">+ {formatCurrency(item.preco)}</span>
+                                          )}
+                                      </button>
+                                  );
+                              })}
+                          </div>
+                      </div>
+                  ))}
+
+                  {/* Etapas do Combo */}
+                  {produto.isCombo && produto.etapas?.map(etapa => (
+                      <div key={etapa.id}>
+                          <div className="flex justify-between items-end mb-3">
+                              <div>
+                                  <h3 className="text-sm font-bold text-gray-800">{etapa.titulo}</h3>
+                                  <p className="text-[10px] text-gray-500">
+                                      {etapa.minEscolhas > 0 ? `Obrigatório • Min: ${etapa.minEscolhas} ` : ''}
+                                      {`Máx: ${etapa.maxEscolhas}`}
+                                  </p>
+                              </div>
+                              {etapa.minEscolhas > 0 && !((etapasSelecionadas[etapa.id]?.length || 0) >= etapa.minEscolhas) && (
+                                  <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">Pendente</span>
+                              )}
+                          </div>
+                          <div className="space-y-2">
+                              {etapa.opcoes.map(opcao => {
+                                  const isSelected = etapasSelecionadas[etapa.id]?.includes(opcao.produtoLojaId);
+                                  return (
+                                      <button
+                                        key={opcao.produtoLojaId}
+                                        onClick={() => handleToggleEtapaOpcao(etapa.id, opcao.produtoLojaId, etapa.maxEscolhas)}
+                                        className={`w-full flex justify-between items-center p-3 rounded-xl border transition-all ${isSelected ? 'border-brand-primary bg-blue-50 ring-1 ring-brand-primary' : 'border-gray-100 hover:bg-gray-50'}`}
+                                      >
+                                          <div className="flex items-center gap-3">
+                                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-brand-primary border-brand-primary' : 'border-gray-300'}`}>
+                                                  {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                                              </div>
+                                              <span className="text-sm font-medium text-gray-700">{opcao.nomeProduto}</span>
+                                          </div>
+                                          {opcao.precoAdicional > 0 && (
+                                              <span className="text-xs font-bold text-brand-primary">+ {formatCurrency(opcao.precoAdicional)}</span>
+                                          )}
+                                      </button>
+                                  );
+                              })}
+                          </div>
+                      </div>
+                  ))}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t bg-gray-50 space-y-4">
+                  <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 bg-white p-1 rounded-xl border shadow-sm">
+                          <button 
+                            onClick={() => setQuantidade(q => Math.max(1, q - 1))}
+                            className="p-2 hover:bg-gray-100 text-brand-primary rounded-lg transition-colors"
+                          >
+                            <Minus size={20} />
+                          </button>
+                          <span className="font-black text-lg w-8 text-center">{quantidade}</span>
+                          <button 
+                            onClick={() => setQuantidade(q => q + 1)}
+                            className="p-2 hover:bg-gray-100 text-brand-primary rounded-lg transition-colors"
+                          >
+                            <Plus size={20} />
+                          </button>
+                      </div>
+                      <div className="text-right">
+                          <p className="text-[10px] text-gray-500 uppercase font-black">Total do Item</p>
+                          <p className="text-2xl font-black text-brand-primary">{formatCurrency(getPrecoFinal() * quantidade)}</p>
+                      </div>
+                  </div>
+                  
+                  <button
+                    onClick={handleConfirm}
+                    disabled={
+                        (produto.gruposOpcao?.some(g => g.minSelecao > 0 && (opcoesSelecionadas[g.id]?.length || 0) < g.minSelecao)) ||
+                        (produto.etapas?.some(e => e.minEscolhas > 0 && (etapasSelecionadas[e.id]?.length || 0) < e.minEscolhas))
+                    }
+                    className="w-full bg-brand-primary text-white py-4 rounded-xl font-bold text-lg hover:bg-brand-secondary transition-all disabled:opacity-50 disabled:grayscale shadow-lg shadow-blue-200"
+                  >
+                    Adicionar ao Pedido
+                  </button>
+              </div>
+          </div>
+      </div>
   );
 }

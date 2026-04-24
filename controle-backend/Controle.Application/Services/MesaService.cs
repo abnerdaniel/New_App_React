@@ -9,6 +9,7 @@ using Controle.Domain.Services;
 using Controle.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Controle.Application.DTOs;
 
 namespace Controle.Application.Services;
 
@@ -239,6 +240,12 @@ public class MesaService : IMesaService
             .Where(pl => pl.LojaId == lojaId)
             .Include(pl => pl.Produto)
             .Include(pl => pl.Categoria)
+            .Include(pl => pl.Variantes)
+                .ThenInclude(v => v.Atributos)
+                    .ThenInclude(a => a.VarianteAtributoValor)
+                        .ThenInclude(vav => vav.VarianteAtributo)
+            .Include(pl => pl.GruposOpcao)
+                .ThenInclude(g => g.Itens)
             .Select(pl => new Controle.Application.DTOs.ProdutoLojaDto {
                 Id = pl.Id,
                 Nome = pl.Produto != null ? pl.Produto.Nome : pl.Descricao,
@@ -246,11 +253,44 @@ public class MesaService : IMesaService
                 Descricao = pl.Descricao,
                 ImagemUrl = pl.ImagemUrl ?? (pl.Produto != null ? pl.Produto.URL_Imagem : null),
                 CategoriaNome = pl.Categoria != null ? pl.Categoria.Nome : (pl.Produto != null ? pl.Produto.Tipo : "Outros"),
-                IsCombo = false
+                IsCombo = false,
+                ModoCardapio = pl.ModoCardapio,
+                Variantes = pl.Variantes.Select(v => new ProdutoVarianteDTO {
+                    Id = v.Id,
+                    SKU = v.SKU,
+                    Preco = v.Preco,
+                    Estoque = v.Estoque,
+                    Disponivel = v.Disponivel,
+                    ImagemUrl = v.ImagemUrl,
+                    Atributos = v.Atributos.Select(a => new ProdutoVarianteAtributoDTO {
+                        ValorId = a.VarianteAtributoValorId,
+                        NomeAtributo = a.VarianteAtributoValor != null && a.VarianteAtributoValor.VarianteAtributo != null ? a.VarianteAtributoValor.VarianteAtributo.Nome : "Atributo",
+                        Valor = a.VarianteAtributoValor != null ? a.VarianteAtributoValor.Valor : "N/A",
+                        CodigoHex = a.VarianteAtributoValor != null ? a.VarianteAtributoValor.CodigoHex : null
+                    }).ToList()
+                }).ToList(),
+                GruposOpcao = pl.GruposOpcao.Select(g => new GrupoOpcaoDTO {
+                    Id = g.Id,
+                    Nome = g.Nome,
+                    Ordem = g.Ordem,
+                    MinSelecao = g.MinSelecao,
+                    MaxSelecao = g.MaxSelecao,
+                    Obrigatorio = g.Obrigatorio,
+                    Itens = g.Itens.Select(i => new OpcaoItemDTO {
+                        Id = i.Id,
+                        Nome = i.Nome,
+                        Preco = i.Preco,
+                        Ordem = i.Ordem,
+                        Ativo = i.Ativo
+                    }).ToList()
+                }).ToList()
             })
             .ToListAsync();
 
         var combos = await _context.Combos
+            .Include(c => c.Etapas)
+                .ThenInclude(e => e.Opcoes)
+                    .ThenInclude(o => o.ProdutoLoja)
             .Where(c => c.LojaId == lojaId && c.Ativo)
             .Select(c => new Controle.Application.DTOs.ProdutoLojaDto {
                 Id = c.Id,
@@ -259,14 +299,29 @@ public class MesaService : IMesaService
                 Descricao = c.Descricao ?? "Combo",
                 ImagemUrl = c.ImagemUrl,
                 CategoriaNome = "Combos",
-                IsCombo = true
+                IsCombo = true,
+                ModoCardapio = "Simples",
+                Etapas = c.Etapas.OrderBy(e => e.Ordem).Select(e => new ComboEtapaDTO {
+                    Id = e.Id,
+                    Titulo = e.Titulo,
+                    Ordem = e.Ordem,
+                    MinEscolhas = e.MinEscolhas,
+                    MaxEscolhas = e.MaxEscolhas,
+                    Obrigatorio = e.Obrigatorio,
+                    Opcoes = e.Opcoes.Select(o => new ComboEtapaOpcaoDTO {
+                        Id = o.Id,
+                        ProdutoLojaId = o.ProdutoLojaId,
+                        NomeProduto = o.ProdutoLoja != null && o.ProdutoLoja.Produto != null ? o.ProdutoLoja.Produto.Nome : (o.ProdutoLoja != null ? o.ProdutoLoja.Descricao : "Item"),
+                        PrecoAdicional = o.PrecoAdicional
+                    }).ToList()
+                }).ToList()
             })
             .ToListAsync();
 
         return produtos.Concat(combos).OrderBy(p => p.Nome);
     }
 
-    public async Task AdicionarItemPedidoAsync(int pedidoId, int? produtoLojaId, int? comboId, int quantidade)
+    public async Task AdicionarItemPedidoAsync(int pedidoId, int? produtoLojaId, int? comboId, int quantidade, int? varianteId = null, List<int>? opcoesIds = null)
     {
         // Delegate to PedidoService to ensure consistent validation, stock calculation, and price updating.
         using (var scope = _serviceProvider.CreateScope())
@@ -280,7 +335,12 @@ public class MesaService : IMesaService
             }
             else if (produtoLojaId.HasValue)
             {
-                itens.Add(new Controle.Application.DTOs.ItemPedidoDTO { IdProduto = produtoLojaId.Value, Qtd = quantidade });
+                itens.Add(new Controle.Application.DTOs.ItemPedidoDTO { 
+                    IdProduto = produtoLojaId.Value, 
+                    Qtd = quantidade,
+                    ProdutoVarianteId = varianteId,
+                    OpcoesAdicionaisIds = opcoesIds ?? new List<int>()
+                });
             }
             else
             {

@@ -51,6 +51,19 @@ export function MiniCartWidget() {
                                     <div>
                                         <p className="font-medium text-gray-800 text-sm line-clamp-1">{item.produto.nome}</p>
                                         <p className="text-xs text-gray-500 line-clamp-2">{item.produto.descricao}</p>
+                                        
+                                        {/* Extras e Opções Opcionais Selecionadas */}
+                                        {item.extras && item.extras.length > 0 && (
+                                            <div className="text-[11px] text-gray-600 mt-1">
+                                                {item.extras.map(e => `+ ${e.nome}`).join(', ')}
+                                            </div>
+                                        )}
+                                        {item.opcoesSelecionadas && item.opcoesSelecionadas.length > 0 && (
+                                            <div className="text-[11px] text-gray-600 mt-1">
+                                                {item.opcoesSelecionadas.map(o => `+ ${o.nome}`).join(', ')}
+                                            </div>
+                                        )}
+                                        
                                         {item.observacao && (
                                             <p className="text-[10px] text-gray-400 mt-1 italic bg-gray-50 p-1 rounded">
                                                 Obs: {item.observacao}
@@ -60,7 +73,12 @@ export function MiniCartWidget() {
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
                                      <span className="font-medium text-gray-700 text-sm">
-                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((item.produto.preco * item.quantidade))}
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                                            ((item.produto.preco + 
+                                              (item.extras || []).reduce((s,e)=>s+e.preco, 0) + 
+                                              (item.opcoesSelecionadas || []).reduce((s,o)=>s+(o.preco||0), 0)
+                                            ) * item.quantidade) / 100
+                                        )}
                                     </span>
                                     <button 
                                         onClick={(e) => { e.stopPropagation(); removeItem(item.produto.id); }}

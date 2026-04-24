@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Home } from './pages/Home';
+import { LandingPage } from './pages/LandingPage';
+import { Parceiros } from './pages/Parceiros';
 import { LojaPage } from './pages/Loja';
 import { CartPage } from './pages/Carrinho';
 import { Identificacao } from './pages/Identificacao';
@@ -18,7 +19,8 @@ function App() {
       <CartProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/parceiros" element={<Parceiros />} />
               <Route path="/:id" element={<LojaPage />} />
               <Route path="/carrinho" element={<CartPage />} />
               <Route path="/identificacao" element={<Identificacao />} />

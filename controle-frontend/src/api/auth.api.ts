@@ -16,8 +16,14 @@ const googleLogin = async (idToken: string): Promise<AuthResponse> => {
   return response.data;
 };
 
+const refreshSession = async (): Promise<AuthResponse> => {
+  const response = await api.get<AuthResponse>('/api/auth/refresh');
+  return response.data;
+};
+
 export const authApi = {
   login,
   register,
   googleLogin,
+  refreshSession,
 };

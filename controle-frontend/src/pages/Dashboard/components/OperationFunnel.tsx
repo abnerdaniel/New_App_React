@@ -25,7 +25,7 @@ export function OperationFunnel({ data }: FunnelProps) {
         },
         {
             id: 'cozinha',
-            label: 'Na Cozinha',
+            label: 'Em preparo',
             count: data.naCozinha,
             icon: ChefHat,
             color: 'text-yellow-600',

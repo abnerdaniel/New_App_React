@@ -23,6 +23,28 @@ namespace Controle.Application.DTOs
         public int? IdProduto { get; set; }
         public int? IdCombo { get; set; }
         public int Qtd { get; set; }
-        public List<int> AdicionaisIds { get; set; } = new(); // Lista de IDs de adicionais (ProdutoAdicional.Id ou ProdutoLoja.Id? Provavelmente ProdutoLojaId dos extras)
+        public int? ProdutoVarianteId { get; set; } // Variante de varejo (SKU selecionado)
+        public List<int> AdicionaisIds { get; set; } = new(); // Legado
+        public List<PedidoAdicionalRequestDTO>? Adicionais { get; set; } 
+        public List<int> OpcoesAdicionaisIds { get; set; } = new(); // Novas referências de OpcaoItem (Configurável)
+        public List<ComboEscolhaEtapaDTO>? ComboEtapas { get; set; } // Escolhas feitas em cada etapa do combo
+    }
+
+    public class ComboEscolhaEtapaDTO
+    {
+        public int ComboEtapaId { get; set; }
+        public List<ComboEscolhaOpcaoDTO> Opcoes { get; set; } = new();
+    }
+
+    public class ComboEscolhaOpcaoDTO
+    {
+        public int ProdutoLojaId { get; set; }
+        public int Quantidade { get; set; } = 1;
+    }
+
+    public class PedidoAdicionalRequestDTO
+    {
+        public int ProdutoLojaId { get; set; }
+        public int Quantidade { get; set; } = 1;
     }
 }

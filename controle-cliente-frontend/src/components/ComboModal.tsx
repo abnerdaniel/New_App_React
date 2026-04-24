@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { X, Minus, Plus } from 'lucide-react';
-import type { Produto, Combo } from '../types';
+import type { Produto, Combo, ComboEtapaEscolha } from '../types';
 import { ProductImage } from './ProductImage';
 
 interface ComboModalProps {
   isOpen: boolean;
   onClose: () => void;
   combo: Combo | null;
-  onAddToCart: (combo: Combo, quantity: number, extras: { [itemId: number]: Produto[] }, observacao: string) => void;
+  onAddToCart: (combo: Combo, quantity: number, extras: { [itemId: number]: Produto[] }, observacao: string, etapasSelecionadas?: ComboEtapaEscolha[]) => void;
   isStoreClosed?: boolean;
 }
 
@@ -18,19 +18,22 @@ export function ComboModal({ isOpen, onClose, combo, onAddToCart, isStoreClosed 
   // Estado para armazenar adicionais selecionados POR ITEM DO COMBO
   const [selectedExtras, setSelectedExtras] = useState<{ [itemId: number]: Produto[] }>({});
 
+  // Estado para armazenar escolhas Dinâmicas de Etapas de Combo
+  const [etapasState, setEtapasState] = useState<Record<number, number[]>>({});
+
   // Reset state when combo changes or modal opens
   useEffect(() => {
     if (isOpen) {
       setQuantity(1);
       setObservacao('');
       setSelectedExtras({});
+      setEtapasState({});
     }
   }, [isOpen, combo]);
 
   if (!isOpen || !combo) return null;
 
   const handleExtraToggle = (itemId: string, extra: Produto) => {
-    // Note: itemId is string in types, but backend might send number. Using key as string safety.
     const key = Number(itemId); 
     
     setSelectedExtras(prev => {
@@ -48,15 +51,62 @@ export function ComboModal({ isOpen, onClose, combo, onAddToCart, isStoreClosed 
     });
   };
 
-  // Calcular total
+  const handleEtapaOpcaoToggle = (etapaId: number, produtoLojaId: number, max: number) => {
+      setEtapasState(prev => {
+          const selecionadas = prev[etapaId] || [];
+          if (selecionadas.includes(produtoLojaId)) {
+              return { ...prev, [etapaId]: selecionadas.filter(id => id !== produtoLojaId) };
+          }
+          if (max === 1) {
+              return { ...prev, [etapaId]: [produtoLojaId] };
+          }
+          if (selecionadas.length < max) {
+              return { ...prev, [etapaId]: [...selecionadas, produtoLojaId] };
+          }
+          return prev;
+      });
+  };
+
+  // Calcular total adicionais fixing (itens fixos)
   const totalExtras = Object.values(selectedExtras)
       .flat()
       .reduce((acc, extra) => acc + extra.preco, 0);
       
-  const totalPrice = (combo.preco + totalExtras) * quantity;
+  // Calcular total das etapas dinâmicas (precoAdicional está em centavos, converter para reais)
+  const totalEtapas = Object.entries(etapasState).reduce((acc, [eId, pIds]) => {
+      const etapaBase = combo.etapas?.find(e => e.id === Number(eId));
+      if (!etapaBase) return acc;
+      const somaOpcoes = pIds.reduce((sum, pId) => {
+          const opt = etapaBase.opcoes.find(o => o.produtoLojaId === pId);
+          return sum + (opt ? opt.precoAdicional / 100 : 0);
+      }, 0);
+      return acc + somaOpcoes;
+  }, 0);
+
+  const totalPrice = (combo.preco + totalExtras + totalEtapas) * quantity;
+
+  // Validate Etapas Obras
+  const isValid = () => {
+      if (!combo.etapas) return true;
+      for (const etapa of combo.etapas) {
+          const count = (etapasState[etapa.id] || []).length;
+          if (etapa.obrigatorio && count < etapa.minEscolhas) return false;
+      }
+      return true;
+  };
 
   const handleConfirm = () => {
-    onAddToCart(combo, quantity, selectedExtras, observacao);
+    if (!isValid()) {
+       alert("Por favor, selecione todas as opções obrigatórias das etapas.");
+       return;
+    }
+    
+    const formatEtapasForCart: ComboEtapaEscolha[] = Object.entries(etapasState).map(([eId, pIds]) => ({
+        comboEtapaId: Number(eId),
+        opcoes: pIds.map(pId => ({ produtoLojaId: pId, quantidade: 1 }))
+    }));
+
+    onAddToCart(combo, quantity, selectedExtras, observacao, formatEtapasForCart);
   };
 
   return (
@@ -92,6 +142,7 @@ export function ComboModal({ isOpen, onClose, combo, onAddToCart, isStoreClosed 
 
               <div className="space-y-6">
                 {/* Lista de Itens do Combo */}
+                {(combo.itens && combo.itens.length > 0) && (
                 <div>
                     <h4 className="font-bold text-gray-800 mb-3 border-b pb-2">Itens do Combo</h4>
                     <div className="space-y-4">
@@ -136,6 +187,64 @@ export function ComboModal({ isOpen, onClose, combo, onAddToCart, isStoreClosed 
                         ))}
                     </div>
                 </div>
+                )}
+
+                {/* Etapas Dinâmicas */}
+                {(combo.etapas && combo.etapas.length > 0) && (
+                    <div className="space-y-6">
+                        {combo.etapas.sort((a, b) => a.ordem - b.ordem).map(etapa => {
+                            const selecionadas = etapasState[etapa.id] || [];
+                            const isValida = !etapa.obrigatorio || selecionadas.length >= etapa.minEscolhas;
+                            return (
+                                <div key={etapa.id} className={`border rounded-lg overflow-hidden ${isValida ? 'border-gray-200' : 'border-orange-300 ring-1 ring-orange-100'}`}>
+                                    <div className={`bg-gray-50 px-4 py-3 flex justify-between items-center border-b ${isValida ? 'border-gray-200' : 'border-orange-200 bg-orange-50/30'}`}>
+                                        <h4 className="font-bold text-gray-800">{etapa.titulo}</h4>
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 font-medium">
+                                            {etapa.obrigatorio ? `Escolha de ${etapa.minEscolhas} a ${etapa.maxEscolhas}` : `Até ${etapa.maxEscolhas} (Opcional)`}
+                                        </span>
+                                    </div>
+                                    <div className="p-2 space-y-1">
+                                        {etapa.opcoes.map(opcao => {
+                                            const checked = selecionadas.includes(opcao.produtoLojaId);
+                                            const disabled = !checked && selecionadas.length >= (etapa.maxEscolhas || 1);
+                                            const handleClick = () => {
+                                                if (disabled) return;
+                                                handleEtapaOpcaoToggle(etapa.id, opcao.produtoLojaId, etapa.maxEscolhas);
+                                            };
+                                            return (
+                                                <div 
+                                                    key={opcao.id}
+                                                    onClick={handleClick}
+                                                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                                                        disabled ? 'opacity-50 cursor-not-allowed bg-gray-50 border-transparent' :
+                                                        checked ? 'border-brand-primary bg-brand-primary/5 shadow-sm cursor-pointer' : 
+                                                        'border-transparent hover:bg-gray-50 cursor-pointer'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-4 h-4 flex items-center justify-center border-2 transition-colors ${
+                                                            etapa.maxEscolhas === 1 ? 'rounded-full' : 'rounded'
+                                                        } ${
+                                                            checked ? 'border-brand-primary bg-brand-primary' : 'border-gray-300 bg-white'
+                                                        }`}>
+                                                            {checked && <div className={`bg-white ${ etapa.maxEscolhas === 1 ? 'w-1.5 h-1.5 rounded-full' : 'w-2 h-2 rounded-sm' }`} />}
+                                                        </div>
+                                                        <span className="font-medium text-gray-700 text-sm">{opcao.nomeProduto}</span>
+                                                    </div>
+                                                    {opcao.precoAdicional > 0 && (
+                                                        <span className="text-brand-primary font-bold text-xs">
+                                                            + {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(opcao.precoAdicional / 100)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {/* Observações */}
                 <div>
@@ -145,7 +254,7 @@ export function ComboModal({ isOpen, onClose, combo, onAddToCart, isStoreClosed 
                   <textarea
                     value={observacao}
                     onChange={(e) => setObservacao(e.target.value)}
-                    placeholder="Ex: Tirar cebola de todos os lanches, maionese à parte..."
+                    placeholder=""
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-primary/20 outline-none resize-none h-24"
                   />
                 </div>

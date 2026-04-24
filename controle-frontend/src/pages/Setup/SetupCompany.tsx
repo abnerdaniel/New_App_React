@@ -6,7 +6,7 @@ import { cloudinaryService } from "../../services/cloudinary.service";
 import { Loader2, Image as ImageIcon, Trash2 } from "lucide-react";
 
 export function SetupCompany() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
@@ -40,7 +40,8 @@ export function SetupCompany() {
     logoUrl: "",
     capaUrl: "",
     aceiteAutomatico: false,
-    despachoAutomatico: false
+    despachoAutomatico: false,
+    segmento: "Food"
   });
 
   useEffect(() => {
@@ -86,7 +87,8 @@ export function SetupCompany() {
             logoUrl: lojaDetalhada.logoUrl || "",
             capaUrl: lojaDetalhada.capaUrl || "",
             aceiteAutomatico: lojaDetalhada.aceiteAutomatico,
-            despachoAutomatico: lojaDetalhada.despachoAutomatico
+            despachoAutomatico: lojaDetalhada.despachoAutomatico,
+            segmento: lojaDetalhada.segmento || "Food"
           }));
         } catch (error) {
           console.error("Erro ao buscar detalhes da loja:", error);
@@ -101,7 +103,7 @@ export function SetupCompany() {
     }
   }, [user, location.state]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev: any) => ({ ...prev, [name]: value }));
 
@@ -139,34 +141,32 @@ export function SetupCompany() {
       
       if (hasStore) {
         // Modo Edição (PUT)
-        // Modo Edição (PUT)
         // Prioriza o ID do state, senão pega o primeiro do usuário (fallback)
         const lojaId = location.state?.lojaId || user.lojas![0].id;
         await api.put(`/api/loja/${lojaId}`, {
           ...formData,
           ativo: true
         });
+        await refreshUser(lojaId);
       } else {
         // Modo Criação (POST)
-        await api.post(`/api/loja`, {
+        const res = await api.post(`/api/loja`, {
             ...formData,
             usuarioId: user!.id,
             senha: "temp",
             ativo: true
         });
+        if (res.data && res.data.id) {
+           await refreshUser(res.data.id);
+        } else {
+           await refreshUser();
+        }
       }
 
       alert("Loja configurada com sucesso!");
       
-      // Como alteramos dados estruturais (nova loja ou novo nome), idealmente recarregamos a página ou fazemos novo login silencioso.
-      // Vamos redirecionar para login para forçar recarga dos dados do usuário (token novo com claims novas se precisasse)
-      // Ou navegar para dashboard e torcer para o AuthContext se virar.
-      // Melhor: Navegar para dashboard. O AuthContext já tem a loja? Não, se foi criada agora, não tem.
-      // Se foi criada agora, o user.lojas está vazio.
-      // O ideal seria fazer um 'refreshUser'.
-      
-      navigate("/pessoas"); 
-      window.location.reload(); // Força recarga para pegar os novos dados da API (vai fazer o restoreUser)
+      // O AuthContext já buscará a nova loja pelo `refreshUser` logo acima.
+      navigate("/dashboard"); 
 
     } catch (err: any) {
       console.error("Erro no setup:", err);
@@ -464,6 +464,19 @@ export function SetupCompany() {
             <div className="border-t border-gray-100 pt-6">
             <h3 className="text-lg font-semibold text-text-dark mb-4">Configurações da Loja</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-text-dark mb-1">Segmento da Loja *</label>
+                  <select
+                    name="segmento"
+                    value={formData.segmento || 'Food'}
+                    onChange={handleChange}
+                    required
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all bg-white"
+                  >
+                    <option value="Food">Restaurante</option>
+                    <option value="Varejo">Varejo</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-text-dark mb-1">Categoria</label>
                   <input

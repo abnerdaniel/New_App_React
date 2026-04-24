@@ -201,7 +201,9 @@ export function CheckoutPage() {
                 idProduto: idProduto,
                 idCombo: idCombo,
                 qtd: item.quantidade,
-                adicionaisIds: item.extras ? item.extras.map(e => parseInt(e.id)) : []
+                adicionaisIds: item.extras ? item.extras.map(e => parseInt(e.id)) : [],
+                opcoesAdicionaisIds: item.opcoesSelecionadas ? item.opcoesSelecionadas.map(o => o.id) : [], // Adaptação para a API (precisarei confirmar o DTO depois)
+                comboEtapas: item.produto.comboEtapas || []
             };
         });
 

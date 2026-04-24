@@ -11,6 +11,7 @@ export interface LojaResumo {
   tempoEntregaMax?: number;
   taxaEntrega?: number;
   aberta?: boolean;
+  segmento?: 'Food' | 'Varejo';
 }
 
 export interface FuncionarioResumo {

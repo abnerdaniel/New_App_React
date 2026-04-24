@@ -30,6 +30,10 @@ namespace Controle.API.Extensions
             services.AddScoped<IProdutoService, ProdutoService>();
             services.AddScoped<IProdutoLojaService, ProdutoLojaService>();
             services.AddScoped<ICategoriaService, CategoriaService>();
+            services.AddScoped<ITipoProdutoService, TipoProdutoService>();
+            services.AddScoped<VarianteAtributoService>();
+            services.AddScoped<ProdutoVarianteService>();
+            services.AddScoped<IGrupoOpcaoService, GrupoOpcaoService>();
             
             // External APIs
             services.AddHttpClient<IEvolutionApiService, EvolutionApiService>();

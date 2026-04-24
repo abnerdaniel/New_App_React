@@ -39,6 +39,15 @@ namespace Controle.Application.DTOs
         
         public bool IsAdicional { get; set; }
         public List<int> AdicionaisIds { get; set; } = new();
+        public List<CreateProdutoAdicionalDTO> Adicionais { get; set; } = new();
+    }
+
+    public class CreateProdutoAdicionalDTO
+    {
+        public int ProdutoFilhoId { get; set; }
+        public int QuantidadeMinima { get; set; } = 0;
+        public int QuantidadeMaxima { get; set; } = 1;
+        public decimal? PrecoOverride { get; set; }
     }
 
     public class UpdateProdutoDTO
@@ -54,5 +63,6 @@ namespace Controle.Application.DTOs
         
         public bool? IsAdicional { get; set; }
         public List<int>? AdicionaisIds { get; set; }
+        public List<CreateProdutoAdicionalDTO>? Adicionais { get; set; }
     }
 }

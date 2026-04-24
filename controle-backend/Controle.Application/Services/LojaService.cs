@@ -42,6 +42,7 @@ namespace Controle.Application.Services
                 loja.Nome = dto.Nome;
                 loja.Slug = await GenerateUniqueSlugAsync(dto.Nome, loja.Id);
             }
+            if (!string.IsNullOrEmpty(dto.Segmento)) loja.Segmento = dto.Segmento;
             if (!string.IsNullOrEmpty(dto.LogoUrl)) loja.LogoUrl = dto.LogoUrl;
             if (dto.TempoMinimoEntrega.HasValue) loja.TempoMinimoEntrega = dto.TempoMinimoEntrega;
             if (dto.TempoMaximoEntrega.HasValue) loja.TempoMaximoEntrega = dto.TempoMaximoEntrega;
@@ -105,6 +106,7 @@ namespace Controle.Application.Services
             {
                 Id = newId,
                 Nome = dto.Nome,
+                Segmento = dto.Segmento,
                 Slug = await GenerateUniqueSlugAsync(dto.Nome, newId),
                 CpfCnpj = dto.CpfCnpj,
                 Telefone = dto.Telefone,
@@ -156,6 +158,7 @@ namespace Controle.Application.Services
                 loja.Nome = dto.Nome;
                 loja.Slug = await GenerateUniqueSlugAsync(dto.Nome, loja.Id);
             }
+            if (!string.IsNullOrEmpty(dto.Segmento)) loja.Segmento = dto.Segmento;
             if (!string.IsNullOrEmpty(dto.CpfCnpj)) loja.CpfCnpj = dto.CpfCnpj;
             if (!string.IsNullOrEmpty(dto.Telefone)) loja.Telefone = dto.Telefone;
             if (!string.IsNullOrEmpty(dto.Email)) loja.Email = dto.Email;

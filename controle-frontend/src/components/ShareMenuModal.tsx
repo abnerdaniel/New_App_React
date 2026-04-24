@@ -83,7 +83,7 @@ export function ShareMenuModal({ isOpen, onClose, slug, nome }: ShareMenuModalPr
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800">Divulgar Cardápio</h2>
+          <h2 className="text-lg font-bold text-gray-800">Divulgar Menu</h2>
           <button 
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -111,7 +111,7 @@ export function ShareMenuModal({ isOpen, onClose, slug, nome }: ShareMenuModalPr
 
           <div className="w-full mb-6">
             <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">
-              Link do seu cardápio
+              Link do seu Menu
             </label>
             <div className="flex items-center gap-2">
               <input 

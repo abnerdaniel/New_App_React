@@ -264,6 +264,66 @@ namespace Controle.Infrastructure.Migrations
                     b.ToTable("Combos");
                 });
 
+            modelBuilder.Entity("Controle.Domain.Entities.ComboEtapa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ComboId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaxEscolhas")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MinEscolhas")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Obrigatorio")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComboId");
+
+                    b.ToTable("ComboEtapas");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ComboEtapaOpcao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ComboEtapaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PrecoAdicional")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProdutoLojaId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComboEtapaId");
+
+                    b.HasIndex("ProdutoLojaId");
+
+                    b.ToTable("ComboEtapaOpcoes");
+                });
+
             modelBuilder.Entity("Controle.Domain.Entities.ComboItem", b =>
                 {
                     b.Property<int>("Id")
@@ -382,6 +442,40 @@ namespace Controle.Infrastructure.Migrations
                     b.ToTable("Funcionarios");
                 });
 
+            modelBuilder.Entity("Controle.Domain.Entities.GrupoOpcao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MaxSelecao")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MinSelecao")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Obrigatorio")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProdutoLojaId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProdutoLojaId");
+
+                    b.ToTable("GruposOpcao");
+                });
+
             modelBuilder.Entity("Controle.Domain.Entities.Loja", b =>
                 {
                     b.Property<Guid>("Id")
@@ -490,6 +584,10 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<bool>("PermitirCancelamentoCliente")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Segmento")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<bool>("SendCustomerNumber")
                         .HasColumnType("boolean");
 
@@ -594,6 +692,37 @@ namespace Controle.Infrastructure.Migrations
                     b.HasIndex("PedidoAtualId");
 
                     b.ToTable("Mesas");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.OpcaoItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("GrupoOpcaoId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Preco")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GrupoOpcaoId");
+
+                    b.ToTable("OpcaoItens");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Pedido", b =>
@@ -701,6 +830,9 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<int?>("ProdutoLojaId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("ProdutoVarianteId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Quantidade")
                         .HasColumnType("integer");
 
@@ -729,13 +861,26 @@ namespace Controle.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("PedidoItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PrecoAdicional")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PrecoUnitario")
                         .HasColumnType("integer");
 
                     b.Property<int>("PrecoVenda")
                         .HasColumnType("integer");
 
                     b.Property<int>("ProdutoLojaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantidade")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -745,6 +890,43 @@ namespace Controle.Infrastructure.Migrations
                     b.HasIndex("ProdutoLojaId");
 
                     b.ToTable("PedidoItemAdicionais");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.PedidoItemOpcao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("NomeGrupo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NomeOpcao")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OpcaoItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PedidoItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PrecoUnitario")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantidade")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OpcaoItemId");
+
+                    b.HasIndex("PedidoItemId");
+
+                    b.ToTable("PedidoItemOpcoes");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Produto", b =>
@@ -816,6 +998,15 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<int>("ProdutoFilhoId")
                         .HasColumnType("integer");
 
+                    b.Property<decimal?>("PrecoOverride")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("QuantidadeMaxima")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("QuantidadeMinima")
+                        .HasColumnType("integer");
+
                     b.HasKey("ProdutoPaiId", "ProdutoFilhoId");
 
                     b.HasIndex("ProdutoFilhoId");
@@ -836,6 +1027,31 @@ namespace Controle.Infrastructure.Migrations
                     b.HasIndex("CategoriaId");
 
                     b.ToTable("ProdutoCategorias");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoImagem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProdutoLojaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProdutoLojaId");
+
+                    b.ToTable("ProdutoImagens");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.ProdutoLoja", b =>
@@ -868,10 +1084,17 @@ namespace Controle.Infrastructure.Migrations
                     b.Property<Guid>("LojaId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ModoCardapio")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("Preco")
                         .HasColumnType("integer");
 
                     b.Property<int>("ProdutoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TipoProdutoId")
                         .HasColumnType("integer");
 
                     b.Property<int?>("Vendas")
@@ -883,7 +1106,84 @@ namespace Controle.Infrastructure.Migrations
 
                     b.HasIndex("ProdutoId");
 
+                    b.HasIndex("TipoProdutoId");
+
                     b.ToTable("ProdutosLojas");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoVariante", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Disponivel")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Estoque")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ImagemUrl")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Preco")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProdutoLojaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SKU")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProdutoLojaId");
+
+                    b.ToTable("ProdutoVariantes");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoVarianteAtributo", b =>
+                {
+                    b.Property<int>("ProdutoVarianteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VarianteAtributoValorId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ProdutoVarianteId", "VarianteAtributoValorId");
+
+                    b.HasIndex("VarianteAtributoValorId");
+
+                    b.ToTable("ProdutoVarianteAtributos");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.TipoProduto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Icone")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("LojaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TiposProduto");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Usuario", b =>
@@ -932,6 +1232,51 @@ namespace Controle.Infrastructure.Migrations
                     b.ToTable("Usuarios");
                 });
 
+            modelBuilder.Entity("Controle.Domain.Entities.VarianteAtributo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("LojaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("VarianteAtributos");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.VarianteAtributoValor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CodigoHex")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Valor")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("VarianteAtributoId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VarianteAtributoId");
+
+                    b.ToTable("VarianteAtributoValores");
+                });
+
             modelBuilder.Entity("Controle.Domain.Entities.Categoria", b =>
                 {
                     b.HasOne("Controle.Domain.Entities.Cardapio", "Cardapio")
@@ -950,6 +1295,36 @@ namespace Controle.Infrastructure.Migrations
                         .HasForeignKey("CategoriaId");
 
                     b.Navigation("Categoria");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ComboEtapa", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.Combo", "Combo")
+                        .WithMany("Etapas")
+                        .HasForeignKey("ComboId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Combo");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ComboEtapaOpcao", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.ComboEtapa", "Etapa")
+                        .WithMany("Opcoes")
+                        .HasForeignKey("ComboEtapaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Controle.Domain.Entities.ProdutoLoja", "ProdutoLoja")
+                        .WithMany()
+                        .HasForeignKey("ProdutoLojaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Etapa");
+
+                    b.Navigation("ProdutoLoja");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.ComboItem", b =>
@@ -971,6 +1346,17 @@ namespace Controle.Infrastructure.Migrations
                     b.Navigation("ProdutoLoja");
                 });
 
+            modelBuilder.Entity("Controle.Domain.Entities.GrupoOpcao", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.ProdutoLoja", "ProdutoLoja")
+                        .WithMany("GruposOpcao")
+                        .HasForeignKey("ProdutoLojaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProdutoLoja");
+                });
+
             modelBuilder.Entity("Controle.Domain.Entities.Mesa", b =>
                 {
                     b.HasOne("Controle.Domain.Entities.Pedido", "PedidoAtual")
@@ -978,6 +1364,17 @@ namespace Controle.Infrastructure.Migrations
                         .HasForeignKey("PedidoAtualId");
 
                     b.Navigation("PedidoAtual");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.OpcaoItem", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.GrupoOpcao", "GrupoOpcao")
+                        .WithMany("Itens")
+                        .HasForeignKey("GrupoOpcaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GrupoOpcao");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Pedido", b =>
@@ -1062,6 +1459,25 @@ namespace Controle.Infrastructure.Migrations
                     b.Navigation("ProdutoLoja");
                 });
 
+            modelBuilder.Entity("Controle.Domain.Entities.PedidoItemOpcao", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.OpcaoItem", "OpcaoItem")
+                        .WithMany()
+                        .HasForeignKey("OpcaoItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Controle.Domain.Entities.PedidoItem", "PedidoItem")
+                        .WithMany("Opcoes")
+                        .HasForeignKey("PedidoItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OpcaoItem");
+
+                    b.Navigation("PedidoItem");
+                });
+
             modelBuilder.Entity("Controle.Domain.Entities.ProdutoAdicional", b =>
                 {
                     b.HasOne("Controle.Domain.Entities.Produto", "ProdutoFilho")
@@ -1100,6 +1516,17 @@ namespace Controle.Infrastructure.Migrations
                     b.Navigation("ProdutoLoja");
                 });
 
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoImagem", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.ProdutoLoja", "ProdutoLoja")
+                        .WithMany("Imagens")
+                        .HasForeignKey("ProdutoLojaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProdutoLoja");
+                });
+
             modelBuilder.Entity("Controle.Domain.Entities.ProdutoLoja", b =>
                 {
                     b.HasOne("Controle.Domain.Entities.Categoria", "Categoria")
@@ -1112,9 +1539,56 @@ namespace Controle.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Controle.Domain.Entities.TipoProduto", "TipoProduto")
+                        .WithMany("Produtos")
+                        .HasForeignKey("TipoProdutoId");
+
                     b.Navigation("Categoria");
 
                     b.Navigation("Produto");
+
+                    b.Navigation("TipoProduto");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoVariante", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.ProdutoLoja", "ProdutoLoja")
+                        .WithMany("Variantes")
+                        .HasForeignKey("ProdutoLojaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProdutoLoja");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoVarianteAtributo", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.ProdutoVariante", "ProdutoVariante")
+                        .WithMany("Atributos")
+                        .HasForeignKey("ProdutoVarianteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Controle.Domain.Entities.VarianteAtributoValor", "VarianteAtributoValor")
+                        .WithMany()
+                        .HasForeignKey("VarianteAtributoValorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProdutoVariante");
+
+                    b.Navigation("VarianteAtributoValor");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.VarianteAtributoValor", b =>
+                {
+                    b.HasOne("Controle.Domain.Entities.VarianteAtributo", "VarianteAtributo")
+                        .WithMany("Valores")
+                        .HasForeignKey("VarianteAtributoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("VarianteAtributo");
                 });
 
             modelBuilder.Entity("Controle.Domain.Entities.Cardapio", b =>
@@ -1133,6 +1607,18 @@ namespace Controle.Infrastructure.Migrations
 
             modelBuilder.Entity("Controle.Domain.Entities.Combo", b =>
                 {
+                    b.Navigation("Etapas");
+
+                    b.Navigation("Itens");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ComboEtapa", b =>
+                {
+                    b.Navigation("Opcoes");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.GrupoOpcao", b =>
+                {
                     b.Navigation("Itens");
                 });
 
@@ -1145,6 +1631,8 @@ namespace Controle.Infrastructure.Migrations
                 {
                     b.Navigation("Adicionais");
 
+                    b.Navigation("Opcoes");
+
                     b.Navigation("SubItens");
                 });
 
@@ -1155,7 +1643,28 @@ namespace Controle.Infrastructure.Migrations
 
             modelBuilder.Entity("Controle.Domain.Entities.ProdutoLoja", b =>
                 {
+                    b.Navigation("GruposOpcao");
+
+                    b.Navigation("Imagens");
+
                     b.Navigation("ProdutoCategorias");
+
+                    b.Navigation("Variantes");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.ProdutoVariante", b =>
+                {
+                    b.Navigation("Atributos");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.TipoProduto", b =>
+                {
+                    b.Navigation("Produtos");
+                });
+
+            modelBuilder.Entity("Controle.Domain.Entities.VarianteAtributo", b =>
+                {
+                    b.Navigation("Valores");
                 });
 #pragma warning restore 612, 618
         }

@@ -26,6 +26,17 @@ public class AppDbContext : DbContext
     public DbSet<ProdutoAdicional> ProdutoAdicionais { get; set; }
     public DbSet<PedidoItemAdicional> PedidoItemAdicionais { get; set; }
     public DbSet<Mesa> Mesas { get; set; }
+    public DbSet<TipoProduto> TiposProduto { get; set; }
+    public DbSet<ProdutoImagem> ProdutoImagens { get; set; }
+    public DbSet<VarianteAtributo> VarianteAtributos { get; set; }
+    public DbSet<VarianteAtributoValor> VarianteAtributoValores { get; set; }
+    public DbSet<ProdutoVariante> ProdutoVariantes { get; set; }
+    public DbSet<ProdutoVarianteAtributo> ProdutoVarianteAtributos { get; set; }
+    public DbSet<GrupoOpcao> GruposOpcao { get; set; }
+    public DbSet<OpcaoItem> OpcaoItens { get; set; }
+    public DbSet<PedidoItemOpcao> PedidoItemOpcoes { get; set; }
+    public DbSet<ComboEtapa> ComboEtapas { get; set; }
+    public DbSet<ComboEtapaOpcao> ComboEtapaOpcoes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -74,5 +85,72 @@ public class AppDbContext : DbContext
             .WithMany(pi => pi.SubItens)
             .HasForeignKey(pi => pi.ParentPedidoItemId)
             .OnDelete(DeleteBehavior.Cascade); // Deletar combo deleta itens
+
+        // Variantes de Varejo
+        modelBuilder.Entity<ProdutoVarianteAtributo>()
+            .HasKey(pva => new { pva.ProdutoVarianteId, pva.VarianteAtributoValorId });
+
+        modelBuilder.Entity<ProdutoVarianteAtributo>()
+            .HasOne(pva => pva.ProdutoVariante)
+            .WithMany(pv => pv.Atributos)
+            .HasForeignKey(pva => pva.ProdutoVarianteId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProdutoVarianteAtributo>()
+            .HasOne(pva => pva.VarianteAtributoValor)
+            .WithMany()
+            .HasForeignKey(pva => pva.VarianteAtributoValorId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProdutoVariante>()
+            .HasOne(pv => pv.ProdutoLoja)
+            .WithMany(pl => pl.Variantes)
+            .HasForeignKey(pv => pv.ProdutoLojaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Produto Configurável - Grupos de Opção
+        modelBuilder.Entity<GrupoOpcao>()
+            .HasOne(g => g.ProdutoLoja)
+            .WithMany(pl => pl.GruposOpcao)
+            .HasForeignKey(g => g.ProdutoLojaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OpcaoItem>()
+            .HasOne(o => o.GrupoOpcao)
+            .WithMany(g => g.Itens)
+            .HasForeignKey(o => o.GrupoOpcaoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // PedidoItemOpcao
+        modelBuilder.Entity<PedidoItemOpcao>()
+            .HasOne(pio => pio.PedidoItem)
+            .WithMany(pi => pi.Opcoes)
+            .HasForeignKey(pio => pio.PedidoItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PedidoItemOpcao>()
+            .HasOne(pio => pio.OpcaoItem)
+            .WithMany()
+            .HasForeignKey(pio => pio.OpcaoItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Combos em Etapas
+        modelBuilder.Entity<ComboEtapa>()
+            .HasOne(e => e.Combo)
+            .WithMany(c => c.Etapas)
+            .HasForeignKey(e => e.ComboId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ComboEtapaOpcao>()
+            .HasOne(o => o.Etapa)
+            .WithMany(e => e.Opcoes)
+            .HasForeignKey(o => o.ComboEtapaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ComboEtapaOpcao>()
+            .HasOne(o => o.ProdutoLoja)
+            .WithMany()
+            .HasForeignKey(o => o.ProdutoLojaId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

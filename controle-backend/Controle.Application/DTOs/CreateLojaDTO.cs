@@ -3,6 +3,7 @@ namespace Controle.Application.DTOs
     public class CreateLojaDTO
     {
         public string Nome { get; set; } = string.Empty;
+        public string Segmento { get; set; } = "Food";
         public string CpfCnpj { get; set; } = string.Empty;
         public string Telefone { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;

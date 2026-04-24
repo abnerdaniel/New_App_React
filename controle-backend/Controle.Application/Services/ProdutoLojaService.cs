@@ -35,11 +35,7 @@ namespace Controle.Application.Services
             // e temos dados para criar um novo, então criamos.
             if (produto == null && dto.NovoProduto != null)
             {
-                // Validar Tipo
-                if (!ProdutoTipo.EhValido(dto.NovoProduto.Tipo))
-                {
-                     throw new DomainException($"Tipo de produto inválido. Tipos permitidos: {string.Join(", ", ProdutoTipo.Todos)}");
-                }
+                // Tipo livre — gerenciado pelo lojista via TipoProduto
 
                 produto = new Produto
                 {
@@ -63,7 +59,19 @@ namespace Controle.Application.Services
                     IsAdicional = dto.NovoProduto.IsAdicional
                 };
 
-                if (dto.NovoProduto.AdicionaisIds != null && dto.NovoProduto.AdicionaisIds.Any())
+                if (dto.NovoProduto.Adicionais != null && dto.NovoProduto.Adicionais.Any())
+                {
+                    foreach (var add in dto.NovoProduto.Adicionais)
+                    {
+                        produto.Adicionais.Add(new ProdutoAdicional { 
+                            ProdutoFilhoId = add.ProdutoFilhoId,
+                            QuantidadeMinima = add.QuantidadeMinima,
+                            QuantidadeMaxima = add.QuantidadeMaxima,
+                            PrecoOverride = add.PrecoOverride
+                        });
+                    }
+                }
+                else if (dto.NovoProduto.AdicionaisIds != null && dto.NovoProduto.AdicionaisIds.Any())
                 {
                     foreach (var idAdicional in dto.NovoProduto.AdicionaisIds)
                     {
@@ -94,7 +102,9 @@ namespace Controle.Application.Services
                 Estoque = dto.Estoque,
                 Descricao = dto.NovoProduto?.Descricao ?? produto.Descricao ?? string.Empty,
                 Disponivel = dto.Disponivel,
-                ImagemUrl = dto.ImagemUrl
+                ImagemUrl = dto.ImagemUrl,
+                TipoProdutoId = dto.TipoProdutoId.HasValue && dto.TipoProdutoId > 0 ? dto.TipoProdutoId.Value : null,
+                ModoCardapio = dto.ModoCardapio ?? "Simples"
             };
 
             // Se CategoriaId foi informado, já cria o vínculo
@@ -135,6 +145,13 @@ namespace Controle.Application.Services
                 produtoLoja.ImagemUrl = dto.ImagemUrl;
             }
             
+            // Novos Campos
+            if (dto.TipoProdutoId.HasValue) 
+                produtoLoja.TipoProdutoId = dto.TipoProdutoId.Value > 0 ? dto.TipoProdutoId.Value : null;
+            
+            if (dto.ModoCardapio != null)
+                produtoLoja.ModoCardapio = dto.ModoCardapio;
+            
             // Legacy CategoriaId update: If provided, clear and add. 
             // Note: This overrides 'CategoriaIds' if both are present in the logic, but for now user sends specific update.
             // Ideally should deprecate CategoriaId in UpdateProdutoLojaRequest.
@@ -157,21 +174,30 @@ namespace Controle.Application.Services
 
             }
 
-            // Atualização do Produto Pai (IsAdicional/AdicionaisIds)
-            // Precisamos carregar o produto pai com includes se quisermos atualizar a coleção.
-            // O repositorio ProdutoLoja carrega Produto? Sim, geralmente. Mas Adicionais? Talvez nao.
-            // Vamos assumir que ProdutoService.AtualizarAsync já faz o trabalho sujo se chamarmos ele.
-            // Mas aqui estamos no ProdutoLojaService.
-            // Melhor abordagem: Injetar IProdutoService aqui? Ou fazer via repositorio.
-            // Pela simplicidade e risco de injeção circular, vamos fazer direto via ProdutoRepository se possivel.
-            if (dto.IsAdicional.HasValue || (dto.AdicionaisIds != null))
+            // Atualização do Produto Pai (Nome/IsAdicional/AdicionaisIds)
+            if (dto.Nome != null || dto.IsAdicional.HasValue || (dto.AdicionaisIds != null))
             {
                  var produtoPai = await _produtoRepository.GetByIdAsync(produtoLoja.ProdutoId);
                  if (produtoPai != null)
                  {
+                     if (dto.Nome != null) produtoPai.Nome = dto.Nome;
                      if (dto.IsAdicional.HasValue) produtoPai.IsAdicional = dto.IsAdicional.Value;
                      
-                     if (dto.AdicionaisIds != null)
+                     if (dto.Adicionais != null)
+                     {
+                         produtoPai.Adicionais.Clear();
+                         foreach (var add in dto.Adicionais)
+                         {
+                             produtoPai.Adicionais.Add(new ProdutoAdicional { 
+                                 ProdutoFilhoId = add.ProdutoFilhoId, 
+                                 ProdutoPaiId = produtoPai.Id,
+                                 QuantidadeMinima = add.QuantidadeMinima,
+                                 QuantidadeMaxima = add.QuantidadeMaxima,
+                                 PrecoOverride = add.PrecoOverride 
+                             });
+                         }
+                     }
+                     else if (dto.AdicionaisIds != null)
                      {
                          produtoPai.Adicionais.Clear();
                          foreach (var idAdicional in dto.AdicionaisIds)
@@ -212,15 +238,29 @@ namespace Controle.Application.Services
                 Estoque = pl.Estoque ?? 0,
                 LojaId = pl.LojaId,
                 ProdutoLojaId = pl.Id,
-                // Prefer 'Descricao' from ProdutoLoja if set, otherwise from Produto
-                // Actually DTO doesn't have Descricao? Checked DTO file, it only has Nome/Tipo/etc.
-                // Wait, checked previously: 'Nome' comes from Produto.
-                
-                
+                TipoProdutoId = pl.TipoProdutoId,
+                TipoProdutoNome = pl.TipoProduto?.Nome,
+                ModoCardapio = pl.ModoCardapio ?? "Simples",
                 CategoriaId = pl.ProdutoCategorias.FirstOrDefault()?.CategoriaId, 
                 CategoriaIds = pl.ProdutoCategorias.Select(pc => pc.CategoriaId).ToList(),
+                
+                // Mapeia os IDs antigos para compatibilidade, e a nova estrutura detalhada.
                 IsAdicional = pl.Produto?.IsAdicional ?? false,
-                AdicionaisIds = pl.Produto?.Adicionais.Select(pa => pa.ProdutoFilhoId).ToList() ?? new List<int>(),
+                AdicionaisIds = pl.Produto?.Adicionais.Select(a => a.ProdutoFilhoId).ToList() ?? new List<int>(),
+                AdicionaisDetalhes = pl.Produto?.Adicionais.Select(a => new CreateProdutoAdicionalDTO
+                {
+                    ProdutoFilhoId = a.ProdutoFilhoId,
+                    QuantidadeMinima = a.QuantidadeMinima,
+                    QuantidadeMaxima = a.QuantidadeMaxima,
+                    PrecoOverride = a.PrecoOverride
+                }).ToList() ?? new List<CreateProdutoAdicionalDTO>(),
+                
+                Imagens = pl.Imagens.OrderBy(img => img.Ordem).Select(img => new ProdutoImagemDTO
+                {
+                    Id = img.Id,
+                    Url = img.Url,
+                    Ordem = img.Ordem
+                }).ToList(),
                 Disponivel = pl.Disponivel,
                 Descricao = string.IsNullOrEmpty(pl.Descricao) ? pl.Produto?.Descricao : pl.Descricao
             }).ToList();
@@ -249,5 +289,55 @@ namespace Controle.Application.Services
         }
 
 
+        public async Task<ProdutoImagemDTO> AdicionarImagemAsync(int produtoLojaId, AddProdutoImagemDTO dto)
+        {
+            var produtoLoja = await _produtoLojaRepository.GetByIdAsync(produtoLojaId);
+            if (produtoLoja == null) throw new DomainException("Produto não encontrado.");
+
+            var novaImagem = new ProdutoImagem
+            {
+                Url = dto.Url,
+                Ordem = dto.Ordem
+            };
+
+            produtoLoja.Imagens.Add(novaImagem);
+            await _produtoLojaRepository.UpdateAsync(produtoLoja);
+
+            return new ProdutoImagemDTO
+            {
+                Id = novaImagem.Id,
+                Url = novaImagem.Url,
+                Ordem = novaImagem.Ordem
+            };
+        }
+
+        public async Task RemoverImagemAsync(int produtoLojaId, int imagemId)
+        {
+            var produtoLoja = await _produtoLojaRepository.GetByIdAsync(produtoLojaId);
+            if (produtoLoja == null) throw new DomainException("Produto não encontrado.");
+
+            var imagem = produtoLoja.Imagens.FirstOrDefault(i => i.Id == imagemId);
+            if (imagem == null) throw new DomainException("Imagem não encontrada no produto.");
+
+            produtoLoja.Imagens.Remove(imagem);
+            await _produtoLojaRepository.UpdateAsync(produtoLoja);
+        }
+
+        public async Task ReordenarImagensAsync(int produtoLojaId, List<ImagemOrdemDTO> ordens)
+        {
+            var produtoLoja = await _produtoLojaRepository.GetByIdAsync(produtoLojaId);
+            if (produtoLoja == null) throw new DomainException("Produto não encontrado.");
+
+            foreach (var ordem in ordens)
+            {
+                var imagem = produtoLoja.Imagens.FirstOrDefault(i => i.Id == ordem.ImagemId);
+                if (imagem != null)
+                {
+                    imagem.Ordem = ordem.Ordem;
+                }
+            }
+
+            await _produtoLojaRepository.UpdateAsync(produtoLoja);
+        }
     }
 }

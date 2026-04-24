@@ -93,6 +93,7 @@ namespace Controle.Application.Services
             {
                 Id = l.Id,
                 Nome = l.Nome,
+                Segmento = l.Segmento,
                 Slug = l.Slug,
                 ImagemUrl = l.LogoUrl,
                 Aberta = l.AbertaManualmente != false,
@@ -304,6 +305,7 @@ namespace Controle.Application.Services
                 {
                     Id = l.Id,
                     Nome = l.Nome,
+                    Segmento = l.Segmento,
                     Slug = l.Slug,
                     ImagemUrl = l.LogoUrl,
                     Aberta = l.AbertaManualmente != false
@@ -510,6 +512,63 @@ namespace Controle.Application.Services
             return hashOfInput == hash;
         }
 
+        public async Task<Result<AuthResponse>> RefreshSessionAsync(Guid usuarioId)
+        {
+            var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
+            if (usuario == null) return Result<AuthResponse>.Fail("Usuário não encontrado.");
+            if (!usuario.Ativo) return Result<AuthResponse>.Fail("Usuário aguardando aprovação.");
+
+            usuario.UltimoAcesso = DateTime.UtcNow;
+            await _usuarioRepository.UpdateAsync(usuario);
+
+            var funcionarios = await _funcionarioRepository.GetByUsuarioIdAsync(usuario.Id);
+            var funcionariosDto = new List<FuncionarioResumoDTO>();
+            int? primaryFuncionarioId = null;
+
+            foreach (var f in funcionarios)
+            {
+                var cargo = await _cargoRepository.GetByIdAsync(f.CargoId);
+                funcionariosDto.Add(new FuncionarioResumoDTO
+                {
+                    Id = f.Id,
+                    LojaId = f.LojaId,
+                    Cargo = cargo?.Nome ?? "Desconhecido",
+                    Ativo = f.Ativo,
+                    AcessoSistemaCompleto = f.AcessoSistemaCompleto,
+                    Telefone = f.Telefone
+                });
+                if (primaryFuncionarioId == null && f.Ativo) primaryFuncionarioId = f.Id;
+            }
+
+            var token = GenerateJwtToken(usuario, primaryFuncionarioId);
+
+            var lojas = await _lojaRepository.GetByUsuarioIdAsync(usuario.Id);
+            var lojasDto = lojas.Select(l => new LojaResumoDTO
+            {
+                Id = l.Id,
+                Nome = l.Nome,
+                Segmento = l.Segmento,
+                Slug = l.Slug,
+                ImagemUrl = l.LogoUrl,
+                Aberta = l.AbertaManualmente != false,
+                LicencaValidaAte = l.LicencaValidaAte,
+                BloqueadaPorFaltaDePagamento = l.BloqueadaPorFaltaDePagamento
+            }).ToList();
+
+            var response = new AuthResponse
+            {
+                Id = usuario.Id,
+                Nome = usuario.Nome,
+                Login = usuario.Login,
+                Email = usuario.Email,
+                Token = token,
+                Lojas = lojasDto,
+                Funcionarios = funcionariosDto
+            };
+
+            return Result<AuthResponse>.Ok(response);
+        }
+
         public async Task<Result<AuthResponse>> ImpersonateAsync(Guid lojaId)
         {
             var loja = await _lojaRepository.GetByIdAsync(lojaId);
@@ -561,6 +620,7 @@ namespace Controle.Application.Services
             {
                 Id = l.Id,
                 Nome = l.Nome,
+                Segmento = l.Segmento,
                 Slug = l.Slug,
                 ImagemUrl = l.LogoUrl,
                 Aberta = l.AbertaManualmente != false,

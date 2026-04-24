@@ -65,12 +65,23 @@ export function CartPage() {
                     <div className="flex justify-between items-start mb-1">
                         <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">{item.produto.nome}</h3>
                         <span className="font-medium text-gray-900 whitespace-nowrap ml-2">
-                             {/* Calculo considerando extras */}
                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                               (item.produto.preco + (item.extras?.reduce((acc, e) => acc + e.preco, 0) || 0)) * item.quantidade
+                               ((item.produto.preco + 
+                                 (item.extras?.reduce((acc, e) => acc + e.preco, 0) || 0) + 
+                                 (item.opcoesSelecionadas?.reduce((acc, o) => acc + (o.preco || 0), 0) || 0)
+                               ) * item.quantidade) / 100
                              )}
                         </span>
                     </div>
+
+                    {/* Opções (Configurável) */}
+                    {item.opcoesSelecionadas && item.opcoesSelecionadas.length > 0 && (
+                        <div className="text-xs text-gray-500 mb-1">
+                            {item.opcoesSelecionadas.map(o => (
+                                <span key={o.id} className="block">+ {o.nome}</span>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Extras */}
                     {item.extras && item.extras.length > 0 && (
